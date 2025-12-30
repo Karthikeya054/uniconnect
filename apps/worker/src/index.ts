@@ -1,8 +1,10 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load env at the absolute top
-dotenv.config();
+// Load env only in non-production environments
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 // Standardize env access for shared package
 process.env.ENCRYPTION_KEY_BASE64 = process.env.ENCRYPTION_KEY_BASE64;
