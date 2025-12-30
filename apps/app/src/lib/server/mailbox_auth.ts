@@ -19,7 +19,7 @@ function getMailboxClient() {
     const clientId = env.GOOGLE_CLIENT_ID;
     const clientSecret = env.GOOGLE_CLIENT_SECRET;
     // We force this to be exactly what Google expects
-    const redirectUri = "http://localhost:3001/api/mailboxes/google/callback";
+    const redirectUri = env.GOOGLE_GMAIL_REDIRECT_URI || "http://localhost:3001/api/mailboxes/google/callback";
 
     console.log('****************************************');
     console.log('DIAGNOSTIC: Google OAuth Redirect URI');
@@ -38,7 +38,7 @@ function getMailboxClient() {
 
 export function getMailboxAuthUrl(universityId: string) {
     const client = getMailboxClient();
-    const redirectUri = "http://localhost:3001/api/mailboxes/google/callback";
+    const redirectUri = env.GOOGLE_GMAIL_REDIRECT_URI || "http://localhost:3001/api/mailboxes/google/callback";
 
     const url = client.generateAuthUrl({
         access_type: 'offline',
