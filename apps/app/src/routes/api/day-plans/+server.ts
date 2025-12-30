@@ -2,14 +2,14 @@ import { getDayPlans, createDayPlan, updateDayPlan, deleteDayPlan } from '@unico
 import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
 
-export const GET: RequestHandler = async ({ url, locals }) => {
+export const GET: RequestHandler = async ({ url, locals }: { url: URL, locals: any }) => {
     if (!locals.user) throw error(401);
     const date = url.searchParams.get('date') || undefined;
     const plans = await getDayPlans(locals.user.id, date);
     return json(plans);
 };
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals }: { request: Request, locals: any }) => {
     if (!locals.user) throw error(401);
     const data = await request.json();
     if (!data.title) throw error(400, 'Title required');
@@ -21,7 +21,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     return json(plan);
 };
 
-export const PATCH: RequestHandler = async ({ request, locals }) => {
+export const PATCH: RequestHandler = async ({ request, locals }: { request: Request, locals: any }) => {
     if (!locals.user) throw error(401);
     const data = await request.json();
     const { id, ...updates } = data;
@@ -31,7 +31,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
     return json(plan);
 };
 
-export const DELETE: RequestHandler = async ({ url, locals }) => {
+export const DELETE: RequestHandler = async ({ url, locals }: { url: URL, locals: any }) => {
     if (!locals.user) throw error(401);
     const id = url.searchParams.get('id');
     if (!id) throw error(400, 'ID required');

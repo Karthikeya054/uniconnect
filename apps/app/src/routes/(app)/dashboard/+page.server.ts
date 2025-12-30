@@ -60,10 +60,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                 avg_open_rate: 0, remaining_credits: 0, recent_campaigns: [],
                 daily_activity: []
             },
-            taskStats: { total: 0, completed: 0, pending: 0, overdue: 0 },
+            taskStats: { total: 0, completed: 0, pending: 0, in_progress: 0, overdue: 0 },
             universities: [],
             tasks: [],
-            scheduleEvents: [], // Added missing field
+            scheduleEvents: [],
+            dayPlans: [],
             selectedUniversityId: universityId,
             userRole: locals.user.role,
             userId: locals.user.id,
