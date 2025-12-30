@@ -565,16 +565,18 @@
                 {/each}
 
                 {#if isAddingItem}
-                    <div class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200 animate-in fade-in slide-in-from-top-2">
+                    <div 
+                        transition:fade={{ duration: 200 }}
+                        class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200"
+                    >
                         <input 
                             bind:value={newDayPlanTitle}
                             placeholder="What's the focus?"
                             class="w-full bg-transparent border-none p-0 text-sm font-bold text-gray-700 placeholder:text-indigo-300 focus:ring-0"
-                            autofocus
                             onkeydown={(e) => e.key === 'Enter' && addDayPlanItem()}
                         />
                         <div class="flex items-center justify-end gap-2 mt-3">
-                            <button onclick={() => isAddingItem = false} class="text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600">Cancel</button>
+                            <button onclick={() => { console.log('Cancelling add'); isAddingItem = false; }} class="text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600">Cancel</button>
                             <button onclick={addDayPlanItem} class="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-3 py-1.5 bg-white rounded-lg shadow-sm border border-indigo-100">Add Item</button>
                         </div>
                     </div>
