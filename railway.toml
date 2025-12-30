@@ -1,0 +1,17 @@
+# Railway configuration for monorepo
+
+[[services]]
+name = "app"
+source = "apps/app"
+build.command = "npm install && npm run build"
+start.command = "npm start"
+
+[[services]]
+name = "worker"
+source = "apps/worker"
+build.command = "npm install && npm run build"
+start.command = "npm start"
+
+[[services]]
+name = "redis"
+image = "redis:7-alpine"
