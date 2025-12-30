@@ -162,7 +162,7 @@ const systemWorker = new Worker('system-notifications', async (job: Job) => {
     // 1. Try to find any connected mailbox to use for system notifications
     // This bypasses Port 587/465 blocks by using the Gmail API (Port 443)
     const mailboxRes = await db.query(
-      `SELECT m.* FROM mailboxes m 
+      `SELECT m.* FROM mailbox_connections m 
        JOIN users u ON m.user_id = u.id 
        WHERE u.role IN ('ADMIN', 'PROGRAM_OPS') 
        LIMIT 1`
