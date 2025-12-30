@@ -151,29 +151,68 @@ const systemWorker = new Worker('system-notifications', async (job: Job) => {
   const { to, subject, text, html } = job.data;
   console.log(`[SYSTEM-NOTIF] Processing job ${job.id} for ${to}`);
 
-  // Sanity check for SMTP
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn(`[SYSTEM-NOTIF] WARNING: SMTP_USER or SMTP_PASS is not set. This job will likely fail.`);
-  }
-
   try {
+    // 1. Try to find any connected mailbox to use for system notifications
+    // This bypasses Port 587/465 blocks by using the Gmail API (Port 443)
+    const mailboxRes = await db.query(
+      `SELECT m.* FROM mailboxes m 
+       JOIN users u ON m.user_id = u.id 
+       WHERE u.role IN ('ADMIN', 'PROGRAM_OPS') 
+       LIMIT 1`
+    );
+
+    if (mailboxRes.rows[0]) {
+      const mailbox = mailboxRes.rows[0];
+      console.log(`[SYSTEM-NOTIF] Using Gmail API fallback via ${mailbox.email}`);
+
+      const refreshToken = decryptString(mailbox.refresh_token_enc);
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+      oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+      const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+      const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+      const messageParts = [
+        `MIME-Version: 1.0`,
+        `To: ${to}`,
+        `From: "UniConnect" <${mailbox.email}>`,
+        `Subject: ${utf8Subject}`,
+        `Content-Type: text/html; charset=utf-8`,
+        `Content-Transfer-Encoding: base64`,
+        '',
+        Buffer.from(html).toString('base64')
+      ];
+
+      const rawMessage = messageParts.join('\r\n');
+      const encodedMail = Buffer.from(rawMessage).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw: encodedMail }
+      });
+
+      console.log(`[SYSTEM-NOTIF] Success (API): Notification sent to ${to}`);
+      return;
+    }
+
+    // 2. Fallback to SMTP if no mailbox is available
+    console.log(`[SYSTEM-NOTIF] No mailbox found, falling back to SMTP...`);
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      throw new Error('No mailbox connected and no SMTP credentials provided');
+    }
+
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465', // true for 465, false for 587
+      secure: process.env.SMTP_PORT === '465',
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
       },
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-      tls: {
-        rejectUnauthorized: false, // Matches our NODE_TLS_REJECT_UNAUTHORIZED setting
-        ciphers: 'SSLv3' // Help with older/specific cloud security protocols
-      },
-      debug: true,
-      logger: true
+      connectionTimeout: 10000,
+      tls: { rejectUnauthorized: false }
     });
 
     await transporter.sendMail({
@@ -184,7 +223,7 @@ const systemWorker = new Worker('system-notifications', async (job: Job) => {
       html
     });
 
-    console.log(`[SYSTEM-NOTIF] Success: Notification sent to ${to}`);
+    console.log(`[SYSTEM-NOTIF] Success (SMTP): Notification sent to ${to}`);
   } catch (err: any) {
     console.error(`[SYSTEM-NOTIF] ERROR: Failed system notification to ${to}:`, err);
     throw err;
