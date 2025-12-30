@@ -165,6 +165,13 @@ const systemWorker = new Worker('system-notifications', async (job: Job) => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
       },
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false, // Matches our NODE_TLS_REJECT_UNAUTHORIZED setting
+        ciphers: 'SSLv3' // Help with older/specific cloud security protocols
+      },
       debug: true,
       logger: true
     });
