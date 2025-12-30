@@ -11,22 +11,13 @@ FROM base AS build
 RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
-# Production stage for App
-FROM base AS app
-COPY --from=build /app/apps/app/build /app/apps/app/build
-COPY --from=build /app/node_modules /app/node_modules
-COPY --from=build /app/apps/app/node_modules /app/apps/app/node_modules
-COPY --from=build /app/apps/app/package.json /app/apps/app/package.json
+# Production stage (Unified)
+FROM base AS production
+COPY --from=build /app /app
 
 EXPOSE 3000
 ENV PORT=3000
-CMD ["node", "apps/app/build/index.js"]
 
-# Production stage for Worker
-FROM base AS worker
-COPY --from=build /app/apps/worker/dist /app/apps/worker/dist
-COPY --from=build /app/node_modules /app/node_modules
-COPY --from=build /app/apps/worker/node_modules /app/apps/worker/node_modules
-COPY --from=build /app/apps/worker/package.json /app/apps/worker/package.json
-
-CMD ["node", "apps/worker/dist/index.js"]
+# Use RAILWAY_DOCKER_TARGET (which the user already set) to decide what to run.
+# Defaults to app if not set.
+CMD ["sh", "-c", "if [ \"$RAILWAY_DOCKER_TARGET\" = \"worker\" ]; then node apps/worker/dist/index.js; else node apps/app/build/index.js; fi"]
