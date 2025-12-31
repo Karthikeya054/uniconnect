@@ -8,7 +8,7 @@ export interface Campaign {
     template_id: string;
     mailbox_id: string;
     recipient_email_key: string | null;
-    status: 'DRAFT' | 'SCHEDULED' | 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+    status: 'DRAFT' | 'SCHEDULED' | 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'STOPPED';
     include_ack: boolean;
     scheduled_at: Date | null;
     started_at: Date | null;
