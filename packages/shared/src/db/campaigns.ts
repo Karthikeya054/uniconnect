@@ -120,11 +120,22 @@ export async function createRecipients(campaignId: string, students: any[], reci
             );
         }
 
-        // Recalculate total_recipients for accuracy
-        const countRes = await client.query(`SELECT COUNT(*) as count FROM campaign_recipients WHERE campaign_id = $1`, [campaignId]);
+        // Recalculate total_recipients and failed_count for accuracy
+        const statsRes = await client.query(`
+            SELECT 
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE status = 'FAILED') as failed
+            FROM campaign_recipients 
+            WHERE campaign_id = $1
+        `, [campaignId]);
+
+        const { total, failed } = statsRes.rows[0];
+
         await client.query(
-            `UPDATE campaigns SET total_recipients = $1, status = 'SCHEDULED', scheduled_at = NOW() WHERE id = $2`,
-            [parseInt(countRes.rows[0].count), campaignId]
+            `UPDATE campaigns 
+             SET total_recipients = $1, failed_count = $2, status = 'SCHEDULED', scheduled_at = NOW() 
+             WHERE id = $3`,
+            [parseInt(total), parseInt(failed), campaignId]
         );
 
         await client.query('COMMIT');
