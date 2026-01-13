@@ -1,5 +1,5 @@
 import { db } from './client';
-import { UserRole } from './users';
+import type { UserRole } from './users';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Invitation {

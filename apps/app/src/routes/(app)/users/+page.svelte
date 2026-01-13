@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation';
+  import { onMount } from 'svelte';
   // @ts-ignore
   let { data } = $props();
 
@@ -17,7 +18,11 @@
   let displayName = $state('');
 
   let activeTab = $state<'users' | 'requests'>('users');
-  let accessRequests = $state([...data.accessRequests]);
+  let accessRequests = $state<any[]>([]);
+
+  onMount(() => {
+    accessRequests = [...data.accessRequests];
+  });
 
   async function handleRequestAction(id: string, status: 'APPROVED' | 'REJECTED') {
     try {

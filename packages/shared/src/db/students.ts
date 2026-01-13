@@ -4,6 +4,7 @@ export interface Student {
     id: string;
     university_id: string;
     name: string;
+    full_name?: string;
     email: string;
     external_id: string;
     metadata: any;
