@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { createRequire } from 'module';
 import mammoth from 'mammoth';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
