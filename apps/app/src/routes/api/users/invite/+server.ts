@@ -16,7 +16,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         throw error(403, 'Permission denied');
     }
 
-    const { email, role, university_id } = await request.json();
+    const { email, role, university_id, university_ids } = await request.json();
 
     if (!email || !role) {
         throw error(400, 'Email and role are required');
@@ -25,14 +25,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     // Check if user already exists - we now ALLOW this to support role/university updates via invitation
     const existingUser = await getUserByEmail(email);
 
-    // Role-based university restriction
-    const targetUnivId = isGlobalAdmin ? university_id : locals.user.university_id;
+    // Role-based university restriction - support both single and multi
+    const univIds = isGlobalAdmin ? (university_ids || (university_id ? [university_id] : [])) : (locals.user.university_id ? [locals.user.university_id] : []);
 
     try {
         const invite = await createInvitation({
             email,
             role,
-            university_id: targetUnivId,
+            university_ids: univIds,
             invited_by: locals.user.id
         });
 

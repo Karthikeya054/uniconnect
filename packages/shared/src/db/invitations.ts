@@ -17,11 +17,15 @@ export async function createInvitation(data: {
     email: string;
     role: UserRole;
     university_id?: string | null;
+    university_ids?: string[]; // New: array of university IDs
     invited_by: string;
 }) {
     const token = uuidv4();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+
+    // Primary university_id for backward compatibility
+    const primaryUnivId = data.university_ids?.[0] || data.university_id || null;
 
     const result = await db.query(
         `INSERT INTO invitations (email, role, university_id, token, expires_at, invited_by)
@@ -34,10 +38,30 @@ export async function createInvitation(data: {
             invited_by = EXCLUDED.invited_by,
             created_at = NOW()
          RETURNING *`,
-        [data.email.toLowerCase(), data.role, data.university_id || null, token, expiresAt, data.invited_by]
+        [data.email.toLowerCase(), data.role, primaryUnivId, token, expiresAt, data.invited_by]
     );
 
-    return result.rows[0] as Invitation;
+    const invite = result.rows[0] as Invitation;
+
+    // Sync junction table if university_ids is provided
+    if (data.university_ids) {
+        await db.query(`DELETE FROM invitation_universities WHERE invitation_id = $1`, [invite.id]);
+
+        if (data.university_ids.length > 0) {
+            const values = data.university_ids.map((univId, idx) =>
+                `($1, $${idx + 2})`
+            ).join(', ');
+
+            await db.query(
+                `INSERT INTO invitation_universities (invitation_id, university_id) 
+                 VALUES ${values} 
+                 ON CONFLICT (invitation_id, university_id) DO NOTHING`,
+                [invite.id, ...data.university_ids]
+            );
+        }
+    }
+
+    return invite;
 }
 
 export async function getInvitationByToken(token: string) {
