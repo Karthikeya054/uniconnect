@@ -4,7 +4,7 @@ import { error } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals }) => {
     const userRole = locals.user?.role as any;
-    if (userRole !== 'ADMIN' && userRole !== 'PROGRAM_OPS' && userRole !== 'UNIVERSITY_OPERATOR') {
+    if (!locals.user?.permissions?.includes('users')) {
         throw error(403, 'Forbidden');
     }
 

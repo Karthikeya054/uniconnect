@@ -17,3 +17,4 @@ export * from './db/mailbox_permissions';
 export * from './crypto';
 export * from './db/assessments';
 export * from './template';
+export * from './db/permissions';

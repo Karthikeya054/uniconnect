@@ -52,14 +52,29 @@ export const handle: Handle = async ({ event, resolve }) => {
                 headers: { Location: '/request-access' }
             });
         }
-    }
 
-    if (path.startsWith('/universities') || path.startsWith('/users') || path.startsWith('/mail-logs')) {
-        const userRole = event.locals.user?.role as any;
-        const isGlobalAdmin = userRole === 'ADMIN' || userRole === 'PROGRAM_OPS';
+        // Dynamic Permission Enforcement
+        const featureMap: Record<string, string> = {
+            '/dashboard': 'dashboard',
+            '/tasks': 'tasks',
+            '/universities': 'universities',
+            '/students': 'students',
+            '/users': 'users',
+            '/analytics': 'analytics',
+            '/mailboxes': 'mailboxes',
+            '/templates': 'templates',
+            '/campaigns': 'campaigns',
+            '/assessments': 'assessments',
+            '/mail-logs': 'mail-logs',
+            '/permissions': 'permissions'
+        };
 
-        if (!isGlobalAdmin) {
-            return new Response('Forbidden', { status: 403 });
+        const matchingPath = Object.keys(featureMap).find(p => path.startsWith(p));
+        if (matchingPath) {
+            const requiredFeature = featureMap[matchingPath];
+            if (!user.permissions?.includes(requiredFeature)) {
+                return new Response('Forbidden: Feature not enabled for your role', { status: 403 });
+            }
         }
     }
 

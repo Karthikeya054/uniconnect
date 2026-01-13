@@ -13,6 +13,7 @@ export interface SessionUser {
     age: number | null;
     profile_picture_url: string | null;
     universities: { id: string, name: string }[];
+    permissions: string[];
 }
 
 const SESSION_TTL_HOURS = 168; // 7 days
@@ -45,9 +46,11 @@ export async function validateSession(token: string): Promise<SessionUser | null
                 WHERE uu.user_id = u.id
             ),
             '[]'::json
-        ) as universities
+        ) as universities,
+        COALESCE(rp.features, '[]'::jsonb) as permissions
     FROM sessions s
     JOIN users u ON s.user_id = u.id
+    LEFT JOIN role_permissions rp ON u.role = rp.role
     WHERE s.token_hash = $1 AND s.expires_at > NOW()
     `,
         [tokenHash]
