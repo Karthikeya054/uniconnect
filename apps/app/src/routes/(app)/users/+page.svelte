@@ -470,7 +470,7 @@
                 <textarea id="f-bio" bind:value={bio} placeholder="e.g. Managing institutional outreach and student coordination." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all" rows="2"></textarea>
             </div>
 
-            {#if !editingUserId && data.isGlobalAdmin}
+            {#if data.isGlobalAdmin}
             <div class="col-span-2">
                 <label for="f-univ" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Assign to Institution</label>
                 <select id="f-univ" bind:value={universityId} class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all">
