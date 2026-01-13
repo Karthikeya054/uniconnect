@@ -81,19 +81,19 @@
 
     const isEditable = $derived(mode === 'edit');
 
-    // Helper to determine if a slot belongs in Part A (2-mark questions)
+    // Helper to determine if a slot belongs in Part A (1-mark MCQs or 2-mark questions)
     const isPartASlot = (slot: any) => {
         if (!slot) return false;
-        // Check if it's a 2-mark question (regardless of type)
+        // Check if it's a 1-mark or 2-mark question (Part A questions)
         if (slot.type === 'SINGLE') {
             const marks = slot.questions?.[0]?.marks || slot.marks;
-            return marks === 2;
+            return marks === 1 || marks === 2;
         }
-        // For OR_GROUP, check if both choices are 2 marks
+        // For OR_GROUP, check if both choices are 1 or 2 marks
         if (slot.type === 'OR_GROUP') {
             const marks1 = slot.choice1?.questions?.[0]?.marks || slot.marks;
             const marks2 = slot.choice2?.questions?.[0]?.marks || slot.marks;
-            return marks1 === 2 && marks2 === 2;
+            return (marks1 === 1 || marks1 === 2) && (marks2 === 1 || marks2 === 2);
         }
         return false;
     };
