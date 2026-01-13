@@ -361,7 +361,7 @@
                                         <span class="text-[10px] font-black">({q.marks})</span>
                                         {#if isEditable}
                                             <button 
-                                                onclick={() => replaceQuestion(currentSetData.questions.indexOf(slot), 'B', 'q1')}
+                                                onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'B', 'q1')}
                                                 class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
                                                 title="Replace Question"
                                             >
@@ -402,7 +402,7 @@
                                         <span class="text-[10px] font-black">({q.marks})</span>
                                         {#if isEditable}
                                             <button 
-                                                onclick={() => replaceQuestion(currentSetData.questions.indexOf(slot), 'B', 'q2')}
+                                                onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'B', 'q2')}
                                                 class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
                                                 title="Replace Question"
                                             >
@@ -437,7 +437,7 @@
                                     <span class="text-[10px] font-black">({q.marks})</span>
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => replaceQuestion(currentSetData.questions.indexOf(slot), 'B')}
+                                            onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.questions?.[0]?.id === slot.questions?.[0]?.id), 'B')}
                                             class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
                                             title="Replace Question"
                                         >
@@ -497,7 +497,7 @@
                                     <span class="text-[10px] font-black">({q.marks})</span>
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => replaceQuestion(currentSetData.questions.indexOf(slot), 'C', 'q1')}
+                                            onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'C', 'q1')}
                                             class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
                                             title="Replace Question"
                                         >
@@ -538,7 +538,7 @@
                                     <span class="text-[10px] font-black">({q.marks})</span>
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => replaceQuestion(currentSetData.questions.indexOf(slot), 'C', 'q2')}
+                                            onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'C', 'q2')}
                                             class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
                                             title="Replace Question"
                                         >
