@@ -448,10 +448,13 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
   <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick={closeModal}></div>
   <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100 animate-in zoom-in-95 duration-200">
-    <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 px-8 py-6 text-white">
+    <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 px-8 py-6 text-white">
         <h3 class="text-2xl font-black tracking-tight flex items-center justify-between" id="modal-title">
           <span>{editingUserId ? 'Edit Member' : 'Invite Member'}</span>
-          <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-lg border border-white/10">v2.1</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[9px] bg-white/20 px-2 py-1 rounded-full border border-white/20 animate-pulse uppercase tracking-widest">Multi-Select Active</span>
+            <span class="text-[10px] bg-black/20 px-2 py-1 rounded-lg">v2.2</span>
+          </div>
         </h3>
         <p class="text-indigo-100 text-sm opacity-80 mt-1">Set user details and assigned roles.</p>
     </div>
@@ -506,10 +509,10 @@
                                 type="checkbox"
                                 checked={universityIds.includes(univ.id)}
                                 onchange={() => toggleUniversity(univ.id)}
-                                class="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all"
+                                class="w-6 h-6 rounded-lg border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-all"
                             />
                             <div class="flex flex-col">
-                                <span class="text-sm font-bold text-gray-700 group-hover:text-indigo-700 transition-colors">{univ.name}</span>
+                                <span class="text-sm font-bold text-gray-700 group-hover:text-emerald-700 transition-colors">{univ.name}</span>
                                 {#if univ.short_name}
                                     <span class="text-[10px] font-medium text-gray-400 uppercase tracking-tighter">{univ.short_name}</span>
                                 {/if}
