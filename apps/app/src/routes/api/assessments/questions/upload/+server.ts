@@ -2,11 +2,11 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createAssessmentQuestion, getCourseOutcomes } from '@uniconnect/shared';
 import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const pdf = require('pdf-parse');
 import mammoth from 'mammoth';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
+    const require = createRequire(import.meta.url);
+    const pdf = require('pdf-parse');
     if (!locals.user) throw error(401);
 
     try {
