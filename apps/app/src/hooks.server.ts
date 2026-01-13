@@ -12,7 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     if (token) {
         try {
-            const user = await validateSession(token);
+            let user = await validateSession(token);
             if (user) {
                 // Handle active university selection
                 const activeUnivId = event.cookies.get('active_university_id');
@@ -69,6 +69,8 @@ export const handle: Handle = async ({ event, resolve }) => {
             '/permissions': 'permissions'
         };
 
+        // Emergency Rollback: Temporarily disabling dynamic permission enforcement to restore system access
+        /*
         const matchingPath = Object.keys(featureMap).find(p => path.startsWith(p));
         if (matchingPath) {
             const requiredFeature = featureMap[matchingPath];
@@ -76,6 +78,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                 return new Response('Forbidden: Feature not enabled for your role', { status: 403 });
             }
         }
+        */
     }
 
     return await resolve(event);

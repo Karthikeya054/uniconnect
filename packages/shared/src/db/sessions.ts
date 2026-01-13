@@ -45,7 +45,7 @@ export async function validateSession(token: string): Promise<SessionUser | null
         const result = await db.query(
             `
         SELECT 
-            u.id, u.email, u.role, u.university_id, u.name, u.display_name, u.phone, u.bio, u.age, u.profile_picture_url,
+            u.id, u.email, u.role, u.university_id, u.name, u.is_active,
             COALESCE(
                 (
                     SELECT json_agg(json_build_object('id', un.id, 'name', un.name))
@@ -67,68 +67,14 @@ export async function validateSession(token: string): Promise<SessionUser | null
         if (result.rows.length === 0) return null;
         return result.rows[0];
     } catch (e: any) {
-        // Fallback Stage 2: Handle missing role_permissions table
-        if (e.code === '42P01' && (e.message.includes('role_permissions'))) {
-            try {
-                const result = await db.query(
-                    `
-                SELECT 
-                    u.id, u.email, u.role, u.university_id, u.name, u.display_name, u.phone, u.bio, u.age, u.profile_picture_url,
-                    COALESCE(
-                        (
-                            SELECT json_agg(json_build_object('id', un.id, 'name', un.name))
-                            FROM user_universities uu
-                            JOIN universities un ON uu.university_id = un.id
-                            WHERE uu.user_id = u.id
-                        ),
-                        '[]'::json
-                    ) as universities
-                FROM sessions s
-                JOIN users u ON s.user_id = u.id
-                WHERE s.token_hash = $1 AND s.expires_at > NOW()
-                `,
-                    [tokenHash]
-                );
-
-                if (result.rows.length === 0) return null;
-                const user = result.rows[0];
-                user.permissions = (user.role === 'ADMIN' || user.role === 'PROGRAM_OPS') ? allFeatures : ['dashboard', 'students'];
-                return user;
-            } catch (e2: any) {
-                // Fallback Stage 3: Extreme fallback - Handle missing user_universities table as well
-                if (e2.code === '42P01') {
-                    const result = await db.query(
-                        `
-                    SELECT 
-                        u.id, u.email, u.role, u.university_id, u.name, u.display_name, u.phone, u.bio, u.age, u.profile_picture_url
-                    FROM sessions s
-                    JOIN users u ON s.user_id = u.id
-                    WHERE s.token_hash = $1 AND s.expires_at > NOW()
-                    `,
-                        [tokenHash]
-                    );
-
-                    if (result.rows.length === 0) return null;
-                    const user = result.rows[0];
-                    user.universities = [];
-                    user.permissions = (user.role === 'ADMIN' || user.role === 'PROGRAM_OPS') ? allFeatures : ['dashboard', 'students'];
-                    return user;
-                }
-                throw e2;
-            }
-        }
-
-        // If it's a DIFFERENT error code 42P01 (e.g. user_universities missing in FIRST query)
-        // trigger the absolute core fallback
-        if (e.code === '42P01') {
+        console.error('[VALIDATE_SESSION_ERROR_FALLBACK_TRIGGERED]', e.message);
+        // Stage 2: Absolute Core Fallback - Minimal columns, no joins
+        try {
             const result = await db.query(
-                `
-            SELECT 
-                u.id, u.email, u.role, u.university_id, u.name, u.display_name, u.phone, u.bio, u.age, u.profile_picture_url
-            FROM sessions s
-            JOIN users u ON s.user_id = u.id
-            WHERE s.token_hash = $1 AND s.expires_at > NOW()
-            `,
+                `SELECT u.id, u.email, u.role, u.university_id, u.name, u.is_active
+                 FROM sessions s
+                 JOIN users u ON s.user_id = u.id
+                 WHERE s.token_hash = $1 AND s.expires_at > NOW()`,
                 [tokenHash]
             );
 
@@ -137,9 +83,10 @@ export async function validateSession(token: string): Promise<SessionUser | null
             user.universities = [];
             user.permissions = (user.role === 'ADMIN' || user.role === 'PROGRAM_OPS') ? allFeatures : ['dashboard', 'students'];
             return user;
+        } catch (fatal: any) {
+            console.error('[VALIDATE_SESSION_FATAL]', fatal.message);
+            return null;
         }
-
-        throw e;
     }
 }
 
