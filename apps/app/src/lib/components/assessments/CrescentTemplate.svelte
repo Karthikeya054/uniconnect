@@ -81,29 +81,37 @@
 
     const isEditable = $derived(mode === 'edit');
 
-    // Helper to determine if a slot is MCQ-oriented
-    const isMCQSlot = (slot: any) => {
+    // Helper to determine if a slot belongs in Part A (2-mark questions)
+    const isPartASlot = (slot: any) => {
         if (!slot) return false;
+        // Check if it's a 2-mark question (regardless of type)
         if (slot.type === 'SINGLE') {
-            return slot.questions?.[0]?.type === 'MCQ';
+            const marks = slot.questions?.[0]?.marks || slot.marks;
+            return marks === 2;
         }
-        return slot.choice1?.questions?.[0]?.type === 'MCQ';
+        // For OR_GROUP, check if both choices are 2 marks
+        if (slot.type === 'OR_GROUP') {
+            const marks1 = slot.choice1?.questions?.[0]?.marks || slot.marks;
+            const marks2 = slot.choice2?.questions?.[0]?.marks || slot.marks;
+            return marks1 === 2 && marks2 === 2;
+        }
+        return false;
     };
 
-    // Smart Partitioning: All MCQs to Part A, everything else to Part B/C
-    let mcqSlots = $derived(currentSetData.questions.filter(isMCQSlot));
-    let nonMcqSlots = $derived(currentSetData.questions.filter((s: any) => !isMCQSlot(s)));
+    // Smart Partitioning: All 2-mark questions to Part A, everything else to Part B/C
+    let partASlots = $derived(currentSetData.questions.filter(isPartASlot));
+    let nonPartASlots = $derived(currentSetData.questions.filter((s: any) => !isPartASlot(s)));
 
-    let questionsA = $derived(mcqSlots);
-    let partACount = $derived(mcqSlots.length);
+    let questionsA = $derived(partASlots);
+    let partACount = $derived(partASlots.length);
 
     let is100m = $derived(Number(paperMeta.max_marks) === 100);
     
-    let slotsB = $derived(is100m ? nonMcqSlots.slice(0, nonMcqSlots.length - 1) : nonMcqSlots);
-    let slotsC = $derived(is100m ? nonMcqSlots.slice(nonMcqSlots.length - 1) : []);
+    let slotsB = $derived(is100m ? nonPartASlots.slice(0, nonPartASlots.length - 1) : nonPartASlots);
+    let slotsC = $derived(is100m ? nonPartASlots.slice(nonPartASlots.length - 1) : []);
 
     let numberedSections = $derived(() => {
-        let current = mcqSlots.length + 1;
+        let current = partASlots.length + 1;
         const b = slotsB.map((s: any) => {
             if (s.type === 'OR_GROUP') {
                 const n1 = current;
