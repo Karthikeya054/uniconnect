@@ -482,44 +482,30 @@
 
             {#if data.isGlobalAdmin}
             <div class="col-span-2">
-                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Assign to Institutions</label>
-                <div class="relative">
-                    <button
-                        type="button"
-                        onclick={() => showUniversityDropdown = !showUniversityDropdown}
-                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all text-left flex items-center justify-between"
-                    >
-                        <span class="truncate">
-                            {#if universityIds.length === 0}
-                                Select Universities
-                            {:else if universityIds.length === 1}
-                                {data.universities.find(u => u.id === universityIds[0])?.name || '1 selected'}
-                            {:else}
-                                {universityIds.length} universities selected
-                            {/if}
-                        </span>
-                        <svg class="w-4 h-4 ml-2 transition-transform {showUniversityDropdown ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    
-                    {#if showUniversityDropdown}
-                        <div class="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto">
-                            <div class="p-2 space-y-1">
-                                {#each data.universities as univ}
-                                    <label class="flex items-center gap-3 px-3 py-2 hover:bg-indigo-50 rounded-lg cursor-pointer transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={universityIds.includes(univ.id)}
-                                            onchange={() => toggleUniversity(univ.id)}
-                                            class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <span class="text-sm font-semibold text-gray-700">{univ.name}</span>
-                                    </label>
-                                {/each}
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Assign to Institutions</label>
+                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 max-h-64 overflow-y-auto space-y-2 shadow-inner">
+                    {#each data.universities as univ}
+                        <label class="flex items-center gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl hover:bg-indigo-50/50 hover:border-indigo-100 cursor-pointer transition-all group">
+                            <input
+                                type="checkbox"
+                                checked={universityIds.includes(univ.id)}
+                                onchange={() => toggleUniversity(univ.id)}
+                                class="w-5 h-5 rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-all"
+                            />
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-gray-700 group-hover:text-indigo-700 transition-colors">{univ.name}</span>
+                                {#if univ.short_name}
+                                    <span class="text-[10px] font-medium text-gray-400 uppercase tracking-tighter">{univ.short_name}</span>
+                                {/if}
                             </div>
-                        </div>
+                        </label>
+                    {/each}
+                    {#if data.universities.length === 0}
+                        <div class="text-center py-8 text-gray-400 text-xs font-bold">No universities found</div>
                     {/if}
+                </div>
+                <div class="mt-2 ml-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                    Selected: {universityIds.length} institutions
                 </div>
             </div>
             {/if}
