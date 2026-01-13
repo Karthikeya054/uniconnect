@@ -286,7 +286,13 @@
                                         <span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border {roleColors[user.role] || roleColors.BOA} w-fit">
                                             {user.role}
                                         </span>
-                                        {#if user.university_name}
+                                        {#if user.universities && user.universities.length > 0}
+                                            <div class="flex flex-col">
+                                                {#each user.universities as univ}
+                                                    <span class="text-[9px] font-bold text-indigo-400 leading-tight">• {univ.name}</span>
+                                                {/each}
+                                            </div>
+                                        {:else if user.university_name}
                                             <span class="text-[10px] font-bold text-indigo-400">{user.university_name}</span>
                                         {/if}
                                     </div>
