@@ -888,7 +888,7 @@
                     <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/10 blur-[60px] rounded-full"></div>
 
                     <div class="flex-1 w-full overflow-y-auto overflow-x-hidden max-h-[650px] bg-slate-100/30 rounded-[2rem] p-6 border border-indigo-100/20 custom-scrollbar">
-                        <div class="scale-[0.5] origin-top w-[200%] mx-auto shadow-2xl">
+                        <div class="scale-100 origin-top w-full mx-auto shadow-2xl">
                             <CrescentTemplate 
                                 paperMeta={{
                                     paper_date: examDate,
