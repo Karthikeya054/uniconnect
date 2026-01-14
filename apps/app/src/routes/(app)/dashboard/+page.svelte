@@ -356,12 +356,12 @@
     }
 </script>
 
-<div class="flex flex-col xl:flex-row gap-8 min-h-screen relative p-2 md:p-6" in:fade>
+<div class="flex flex-col 2xl:flex-row gap-8 min-h-screen relative p-2 md:p-6" in:fade>
     <!-- Main Content Area (Left) -->
     <div class="flex-1 space-y-8">
         <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div>
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight">Main Dashboard</h1>
+                <h1 class="text-3xl font-black text-gray-900 tracking-tight">Main Dashboard <span class="text-xs font-normal text-gray-400 opacity-50 ml-2">(Build: 1700)</span></h1>
                 <p class="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Real-time Overview</p>
             </div>
             {#if (data.user?.permissions || []).includes('universities') || data.universities.length > 1}
@@ -381,7 +381,7 @@
         </div>
 
         <!-- Task Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6">
+        <div class="grid grid-cols-2 min-[500px]:grid-cols-3 min-[900px]:grid-cols-5 gap-4 lg:gap-6">
             {#each taskStats as stat}
                 <div class="bg-white p-6 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col items-center text-center transition-all hover:scale-[1.05] hover:shadow-indigo-500/10 cursor-default group">
                     <div class="w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center text-xl {stat.color} shadow-sm mb-4 group-hover:rotate-6 transition-transform">{stat.icon}</div>
@@ -518,7 +518,7 @@
     </div>
 
     <!-- Right Sidebar (Day Plan & Quick Actions) -->
-    <div class="w-full lg:w-[380px] space-y-8">
+    <div class="w-full 2xl:w-[320px] space-y-8">
         <!-- Daily Focus / Day Plan -->
         <div class="bg-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 flex flex-col">
             <div class="flex items-center justify-between mb-8">

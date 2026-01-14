@@ -190,7 +190,8 @@
   {/if}
   <!-- Main Content -->
   <main class="flex-1 overflow-auto bg-gray-50 focus:outline-none scrollbar-hide">
-    <div class="sticky top-0 z-40 bg-gray-50/80 backdrop-blur-md px-4 sm:px-6 md:px-8 py-3 flex justify-end items-center gap-4">
+    <div class="sticky top-0 z-40 bg-gray-50/80 backdrop-blur-md border-b border-gray-100/50">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 py-3 flex justify-end items-center gap-4">
         
         <!-- Institutional Context Selector -->
         {#if user && (user.role === 'ADMIN' || user.role === 'PROGRAM_OPS' || (user.universities && user.universities.length > 1))}
@@ -243,10 +244,11 @@
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
           </button>
         </form>
+      </div>
     </div>
 
     <div class="py-2">
-      <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
         {@render children()}
       </div>
     </div>

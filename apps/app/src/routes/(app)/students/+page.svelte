@@ -220,9 +220,9 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex justify-between items-center">
+  <div class="flex flex-wrap justify-between items-center gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Contact List</h1>
+      <h1 class="text-2xl font-bold text-gray-900">Contact List <span class="text-xs font-normal text-gray-400 opacity-50 ml-2">(Build: 1700)</span></h1>
       <p class="mt-1 text-sm text-gray-500">Manage your student recipients and data imports.</p>
     </div>
     <div class="flex space-x-3">
@@ -246,7 +246,7 @@
   </div>
 
   {#if data.universities.length > 1}
-    <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-floating flex items-center gap-6">
+    <div class="bg-white p-4 sm:p-6 rounded-[32px] border border-gray-100 shadow-floating flex flex-wrap items-center gap-4 sm:gap-6">
         <label for="univ-select" class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Filter by University:</label>
             <select 
                 id="univ-select" 
