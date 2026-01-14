@@ -221,9 +221,9 @@
 
 <div class="space-y-6">
   <div class="flex flex-wrap justify-between items-center gap-4">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">Contact List <span class="text-xs font-normal text-gray-400 opacity-50 ml-2">(Build: 1900)</span></h1>
-      <p class="mt-1 text-sm text-gray-500">Manage your student recipients and data imports.</p>
+    <div class="flex-grow min-w-0">
+      <h1 class="text-2xl font-bold text-gray-900 truncate">Contact List <span class="text-xs font-normal text-gray-400 opacity-50 ml-2">(Build: 2000)</span></h1>
+      <p class="mt-0.5 text-sm text-gray-500 truncate">Manage your student recipients and data imports.</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
         {#if data.students.length > 0}
@@ -246,15 +246,15 @@
   </div>
 
   {#if data.universities.length > 1}
-    <div class="bg-white p-4 sm:p-6 rounded-[32px] border border-gray-100 shadow-floating flex flex-wrap items-center gap-4 sm:gap-6">
-        <label for="univ-select" class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Filter by University:</label>
+    <div class="bg-white p-5 sm:p-6 rounded-[2rem] border border-gray-100 shadow-floating flex flex-wrap items-center gap-4 sm:gap-6">
+        <label for="univ-select" class="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Filter by Institution:</label>
             <select 
                 id="univ-select" 
                 bind:value={selectedUniversityId} 
                 onchange={onUnivChange}
-                class="flex-1 max-w-md bg-gray-50 border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold shadow-sm outline-none focus:ring-4 focus:ring-indigo-100 transition-all focus:bg-white"
+                class="flex-1 max-w-md bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 text-sm font-bold shadow-sm outline-none focus:ring-4 focus:ring-indigo-100 transition-all focus:bg-white"
             >
-                <option value="">All Universities</option>
+                <option value="">All Institutions</option>
                 {#each data.universities as univ}
                     <option value={univ.id}>{univ.name}</option>
                 {/each}
@@ -262,7 +262,8 @@
     </div>
   {/if}
 
-  <div class="bg-white shadow-floating overflow-auto rounded-[32px] border border-gray-100 relative">
+  <div class="bg-white shadow-floating rounded-[2rem] border border-gray-100 overflow-hidden relative">
+    <div class="overflow-x-auto w-full">
     <table class="min-w-full divide-y divide-gray-100">
       <thead class="bg-gray-50">
         <tr>
@@ -333,8 +334,9 @@
         </div>
       </div>
     {/if}
-  </div>
-</div>
+    </div> <!-- Closes overflow-x-auto -->
+  </div> <!-- Closes bg-white shadow-floating card -->
+</div> <!-- Closes root space-y-6 -->
 
 {#if showUploadModal}
 <div class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
