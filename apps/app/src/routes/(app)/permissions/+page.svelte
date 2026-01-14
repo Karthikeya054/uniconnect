@@ -115,7 +115,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-4xl font-black text-gray-900 tracking-tight">Feature Management</h1>
-      <p class="text-gray-500 mt-2 font-medium">Control which roles have access to specific application features. (Build: 2026-01-14-1000)</p>
+      <p class="text-gray-500 mt-2 font-medium">Control which roles have access to specific application features. (Build: 2026-01-14-1100)</p>
     </div>
     <div class="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 hidden md:block">
         <div class="flex items-center gap-3">
@@ -170,7 +170,8 @@
           <span class="text-xs font-black text-gray-400 uppercase tracking-widest">Loading permissions matrix...</span>
         </div>
       {:else}
-        <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+        {#key selectedRole}
+        <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden" in:fade={{ duration: 200 }}>
           <div class="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
             <div>
               <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">Feature Matrix for {selectedRole}</h2>
@@ -185,9 +186,10 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-50">
-            {#each features as feature}
+            {#each features as feature (feature.id)}
               <div class="p-8 hover:bg-gray-50/50 transition-all flex items-start gap-4">
                 <label class="relative inline-flex items-center cursor-pointer mt-1">
+                  <!-- Simplified toggle with click handler instead of complex binding for more control -->
                   <input 
                     type="checkbox" 
                     checked={currentFeatures.includes(feature.id)}
@@ -200,16 +202,18 @@
                 <div>
                   <div class="text-sm font-black text-gray-900 uppercase tracking-tight">{feature.label}</div>
                   <p class="text-[11px] text-gray-500 font-medium mt-1 leading-relaxed">{feature.desc}</p>
+                  
                   {#if currentFeatures.includes(feature.id)}
-                    <span class="inline-block mt-2 px-2 py-0.5 bg-green-50 text-green-600 text-[9px] font-black rounded-lg uppercase tracking-tight">Enabled</span>
+                    <span class="inline-block mt-2 px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-green-100 shadow-sm animate-in fade-in zoom-in duration-300">Enabled</span>
                   {:else}
-                    <span class="inline-block mt-2 px-2 py-0.5 bg-gray-50 text-gray-400 text-[9px] font-black rounded-lg uppercase tracking-tight">Disabled</span>
+                    <span class="inline-block mt-2 px-3 py-1 bg-gray-100 text-gray-400 text-[10px] font-black rounded-lg uppercase tracking-widest border border-gray-200 opacity-60">Disabled</span>
                   {/if}
                 </div>
               </div>
             {/each}
           </div>
         </div>
+        {/key}
 
         <!-- Global Roles Summary Table -->
          <div class="bg-indigo-900 rounded-[32px] p-8 text-white shadow-xl shadow-indigo-900/20 overflow-hidden relative">

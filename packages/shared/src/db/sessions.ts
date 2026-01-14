@@ -55,7 +55,7 @@ export async function validateSession(token: string): Promise<SessionUser | null
                 ),
                 '[]'::json
             ) as universities,
-            COALESCE(rp.features, '[]'::jsonb) as permissions
+            rp.features as permissions
         FROM sessions s
         JOIN users u ON s.user_id = u.id
         LEFT JOIN role_permissions rp ON u.role = rp.role
@@ -68,7 +68,7 @@ export async function validateSession(token: string): Promise<SessionUser | null
         const user = result.rows[0];
 
         // Ensure permissions is a valid array and provide defaults if missing/empty
-        if (!user.permissions || (Array.isArray(user.permissions) && user.permissions.length === 0)) {
+        if (user.permissions === null || user.permissions === undefined) {
             if (user.role === 'ADMIN' || user.role === 'PROGRAM_OPS') {
                 user.permissions = allFeatures;
             } else {

@@ -37,12 +37,17 @@ export async function getRolePermissions(role: string): Promise<string[]> {
 }
 
 export async function updateRolePermissions(role: string, features: string[]): Promise<void> {
-    await db.query(
-        `INSERT INTO role_permissions (role, features, updated_at) 
-         VALUES ($1, $2, NOW()) 
-         ON CONFLICT (role) DO UPDATE SET 
-            features = EXCLUDED.features,
-            updated_at = NOW()`,
-        [role, JSON.stringify(features)]
-    );
+    try {
+        await db.query(
+            `INSERT INTO role_permissions (role, features, updated_at) 
+             VALUES ($1, $2::jsonb, NOW()) 
+             ON CONFLICT (role) DO UPDATE SET 
+                features = EXCLUDED.features,
+                updated_at = NOW()`,
+            [role, features]
+        );
+    } catch (e) {
+        console.error(`[DB_PERMISSIONS_ERROR] Failed to update role ${role}:`, e);
+        throw e;
+    }
 }
