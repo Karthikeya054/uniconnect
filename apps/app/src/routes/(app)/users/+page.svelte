@@ -447,29 +447,29 @@
 {#if showModal}
 <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
   <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick={closeModal}></div>
-  <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100 animate-in zoom-in-95 duration-200">
+  <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100 animate-in zoom-in-95 duration-200">
     <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 px-8 py-6 text-white">
         <h3 class="text-2xl font-black tracking-tight flex items-center justify-between" id="modal-title">
           <span>{editingUserId ? 'Edit Member' : 'Invite Member'}</span>
           <div class="flex items-center gap-2">
             <span class="text-[9px] bg-white/20 px-2 py-1 rounded-full border border-white/20 animate-pulse uppercase tracking-widest">Multi-Select Active</span>
-            <span class="text-[10px] bg-black/20 px-2 py-1 rounded-lg">v2.2</span>
+            <span class="text-[10px] bg-black/20 px-2 py-1 rounded-lg">Build: 1600</span>
           </div>
         </h3>
         <p class="text-indigo-100 text-sm opacity-80 mt-1">Set user details and assigned roles.</p>
     </div>
     
-    <div class="p-8 space-y-6">
-        <div class="grid grid-cols-2 gap-4">
+    <div class="p-8 space-y-6 max-h-[65vh] overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="col-span-2">
                 <label for="f-email" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
                 <input type="email" id="f-email" bind:value={email} disabled={!!editingUserId} class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all disabled:opacity-50">
             </div>
-            <div class="col-span-2 md:col-span-1">
+            <div class="col-span-1">
                 <label for="f-name" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
                 <input type="text" id="f-name" bind:value={name} placeholder="John Doe" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all">
             </div>
-            <div class="col-span-2 md:col-span-1">
+            <div class="col-span-1">
                 <label for="f-role" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Member Role</label>
                 <select id="f-role" bind:value={role} class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all">
                     {#if data.isGlobalAdmin}
@@ -483,7 +483,7 @@
                 </select>
             </div>
             
-            <div class="col-span-2">
+            <div class="col-span-1">
                 <label for="f-phone" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp / Phone</label>
                 <input type="text" id="f-phone" bind:value={phone} placeholder="+91 9876543210" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all">
             </div>
@@ -502,7 +502,7 @@
                         <button type="button" onclick={clearSelection} class="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors">Clear</button>
                     </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 max-h-64 overflow-y-auto space-y-2 shadow-inner">
+                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 max-h-48 overflow-y-auto space-y-2 shadow-inner">
                     {#each data.universities as univ}
                         <label class="flex items-center gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl hover:bg-indigo-50/50 hover:border-indigo-100 cursor-pointer transition-all group">
                             <input
@@ -519,9 +519,9 @@
                             </div>
                         </label>
                     {/each}
-                    {#if data.universities.length === 0}
-                        <div class="text-center py-8 text-gray-400 text-xs font-bold">No universities found</div>
-                    {/if}
+                    {#each Array(3) as _}
+                        <div class="h-1 invisible"></div> <!-- Extra spacer for scroll bottom -->
+                    {/each}
                 </div>
                 <div class="mt-2 ml-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                     Selected: {universityIds.length} institutions

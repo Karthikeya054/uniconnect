@@ -182,7 +182,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Task Command Center</h1>
-            <p class="mt-1 text-gray-500 font-medium">Orchestrate your team's daily operations and student follow-ups.</p>
+            <p class="mt-1 text-gray-500 font-medium">Orchestrate your team's daily operations and student follow-ups. (Build: 2026-01-14-1600)</p>
         </div>
         <div class="flex items-center gap-3">
             {#if selectedTasks.size > 0}
@@ -294,7 +294,7 @@
                     />
                 </div>
                 <!-- Priority/Status Bar -->
-                <div class="flex items-center justify-between px-5 py-3 border-b border-gray-50 bg-gray-50/50 group-hover:bg-indigo-50/30 transition-colors">
+                <div class="flex items-center justify-between pl-14 pr-5 py-3 border-b border-gray-50 bg-gray-50/50 group-hover:bg-indigo-50/30 transition-colors">
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border {priorityColors[task.priority] || priorityColors.MEDIUM}">
                         {task.priority || 'MEDIUM'} Priority
                     </span>
