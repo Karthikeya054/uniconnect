@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
+  import { invalidateAll } from '$app/navigation';
 
   let roles = ['ADMIN', 'PROGRAM_OPS', 'UNIVERSITY_OPERATOR', 'COS', 'PM', 'PMA', 'BOA'];
   let features = [
@@ -57,6 +58,7 @@
                   newState[role] = existing ? (existing.features || []) : [];
               });
               permissionsState = newState;
+              await invalidateAll();
               alert('Default permissions restored successfully.');
           }
       } catch (e) {
@@ -98,6 +100,7 @@
       });
       
       if (!res.ok) throw new Error('Failed to save');
+      await invalidateAll();
     } catch (e) {
       // Revert state if server sync fails
       permissionsState[selectedRole] = originalFeatures;
@@ -121,7 +124,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-4xl font-black text-gray-900 tracking-tight">Feature Management</h1>
-      <p class="text-gray-500 mt-2 font-medium">Control which roles have access to specific application features. (Build: 2026-01-14-1200)</p>
+      <p class="text-gray-500 mt-2 font-medium">Control which roles have access to specific application features. (Build: 2026-01-14-1300)</p>
     </div>
     <div class="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 hidden md:block">
         <div class="flex items-center gap-3">
