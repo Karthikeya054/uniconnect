@@ -148,7 +148,17 @@
                     <style>
                         @media print {
                             @page { size: A4; margin: 0; }
-                            body { margin: 0 !important; padding: 0 !important; background: white !important; }
+                            html, body { 
+                                margin: 0 !important; 
+                                padding: 0 !important; 
+                                width: 210mm !important;
+                                background: white !important;
+                                display: block !important;
+                            }
+                            body > * {
+                                margin-left: auto !important;
+                                margin-right: auto !important;
+                            }
                             .paper-container { 
                                 width: 210mm !important; 
                                 margin: 0 auto !important; 
@@ -157,8 +167,6 @@
                                 box-shadow: none !important;
                                 box-sizing: border-box !important;
                                 position: relative !important;
-                                left: 0 !important;
-                                right: 0 !important;
                             }
                             .no-print, nav, header, sidebar, .print\\:hidden, .fixed { display: none !important; }
                         }
@@ -189,7 +197,7 @@
                             setTimeout(() => { 
                                 window.focus();
                                 window.print(); 
-                            }, 1000);
+                            }, 1200);
                         };
                     </${'script'}>
                 </body>
@@ -210,14 +218,15 @@
 
         const cleanOption = (txt: string) => {
             if (!txt) return '';
-            // More aggressive cleaning for (a), a), a. prefixes
+            // Strip common prefixes like (a), a), a. carefully to avoid double-prefixing
             return txt.replace(/^\s*[\(\[]?[a-dA-D][\.\)\s\]-]+\s*/i, '').trim();
         };
 
         const cleanQuestionText = (txt: string) => {
             if (!txt) return '';
-            // Strip any trailing choice blocks that might be embedded in raw text
-            return txt.replace(/\s*[\(\[]?[a][\.\)\s\]-].+$/is, '').trim();
+            // Safe cleaning: only remove IF it looks like a complete option block at the very end
+            // Otherwise, keep it to avoid cutting off legitimate text containing parts like "in a row"
+            return txt.replace(/\s*\(a\).+\(d\).+$/is, '').trim();
         };
 
         let html = `
@@ -231,21 +240,21 @@
                     td { vertical-align: top; border: 1pt solid black; padding: 6pt; }
                     .no-border td { border: none !important; padding: 1pt; }
                     .metadata-table td { font-weight: bold; border: 1pt solid black; padding: 4pt 6pt; text-transform: uppercase; font-size: 9.5pt; }
-                    .part-header-row { 
+                    .part-header { 
                         text-align: center; 
                         font-weight: bold; 
-                        padding: 8pt; 
+                        padding: 10pt; 
                         background-color: #f2f2f2;
-                        font-size: 11.5pt;
+                        font-size: 12pt;
                         text-transform: uppercase;
+                        border: 1pt solid black;
+                        margin-top: 15pt;
                     }
-                    .or-separator {
+                    .or-text {
                         text-align: center;
                         font-weight: bold;
                         font-style: italic;
-                        padding: 6pt;
-                        border-top: none !important;
-                        border-bottom: none !important;
+                        padding: 8pt;
                     }
                 </style>
             </head>
@@ -276,7 +285,7 @@
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 14pt; margin: 10pt 0; text-transform: uppercase; letter-spacing: 0.7pt;">
+            <div style="text-align: center; font-weight: bold; font-size: 14pt; margin: 10pt 0; text-transform: uppercase; letter-spacing: 0.8pt;">
                 ${meta.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025'}
             </div>
 
@@ -303,7 +312,7 @@
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 12pt 0; text-decoration: underline;">
+            <div style="text-align: center; font-weight: bold; font-size: 11pt; margin: 15pt 0; text-decoration: underline;">
                 ${meta.instructions || 'ANSWER ALL QUESTIONS'}
             </div>
         `;
@@ -317,8 +326,8 @@
 
         const buildBlock = (title: string, slots: any[], startNum: number, marksPerQ: number) => {
             if (slots.length === 0) return '';
-            let blockHtml = `<table style="width: 100%; border: 1pt solid black; margin-top: 15pt;">`;
-            blockHtml += `<tr><td colspan="3" class="part-header-row">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</td></tr>`;
+            let blockHtml = `<div class="part-header">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</div>`;
+            blockHtml += `<table style="width: 100%; border: 1pt solid black; margin-top: -1pt;">`;
             
             let currentNum = startNum;
             slots.forEach((s) => {
@@ -327,22 +336,22 @@
                     const q2 = (s.choice2?.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold; border-bottom: none !important;">${currentNum}.</td>
+                            <td style="width: 45pt; text-align: center; font-weight: bold; border-bottom: none !important;">${currentNum}.</td>
                             <td style="width: auto; border-bottom: none !important;">${cleanQuestionText(q1.text)}</td>
-                            <td style="width: 75pt; text-align: center; border-left: 1pt solid black; border-bottom: none !important; font-size: 9.5pt;">
+                            <td style="width: 80pt; text-align: center; border-left: 1pt solid black; border-bottom: none !important; font-size: 10pt;">
                                 ${fetchCO(q1) ? `<div>(${fetchCO(q1)})</div>` : ''}
                                 <div style="font-weight: bold;">(${q1.marks || s.marks || 0})</div>
                             </td>
                         </tr>
                         <tr>
-                            <td style="width: 40pt; border-top: none !important; border-bottom: none !important;">&nbsp;</td>
-                            <td class="or-separator" style="width: auto;">(OR)</td>
-                            <td style="width: 75pt; border-left: 1pt solid black; border-top: none !important; border-bottom: none !important;">&nbsp;</td>
+                            <td style="border-top: none !important; border-bottom: none !important;">&nbsp;</td>
+                            <td class="or-text" style="border-top: none !important; border-bottom: none !important;">(OR)</td>
+                            <td style="border-left: 1pt solid black; border-top: none !important; border-bottom: none !important;">&nbsp;</td>
                         </tr>
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold; border-top: none !important;">&nbsp;</td>
+                            <td style="width: 45pt; text-align: center; font-weight: bold; border-top: none !important;">&nbsp;</td>
                             <td style="width: auto; border-top: none !important;">${cleanQuestionText(q2.text)}</td>
-                            <td style="width: 75pt; text-align: center; border-left: 1pt solid black; border-top: none !important; font-size: 9.5pt;">
+                            <td style="width: 80pt; text-align: center; border-left: 1pt solid black; border-top: none !important; font-size: 10pt;">
                                 ${fetchCO(q2) ? `<div>(${fetchCO(q2)})</div>` : ''}
                                 <div style="font-weight: bold;">(${q2.marks || s.marks || 0})</div>
                             </td>
@@ -353,28 +362,26 @@
                     const q = (s.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
+                            <td style="width: 45pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
                             <td style="width: auto;">
-                                <div style="margin-bottom: 4pt; font-size: 11pt;">${cleanQuestionText(q.text)}</div>
+                                <div style="margin-bottom: 6pt; font-size: 11.5pt;">${cleanQuestionText(q.text)}</div>
                                 ${q.type === 'MCQ' ? `
-                                    <table border="0" style="width: 100%;">
-                                        <tr><td style="border: none !important; text-align: right; font-weight: bold;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</td></tr>
-                                    </table>
+                                    <div style="text-align: right; font-weight: bold; margin-bottom: 2pt;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</div>
                                 ` : ''}
                                 ${q.options && q.options.length > 0 ? `
                                     <table border="0" style="margin-top: 5pt; margin-left: 20pt; width: 95%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(a) ${cleanOption(q.options[0])}</td>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(b) ${cleanOption(q.options[1])}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt; font-size: 11pt;">(a) ${cleanOption(q.options[0])}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt; font-size: 11pt;">(b) ${cleanOption(q.options[1])}</td>
                                         </tr>
                                         <tr>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(c) ${cleanOption(q.options[2])}</td>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(d) ${cleanOption(q.options[3])}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt; font-size: 11pt;">(c) ${cleanOption(q.options[2])}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt; font-size: 11pt;">(d) ${cleanOption(q.options[3])}</td>
                                         </tr>
                                     </table>
                                 ` : ''}
                             </td>
-                            <td style="width: 75pt; text-align: center; border-left: 1pt solid black; font-size: 9.5pt; vertical-align: middle;">
+                            <td style="width: 80pt; text-align: center; border-left: 1pt solid black; font-size: 10pt; vertical-align: middle;">
                                 ${fetchCO(q) ? `<div>(${fetchCO(q)})</div>` : ''}
                                 <div style="font-weight: bold;">(${q.marks || s.marks || 0})</div>
                             </td>
@@ -393,7 +400,7 @@
         }
 
         html += `
-            <table class="no-border" style="margin-top: 50pt;">
+            <table class="no-border" style="margin-top: 60pt;">
                 <tr>
                     <td style="width: 50%; text-align: left; padding-top: 30pt; font-size: 11pt; font-weight: bold; border-top: 1pt solid black;">Name & Signature of DAAC Member</td>
                     <td style="width: 50%; text-align: right; padding-top: 30pt; font-size: 11pt; font-weight: bold; border-top: 1pt solid black;">Name & Signature of DAAC Member</td>
