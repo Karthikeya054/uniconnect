@@ -966,46 +966,38 @@
             margin: 0;
         }
 
-        /* STRUCTURAL ISOLATION: Hide chrome, keep flow static */
         :global(body) {
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
         }
 
-        :global(.no-print), :global(.print\:hidden), :global(nav), :global(header), :global(sidebar) {
-            display: none !important;
-        }
-
         .paper-container {
             width: 210mm !important;
             margin: 0 auto !important;
-            padding: 15mm !important;
+            padding: 20mm !important;
             border: none !important;
             box-shadow: none !important;
-            background: white !important;
             position: relative !important;
             display: block !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
         }
 
-        /* NATURAL FLOW: Keep sections together but allow breaks */
-        .section-page-break {
-            break-before: auto !important;
-            page-break-before: auto !important;
-            margin-top: 20pt !important;
-            padding-top: 0 !important;
-        }
-
-        /* Prevent questions from splitting poorly */
-        .page-break-avoid {
+        /* Prevent individual questions or headers from being cut halved */
+        .page-break-avoid, :global(.question-container), :global(.part-header-row) {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
         }
 
-        .mt-20 {
-            margin-top: 40pt !important;
+        .section-page-break {
+            break-before: auto !important;
+            page-break-before: auto !important;
+            margin-top: 25pt !important;
+        }
+
+        :global(.no-print) {
+            display: none !important;
         }
     }
 

@@ -127,14 +127,56 @@
     }
 
     function downloadPDF() {
-        window.print();
+        const content = document.getElementById('paper-content')?.innerHTML;
+        if (!content) return;
+
+        const printWindow = window.open('', '_blank', 'width=1100,height=900');
+        if (!printWindow) {
+            alert('Please allow popups to print the paper');
+            return;
+        }
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Assessment Paper</title>
+                    <link rel="stylesheet" href="/global.css">
+                    <style>
+                        @media print {
+                            @page { size: A4; margin: 0; }
+                            body { margin: 0; padding: 0; background: white; font-family: 'Times New Roman', serif; }
+                            .paper-container { width: 210mm !important; margin: 0 auto !important; padding: 15mm !important; }
+                            .no-print, nav, header, sidebar, .print\\:hidden { display: none !important; }
+                            .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
+                            .section-page-break { margin-top: 30pt !important; break-before: auto !important; }
+                        }
+                        body { padding: 40px; background: #eee; font-family: 'Times New Roman', serif; overflow-y: scroll; }
+                        .paper-container { background: white; width: 210mm; margin: 0 auto; padding: 20mm; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+                        .no-print, nav, header, sidebar, .print\\:hidden { display: none !important; }
+                    </style>
+                </head>
+                <body>
+                    <div class="paper-container">
+                        ${content}
+                    </div>
+                    <script>
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                                // window.close(); // User might want to keep it open
+                            }, 500);
+                        };
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
     }
 
     function downloadDOCX() {
         const meta = paperMeta;
         const currentSetQuestions = (editableSets[activeSet] || editableSets['A'] || { questions: [] }).questions;
         
-        // Helper for CO codes
         const fetchCO = (q: any) => {
             if (!q.co_id) return '';
             return data.courseOutcomes.find((c: any) => c.id === q.co_id)?.code || '';
@@ -145,85 +187,85 @@
             <head>
                 <meta charset='utf-8'>
                 <style>
-                    @page { margin: 0.75in; }
-                    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: black; line-height: 1.2; }
+                    @page { margin: 0.7in; mso-header-margin: 0.5in; mso-footer-margin: 0.5in; }
+                    body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: black; line-height: 1.15; }
                     table { border-collapse: collapse; width: 100%; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-                    td { vertical-align: top; border: 1pt solid black; padding: 6pt; }
+                    td { vertical-align: top; border: 1.2pt solid black; padding: 6pt; }
                     .no-border td { border: none !important; padding: 1pt; }
-                    .metadata-table td { font-weight: bold; border: 1pt solid black; padding: 5pt; }
+                    .metadata-table td { font-weight: bold; border: 1pt solid black; padding: 4.5pt 6pt; text-transform: uppercase; font-size: 10pt; }
                     .part-header { 
                         text-align: center; 
                         font-weight: bold; 
-                        padding: 6pt; 
-                        border: 1pt solid black; 
-                        background-color: #f2f2f2;
+                        padding: 7pt; 
+                        border: 1.2pt solid black; 
+                        background-color: #f1f1f1;
                         text-transform: uppercase;
                         margin-top: 15pt;
+                        font-size: 11.5pt;
                     }
-                    .text-center { text-align: center; }
                 </style>
             </head>
             <body>
         `;
 
-        // 1. HEADER SECTION - UPGRADED 3-TIER FIDELITY
+        // 1. PRECISION HEADER - ULTRA FIDELITY
         html += `
             <table class="no-border" style="margin-bottom: 2pt;">
                 <tr>
-                    <td style="width: 15%; vertical-align: middle;">
-                        <img src="https://uniconnect-app.up.railway.app/crescent-logo.png" width="90" height="90" style="display: block;" />
+                    <td style="width: 15%; text-align: left; vertical-align: middle;">
+                        <img src="https://uniconnect-app.up.railway.app/crescent-logo.png" width="95" height="95" />
                     </td>
-                    <td style="width: 55%; vertical-align: middle; padding-left: 15pt;">
-                        <div style="font-size: 18pt; font-weight: bold; color: #003366;">BS Abdur Rahman</div>
-                        <div style="font-size: 15pt; font-weight: bold; color: #003366;">Crescent Institute of Science & Technology</div>
-                        <div style="font-size: 8.5pt; color: #555; margin-top: 2pt;">Deemed to be University u/s 3 of the UGC Act, 1956</div>
+                    <td style="width: 60%; text-align: center; vertical-align: middle;">
+                        <div style="font-size: 19pt; font-weight: bold; font-family: Arial, sans-serif;">BS Abdur Rahman</div>
+                        <div style="font-size: 16pt; font-weight: bold; font-family: Arial, sans-serif;">Crescent Institute of Science & Technology</div>
+                        <div style="font-size: 8.5pt; color: #444; margin-top: 2pt;">Deemed to be University u/s 3 of the UGC Act, 1956</div>
                     </td>
-                    <td style="width: 30%; text-align: right; vertical-align: bottom;">
-                        <div style="font-weight: bold; margin-bottom: 15pt; font-size: 12.5pt; font-family: 'Times New Roman', serif;">&lt;${meta.course_code || ''}&gt;</div>
+                    <td style="width: 25%; text-align: right; vertical-align: bottom;">
+                        <div style="font-weight: bold; margin-bottom: 12pt; font-size: 13pt;">&lt;${meta.course_code || ''}&gt;</div>
                         <table style="width: auto; float: right; border-collapse: collapse;" cellspacing="0">
                             <tr>
-                                <td style="border: 1pt solid black; font-size: 8.5pt; padding: 4pt 6pt; font-weight: bold; background: #f0f0f0;">RRN</td>
-                                ${Array(10).fill('<td style="border: 1.5pt solid black; width: 16pt; height: 18pt;">&nbsp;</td>').join('')}
+                                <td style="border: 1pt solid black; font-size: 8.5pt; padding: 3pt 5pt; font-weight: bold; background: #eee;">RRN</td>
+                                ${Array(10).fill('<td style="border: 1pt solid black; width: 15pt; height: 18pt;">&nbsp;</td>').join('')}
                             </tr>
                         </table>
                     </td>
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 14pt; margin: 8pt 0; text-transform: uppercase; font-family: 'Times New Roman', serif;">
+            <div style="text-align: center; font-weight: bold; font-size: 14pt; margin: 10pt 0; text-transform: uppercase; letter-spacing: 0.5pt;">
                 ${meta.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025'}
             </div>
 
-            <!-- 2. METADATA TABLE - REFINED SPACING -->
+            <!-- METADATA TABLE -->
             <table class="metadata-table">
                 <tr>
-                    <td style="width: 25%; font-weight: bold; background: #f9f9f9; border-bottom: 1pt solid black;">PROGRAMME & BRANCH</td>
-                    <td colspan="3" style="border-bottom: 1pt solid black;">${meta.programme || ''}</td>
+                    <td style="width: 25%; background: #f9f9f9;">Programme & Branch</td>
+                    <td colspan="3" style="font-weight: normal;">: ${meta.programme || ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; font-weight: bold; background: #f9f9f9;">SEMESTER</td>
-                    <td style="width: 25%; text-align: center;">${meta.semester || ''}</td>
-                    <td style="width: 25%; font-weight: bold; background: #f9f9f9; border-left: 2pt solid black;">DATE & SESSION</td>
-                    <td style="width: 25%; font-size: 10pt; text-align: center;">${meta.paper_date || ''} ${meta.exam_time ? `[${meta.exam_time}]` : ''}</td>
+                    <td style="width: 25%; background: #f9f9f9;">Semester</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.semester || ''}</td>
+                    <td style="width: 25%; background: #f9f9f9; border-left: 1.5pt solid black;">Date & Session</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal; font-size: 9.5pt;">: ${meta.paper_date || ''} ${meta.exam_time ? `[${meta.exam_time}]` : ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; font-weight: bold; background: #f9f9f9; border-top: 1pt solid black;">COURSE CODE & NAME</td>
-                    <td colspan="3" style="border-top: 1pt solid black;">${meta.course_code || ''} - ${meta.subject_name || ''}</td>
+                    <td style="width: 25%; background: #f9f9f9;">Course Code & Name</td>
+                    <td colspan="3" style="font-weight: normal;">: ${meta.course_code || ''} - ${meta.subject_name || ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; font-weight: bold; background: #f9f9f9; border-top: 1pt solid black;">DURATION</td>
-                    <td style="width: 25%; text-align: center; border-top: 1pt solid black;">${meta.duration_minutes || ''} Minutes</td>
-                    <td style="width: 25%; font-weight: bold; background: #f9f9f9; border-top: 1pt solid black; border-left: 2pt solid black;">MAXIMUM MARKS</td>
-                    <td style="width: 25%; text-align: center; border-top: 1pt solid black;">${meta.max_marks || ''}</td>
+                    <td style="width: 25%; background: #f9f9f9;">Duration</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.duration_minutes || ''} Minutes</td>
+                    <td style="width: 25%; background: #f9f9f9; border-left: 1.5pt solid black;">Maximum Marks</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.max_marks || ''}</td>
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 10pt 0; text-decoration: underline; letter-spacing: 3pt;">
+            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 12pt 0; text-decoration: underline; letter-spacing: 2pt;">
                 ${meta.instructions || 'ANSWER ALL QUESTIONS'}
             </div>
         `;
 
-        // 3. QUESTIONS RECONSTRUCTION - NATURAL FLOW
+        // 3. PRECISION QUESTIONS - FIXED WIDTHS
         const config = paperStructure;
         const countA = config[0]?.count || 0;
         const countB = config[1]?.count || 0;
@@ -235,7 +277,7 @@
         const buildBlock = (title: string, slots: any[], startNum: number, marksPerQ: number) => {
             if (slots.length === 0) return '';
             let blockHtml = `<div class="part-header">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</div>`;
-            blockHtml += `<table style="width: 100%; border: 1.5pt solid black; margin-top: -1pt;">`;
+            blockHtml += `<table style="width: 100%; border: 1.2pt solid black; margin-top: -1pt;">`;
             
             let currentNum = startNum;
             slots.forEach((s) => {
@@ -244,51 +286,50 @@
                     const q2 = (s.choice2?.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold; border-bottom: 0.5pt solid #ddd;">${currentNum}.</td>
-                            <td style="width: auto; border-bottom: 0.5pt solid #ddd;">${q1.text || ''}</td>
-                            <td style="width: 65pt; text-align: center; border-left: 1.5pt solid black; border-bottom: 0.5pt solid #ddd; font-size: 9.5pt;">
+                            <td style="width: 35pt; text-align: center; font-weight: bold; border-bottom: 0.5pt solid #eee;">${currentNum}.</td>
+                            <td style="width: auto; border-bottom: 0.5pt solid #eee;">${q1.text || ''}</td>
+                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; border-bottom: 0.5pt solid #eee; font-size: 9.5pt;">
                                 <div>(${fetchCO(q1)})</div>
                                 <div style="font-weight: bold;">(${q1.marks || s.marks || 0})</div>
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="3" style="text-align: center; font-style: italic; font-weight: bold; font-size: 10pt; padding: 6pt; background: #ffffff;">(OR)</td>
+                            <td colspan="3" style="text-align: center; font-style: italic; font-weight: bold; font-size: 10.5pt; padding: 5pt; background: #ffffff;">(OR)</td>
                         </tr>
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold;">&nbsp;</td>
+                            <td style="width: 35pt; text-align: center; font-weight: bold;">&nbsp;</td>
                             <td style="width: auto;">${q2.text || ''}</td>
-                            <td style="width: 65pt; text-align: center; border-left: 1.5pt solid black; font-size: 9.5pt;">
+                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 9.5pt;">
                                 <div>(${fetchCO(q2)})</div>
                                 <div style="font-weight: bold;">(${q2.marks || s.marks || 0})</div>
                             </td>
                         </tr>
                     `;
-                    currentNum++; // In exam papers, OR usually counts as one slot
+                    currentNum++;
                 } else {
                     const q = (s.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
+                            <td style="width: 35pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
                             <td style="width: auto;">
                                 <div style="display: flex; justify-content: space-between;">
                                     <span>${q.text || ''}</span>
-                                    ${q.type === 'MCQ' ? '<span style="float: right; font-weight: bold;">[&nbsp;&nbsp;&nbsp;&nbsp;]</span>' : ''}
+                                    ${q.type === 'MCQ' ? '<span style="float: right; font-weight: bold;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</span>' : ''}
                                 </div>
                                 ${q.options && q.options.length > 0 ? `
-                                    <table class="no-border" style="margin-top: 10pt; margin-left: 25pt;">
+                                    <table class="no-border" style="margin-top: 10pt; margin-left: 20pt; width: 90%;">
                                         <tr>
-                                            ${q.options[0] ? `<td style="width: 50%; font-size: 10pt;">(a) ${q.options[0]}</td>` : ''}
-                                            ${q.options[1] ? `<td style="width: 50%; font-size: 10pt;">(b) ${q.options[1]}</td>` : ''}
+                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(a) ${q.options[0] || ''}</td>
+                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(b) ${q.options[1] || ''}</td>
                                         </tr>
-                                        ${q.options[2] ? `
                                         <tr>
-                                            <td style="width: 50%; font-size: 10pt;">(c) ${q.options[2]}</td>
-                                            <td style="width: 50%; font-size: 10pt;">(d) ${q.options[3] || ''}</td>
-                                        </tr>` : ''}
+                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(c) ${q.options[2] || ''}</td>
+                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(d) ${q.options[3] || ''}</td>
+                                        </tr>
                                     </table>
                                 ` : ''}
                             </td>
-                            <td style="width: 65pt; text-align: center; border-left: 1.5pt solid black; font-size: 9.5pt;">
+                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 9.5pt;">
                                 <div>(${fetchCO(q)})</div>
                                 <div style="font-weight: bold;">(${q.marks || s.marks || 0})</div>
                             </td>
@@ -301,20 +342,16 @@
         };
 
         html += buildBlock(config[0]?.title || 'PART A', setsA, 1, config[0]?.marks_per_q || 2);
-        
-        let subB = 1; setsA.forEach((s: any) => subB += (s.type === 'OR_GROUP' ? 0 : 1)); // Adjust for OR count
-        // Natural Continuity - No pageBreak here
         html += buildBlock(config[1]?.title || 'PART B', setsB, countA + 1, config[1]?.marks_per_q || 16);
-
         if (setsC.length > 0) {
             html += buildBlock(config[2]?.title || 'PART C', setsC, countA + countB + 1, config[2]?.marks_per_q || 16);
         }
 
         html += `
-            <table class="no-border" style="margin-top: 50pt; border-top: 1.5pt solid black;">
+            <table class="no-border" style="margin-top: 60pt; border-top: 1.2pt solid black;">
                 <tr>
-                    <td style="width: 50%; text-align: left; padding-top: 20pt; font-size: 10pt; font-weight: bold; font-family: 'Times New Roman', serif;">Name & Signature of DAAC Member</td>
-                    <td style="width: 50%; text-align: right; padding-top: 20pt; font-size: 10pt; font-weight: bold; font-family: 'Times New Roman', serif;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: left; padding-top: 25pt; font-size: 10.5pt; font-weight: bold;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: right; padding-top: 25pt; font-size: 10.5pt; font-weight: bold;">Name & Signature of DAAC Member</td>
                 </tr>
             </table>
             </body></html>
