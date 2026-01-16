@@ -29,8 +29,6 @@
     // This ensures even raw question objects from DB are wrapped into the "slot" structure expected by the UI
     let safeQuestions = $derived.by(() => {
         const raw = currentSetData;
-        const generationMode = paperMeta.generation_mode || 'Standard';
-        const isModifiable = generationMode === 'Modifiable';
         
         // Handle various input structures: { questions: [] } or just []
         let arr = (Array.isArray(raw) ? raw : (raw?.questions || [])).filter(Boolean);
@@ -40,8 +38,19 @@
             const getTxt = (q: any) => q.text || q.question_text || 'Click to add question text...';
             const getMarks = (q: any) => Number(q.marks || q.mark || 0);
 
+            // Store original reference for easy deletion/updates
+            let mappedSlot = { ...item, _raw: item };
+            
+            // Assign part if missing (heuristic based on original position/structure)
+            if (!mappedSlot.part) {
+                const partACount = paperStructure[0]?.count || 10;
+                const partBCount = paperStructure[1]?.count || 5;
+                if (i < partACount) mappedSlot.part = 'A';
+                else if (i < partACount + partBCount) mappedSlot.part = 'B';
+                else mappedSlot.part = 'C';
+            }
+
             if (item.type === 'SINGLE' || item.type === 'OR_GROUP') {
-                let mappedSlot = { ...item };
                 if (item.type === 'SINGLE' && item.questions) {
                     mappedSlot.questions = item.questions.map((q: any) => ({ 
                         ...q, 
@@ -77,6 +86,7 @@
             }
             
             return {
+                ...mappedSlot,
                 id: item.id || `q-raw-${activeSet}-${i}`,
                 type: 'SINGLE',
                 label: String(i + 1),
@@ -85,40 +95,24 @@
             };
         });
 
-        // PAD with empty slots ONLY for Standard mode or if collection is empty
-        if (!isModifiable) {
-            const totalExpectedSlots = paperStructure.reduce((acc: any, s: any) => acc + (s.count || 0), 0) || 16;
-            if (mapped.length < totalExpectedSlots) {
-                const padding = [];
-                let partACount = paperStructure[0]?.count || 10;
-
-                for (let i = mapped.length; i < totalExpectedSlots; i++) {
-                    padding.push({
-                        id: `pad-${activeSet}-${i}`,
-                        type: i < partACount ? 'SINGLE' : 'OR_GROUP',
-                        label: '?',
-                        questions: []
-                    });
-                }
-                return [...mapped, ...padding];
-            }
-        }
-
+        // NO PADDING anymore. Only show what's in the data.
         return mapped;
     });
 
-    function removeQuestion(slotId: string) {
+    function removeQuestion(slot: any) {
         if (!confirm('Are you sure you want to delete this question?')) return;
         
-        let targetArr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
+        let targetArr = Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || []);
         if (!targetArr) return;
 
-        const filtered = targetArr.filter((s: any) => s.id !== slotId);
+        // Use the raw reference if possible for absolute accuracy
+        const rawItem = slot?._raw || slot;
+        const filtered = targetArr.filter((s: any) => s !== rawItem && s.id !== slot.id);
         
         if (Array.isArray(currentSetData)) {
-            currentSetData = filtered;
+            currentSetData = [...filtered];
         } else {
-            currentSetData.questions = filtered;
+            currentSetData.questions = [...filtered];
         }
     }
 
@@ -218,23 +212,25 @@
 
     function updateQuestionsFromDnd(items: any[], part: 'A' | 'B' | 'C') {
         // Find indices for start/end of each part in the master list
-        const partAIds = questionsA.map(q => q.id);
-        const partBIds = questionsB.map(q => q.id);
-        const partCIds = questionsC.map(q => q.id);
+        // const partAIds = questionsA.map(q => q.id);
+        // const partBIds = questionsB.map(q => q.id);
+        // const partCIds = questionsC.map(q => q.id);
 
         let masterList = [...safeQuestions];
         
+        // Update PART property of moved items if they switched parts? 
+        // For now let's assume DND is only within parts.
+        
         if (part === 'A') {
-            // Replace Part A items
-            const bAndC = masterList.filter(s => !partAIds.includes(s.id));
-            masterList = [...items, ...bAndC];
+            const bAndC = masterList.filter(s => s.part !== 'A');
+            masterList = [...items.map(it => ({ ...it, part: 'A'})), ...bAndC];
         } else if (part === 'B') {
-            const aItems = masterList.filter(s => partAIds.includes(s.id));
-            const cItems = masterList.filter(s => partCIds.includes(s.id));
-            masterList = [...aItems, ...items, ...cItems];
+            const aItems = masterList.filter(s => s.part === 'A');
+            const cItems = masterList.filter(s => s.part === 'C');
+            masterList = [...aItems, ...items.map(it => ({ ...it, part: 'B'})), ...cItems];
         } else if (part === 'C') {
-            const aAndB = masterList.filter(s => !partCIds.includes(s.id));
-            masterList = [...aAndB, ...items];
+            const aAndB = masterList.filter(s => s.part !== 'C');
+            masterList = [...aAndB, ...items.map(it => ({ ...it, part: 'C'}))];
         }
 
         if (Array.isArray(currentSetData)) {
@@ -252,6 +248,7 @@
         if (isPartA) {
             newSlot = {
                 id: 'manual-' + Math.random().toString(36).substr(2, 9),
+                part,
                 type: 'SINGLE',
                 label: 'New',
                 marks: marks,
@@ -269,6 +266,7 @@
             // Parts B & C use OR_GROUPs in Crescent template
             newSlot = {
                 id: 'manual-' + Math.random().toString(36).substr(2, 9),
+                part,
                 type: 'OR_GROUP',
                 label: 'New',
                 marks: marks,
@@ -293,16 +291,22 @@
             };
         }
         
-        // Find correct insertion index based on current partitions
+        // Insert it into the master list at the relative end of its part
         let targetArr = Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || []);
         let newList = [...targetArr];
 
         if (part === 'A') {
-            const endIdx = questionsA.length;
-            newList.splice(endIdx, 0, newSlot);
+            const lastAIdx = newList.findLastIndex(s => s.part === 'A');
+            newList.splice(lastAIdx + 1, 0, newSlot);
         } else if (part === 'B') {
-            const endIdx = questionsA.length + questionsB.length;
-            newList.splice(endIdx, 0, newSlot);
+            const lastBIdx = newList.findLastIndex(s => s.part === 'B');
+            if (lastBIdx === -1) {
+                // Insert after Part A
+                const lastAIdx = newList.findLastIndex(s => s.part === 'A');
+                newList.splice(lastAIdx + 1, 0, newSlot);
+            } else {
+                newList.splice(lastBIdx + 1, 0, newSlot);
+            }
         } else {
             newList.push(newSlot);
         }
@@ -343,52 +347,13 @@
 
     const isEditable = $derived(mode === 'edit');
 
-    // Dynamic Partitioning: Filter by Slot Type for Parts
-    // Part A: All slots of type SINGLE (usually up to the first OR_GROUP or a fixed count)
+    // Part-Based filtering: NO INDEX SLICING
     let questionsA = $derived.by(() => {
-        // If Standard mode, respect structure count
-        const isStandard = (paperMeta.generation_mode || 'Standard') === 'Standard';
-        if (isStandard) {
-            const count = paperStructure[0]?.count || 10;
-            return safeQuestions.slice(0, count).map((s: any, idx: number) => ({ ...s, n1: idx + 1 }));
-        }
-        // If Modifiable, Part A is all SINGLE slots at the beginning
-        let result = [];
-        for (let i = 0; i < safeQuestions.length; i++) {
-            if (safeQuestions[i].type === 'SINGLE') result.push({ ...safeQuestions[i], n1: i + 1 });
-            else break;
-        }
-        return result;
+        return safeQuestions.filter(s => s.part === 'A').map((s: any, idx: number) => ({ ...s, n1: idx + 1 }));
     });
 
     let questionsB = $derived.by(() => {
-        const isStandard = (paperMeta.generation_mode || 'Standard') === 'Standard';
-        const startIdx = questionsA.length;
-
-        if (isStandard) {
-             const count = paperStructure[1]?.count || 5;
-             const slots = safeQuestions.slice(startIdx, startIdx + count);
-             let currentNum = questionsA.length + 1;
-             return slots.map((s: any) => {
-                if (s.type === 'OR_GROUP') {
-                    const n1 = currentNum++;
-                    const n2 = currentNum++;
-                    return { ...s, n1, n2 };
-                } else {
-                    const n1 = currentNum++;
-                    return { ...s, n1 };
-                }
-            });
-        }
-
-        // Modifiable: Pick next segment of slots until next major break or end
-        // In Crescent, Part B is usually OR_GROUPs but could have SINGLEs
-        // Let's assume Part B continues until Part C (if exists) or end
-        const partCCount = paperStructure[2]?.count || 0;
-        const slots = partCCount > 0 
-            ? safeQuestions.slice(startIdx, safeQuestions.length - partCCount)
-            : safeQuestions.slice(startIdx);
-
+        const slots = safeQuestions.filter(s => s.part === 'B');
         let currentNum = questionsA.length + 1;
         return slots.map((s: any) => {
             if (s.type === 'OR_GROUP') {
@@ -403,13 +368,13 @@
     });
 
     let questionsC = $derived.by(() => {
-        const isStandard = (paperMeta.generation_mode || 'Standard') === 'Standard';
-        const startIdx = questionsA.length + questionsB.length;
-        const slots = safeQuestions.slice(startIdx);
-
-        let currentNum = 1;
-        questionsA.forEach(s => { currentNum++; });
-        questionsB.forEach(s => { currentNum += (s.type === 'OR_GROUP' ? 2 : 1); });
+        const slots = safeQuestions.filter(s => s.part === 'C');
+        
+        // Calculate starting number
+        let currentNum = questionsA.length + 1;
+        questionsB.forEach((s: any) => {
+            currentNum += (s.type === 'OR_GROUP' ? 2 : 1);
+        });
 
         return slots.map((s: any) => {
             if (s.type === 'OR_GROUP') {
@@ -422,6 +387,11 @@
             }
         });
     });
+
+    // Dynamic Marks calculation based on actual questions
+    let totalMarksA = $derived(questionsA.length * (paperStructure[0]?.marks_per_q || 2));
+    let totalMarksB = $derived(questionsB.length * (paperStructure[1]?.marks_per_q || 5));
+    let totalMarksC = $derived(questionsC.length * (paperStructure[2]?.marks_per_q || 16));
 
     // Stats
     let partACount = $derived(questionsA.length);
@@ -576,7 +546,7 @@
             class="w-full text-center font-black text-xs uppercase mb-4 border border-black p-1 {isEditable ? '' : 'pointer-events-none'}"
         >
             {paperStructure[0]?.title || 'PART A'} 
-            ({partACount} X {paperStructure[0]?.marks_per_q || (is100m ? 2 : 2)} = {partACount * (paperStructure[0]?.marks_per_q || 2)} MARKS)
+            ({partACount} X {paperStructure[0]?.marks_per_q || 2} = {totalMarksA} MARKS)
         </div>
         <div 
             class="w-full border border-black divide-y divide-black"
@@ -629,7 +599,7 @@
                                                 SWAP
                                             </button>
                                             <button 
-                                                onclick={() => removeQuestion(slot.id)}
+                                                onclick={() => removeQuestion(slot)}
                                                 class="bg-red-500 text-white p-1.5 rounded-md shadow-lg text-[9px] font-black tracking-widest flex items-center gap-1 hover:bg-red-600 active:scale-95"
                                             >
                                                 <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -650,10 +620,11 @@
                              <div class="text-[10px] font-bold text-center">Slot {i+1} (OR Question Support)</div>
                              {#if isEditable}
                                 <button 
-                                    onclick={() => removeQuestion(slot.id)}
-                                    class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 bg-red-500 text-white p-1 rounded-md text-[8px] print:hidden"
+                                    onclick={() => removeQuestion(slot)}
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 bg-red-500 text-white p-1.5 rounded-md shadow-lg text-[9px] font-black tracking-widest flex items-center gap-1 hover:bg-red-600 active:scale-95 print:hidden"
                                 >
-                                    DELETE
+                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    DEL
                                 </button>
                              {/if}
                         </div>
@@ -687,7 +658,7 @@
             class="w-full text-center font-black text-xs uppercase mb-4 border border-black p-1 {isEditable ? '' : 'pointer-events-none'}"
         >
             {paperStructure[1]?.title || 'PART B'} 
-            ({partBCount} X {paperStructure[1]?.marks_per_q || 5} = {partBCount * (paperStructure[1]?.marks_per_q || 5)} MARKS)
+            ({partBCount} X {paperStructure[1]?.marks_per_q || 5} = {totalMarksB} MARKS)
         </div>
         <div 
             class="space-y-6"
@@ -854,9 +825,9 @@
                 class="w-full text-center font-black text-xs uppercase mb-4 border border-black p-1 {isEditable ? '' : 'pointer-events-none'}"
             >
                 {#if paperStructure[2]}
-                    {paperStructure[2].title} ({partCCount} X {paperStructure[2].marks_per_q} = {partCCount * paperStructure[2].marks_per_q} MARKS)
+                    {paperStructure[2].title} ({partCCount} X {paperStructure[2].marks_per_q} = {totalMarksC} MARKS)
                 {:else}
-                    PART C (1 X 16 = 16 MARKS)
+                    PART C ({partCCount} X 16 = {totalMarksC} MARKS)
                 {/if}
             </div>
         <div 
