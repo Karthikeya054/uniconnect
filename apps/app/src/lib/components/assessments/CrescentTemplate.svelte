@@ -35,25 +35,32 @@
         const arr = (Array.isArray(raw) ? raw : (raw.questions || [])).filter(Boolean);
         
         return arr.map((item: any, i: number) => {
+            // Helper to get text safely
+            const getTxt = (q: any) => q.text || q.question_text || 'Click to add question text...';
+            const getMarks = (q: any) => Number(q.marks || q.mark || 0);
+
             // If it's already a slot structure, ensure questions are safe
             if (item.type === 'SINGLE' || item.type === 'OR_GROUP') {
                 const mappedSlot = { ...item };
                 if (mappedSlot.type === 'SINGLE' && mappedSlot.questions) {
                     mappedSlot.questions = mappedSlot.questions.map((q: any) => ({
                         ...q,
-                        text: q.text || q.question_text || 'Question Text Placeholder'
+                        text: getTxt(q),
+                        marks: getMarks(q)
                     }));
                 } else if (mappedSlot.type === 'OR_GROUP') {
                     if (mappedSlot.choice1?.questions) {
                         mappedSlot.choice1.questions = mappedSlot.choice1.questions.map((q: any) => ({
                             ...q,
-                            text: q.text || q.question_text || 'Question Text Placeholder'
+                            text: getTxt(q),
+                            marks: getMarks(q)
                         }));
                     }
                     if (mappedSlot.choice2?.questions) {
                         mappedSlot.choice2.questions = mappedSlot.choice2.questions.map((q: any) => ({
                             ...q,
-                            text: q.text || q.question_text || 'Question Text Placeholder'
+                            text: getTxt(q),
+                            marks: getMarks(q)
                         }));
                     }
                 }
@@ -68,10 +75,11 @@
                 id: item.id || `q-raw-${activeSet}-${i}`,
                 type: 'SINGLE',
                 label: String(i + 1),
-                marks: Number(item.marks || 2),
+                marks: getMarks(item),
                 questions: [{
                     ...item,
-                    text: item.text || item.question_text || 'Question Text Placeholder'
+                    text: getTxt(item),
+                    marks: getMarks(item)
                 }]
             };
         });
@@ -89,7 +97,7 @@
         }
 
         const marks = Number(currentQ?.marks || slot.marks || (part === 'A' ? 2 : 16));
-        const alternates = (questionPool || []).filter((q: any) => Number(q.marks) === marks && q.id !== currentQ?.id);
+        const alternates = (questionPool || []).filter((q: any) => Number(q.marks || q.mark) === marks && q.id !== currentQ?.id);
 
         swapContext = {
             slotIndex: index,

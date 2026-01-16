@@ -129,65 +129,65 @@
     }
 </script>
 
-<div class="max-w-6xl mx-auto space-y-8 pb-32 print:p-0 print:m-0 print:max-w-none">
-    <!-- toolbar -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden px-4 md:px-0">
-        <div class="space-y-1">
-            <div class="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest">
-                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                Live Assessment Editor
+<div class="max-w-6xl mx-auto space-y-6 pb-32 print:p-0 print:m-0 print:max-w-none">
+    <!-- Top Bar with Set Selector Integrated -->
+    <div class="bg-gray-900 text-white rounded-[2rem] p-4 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 print:hidden">
+        <div class="flex items-center gap-6 px-4">
+             <div class="space-y-0.5">
+                <div class="flex items-center gap-2 text-[8px] font-black text-indigo-400 uppercase tracking-[0.3em]">
+                    <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                    Editor State: Ready
+                </div>
+                <h1 class="text-xl font-black tracking-tight uppercase leading-none">{data.paper?.subject_name || 'Question Paper'}</h1>
             </div>
-            <h1 class="text-3xl font-black text-gray-900 tracking-tight uppercase">{data.paper?.subject_name || 'Question Paper'}</h1>
+            
+            <div class="h-8 w-px bg-white/10 hidden md:block"></div>
+
+            <!-- Set Selector -->
+            <div class="flex items-center gap-1 bg-white/5 p-1 rounded-xl">
+                {#each availableSets as set}
+                    <button 
+                        onclick={() => activeSet = set}
+                        class="px-5 py-2.5 rounded-lg text-[10px] font-black tracking-tighter transition-all duration-300 uppercase
+                        {activeSet === set ? 'bg-indigo-600 text-white shadow-xl scale-105' : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+                    >
+                        SET {set}
+                    </button>
+                {/each}
+            </div>
         </div>
-        
-        <div class="flex flex-wrap gap-3">
+
+        <div class="flex items-center gap-3 px-4">
             <button 
                 onclick={saveChanges}
                 disabled={isSaving}
-                class="inline-flex items-center px-8 py-4 bg-green-600 text-white text-xs font-black rounded-2xl hover:bg-green-700 transition-all shadow-xl shadow-green-100 disabled:opacity-50 active:scale-95 text-center justify-center min-w-[200px]"
+                class="inline-flex items-center px-6 py-3 bg-green-600 text-white text-[10px] font-black rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-900/20 disabled:opacity-50 active:scale-95"
             >
                 {#if isSaving}
-                    <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                    SAVING CHANGES...
+                    <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                    SAVING...
                 {:else}
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    SAVE PAPER CHANGES
+                    <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    SAVE CHANGES
                 {/if}
             </button>
-            <div class="flex gap-2">
-                <button 
-                    onclick={downloadPDF}
-                    class="inline-flex items-center px-6 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-black rounded-2xl hover:bg-gray-50 transition-all shadow-sm"
-                >
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    PDF / PRINT
-                </button>
-                <button 
-                    onclick={downloadDOCX}
-                    class="inline-flex items-center px-6 py-3 bg-white border border-gray-200 text-gray-600 text-xs font-black rounded-2xl hover:bg-gray-50 transition-all shadow-sm"
-                >
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    DOCX (WORD)
-                </button>
-            </div>
+            <button 
+                onclick={downloadPDF}
+                class="inline-flex items-center px-4 py-3 bg-white/5 text-gray-300 text-[10px] font-black rounded-xl hover:bg-white/10 transition-all"
+            >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            </button>
+            <button 
+                onclick={downloadDOCX}
+                class="inline-flex items-center px-4 py-3 bg-white/5 text-gray-300 text-[10px] font-black rounded-xl hover:bg-white/10 transition-all"
+            >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </button>
         </div>
     </div>
 
-    <!-- Set Selector -->
-    <div class="bg-gray-100/50 p-2 rounded-[2rem] border border-gray-200 shadow-inner flex gap-2 print:hidden backdrop-blur-sm">
-        {#each availableSets as set}
-            <button 
-                onclick={() => activeSet = set}
-                class="flex-1 py-4 rounded-[1.5rem] text-sm font-black transition-all duration-300
-                {activeSet === set ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-200 scale-102' : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'}"
-            >
-                VIEW SET {set}
-            </button>
-        {/each}
-    </div>
-
     <!-- Paper View (Crescent Template) -->
-    <div id="paper-content" class="bg-white rounded-[1rem] shadow-2xl overflow-hidden print:shadow-none print:m-0 print:p-0 border border-gray-100">
+    <div id="paper-content" class="bg-white rounded-[1rem] shadow-2xl overflow-hidden print:shadow-none print:m-0 print:p-0 border border-gray-100 min-h-screen">
         {#if editableSets[activeSet]}
             <CrescentTemplate 
                 bind:paperMeta 
@@ -199,9 +199,12 @@
                 mode="edit"
             />
         {:else}
-            <div class="p-20 text-center space-y-4">
-                <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p class="text-gray-400 font-black uppercase tracking-widest text-xs">Loading Paper Content...</p>
+            <div class="p-32 text-center space-y-6">
+                <div class="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <div class="space-y-1">
+                    <p class="text-gray-900 font-black uppercase tracking-[0.3em] text-sm">INITIALIZING PAPER</p>
+                    <p class="text-gray-400 text-[10px] font-bold">PLEASE WAIT WHILE WE COMPILE THE DATA</p>
+                </div>
             </div>
         {/if}
     </div>
