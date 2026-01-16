@@ -966,37 +966,47 @@
             margin: 0;
         }
 
-        :global(body) {
-            background: white !important;
-            padding: 0 !important;
-            margin: 0 !important;
+        /* ABSOLUTE ISOLATION: Hide everything but the paper */
+        :global(body *) {
+            visibility: hidden !important;
         }
-
-        /* Hide everything except the paper content */
-        :global(nav), :global(header), :global(sidebar), :global(.no-print), :global(.print\:hidden) {
-            display: none !important;
+        
+        .paper-container, .paper-container * {
+            visibility: visible !important;
         }
 
         .paper-container {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
             width: 210mm !important;
-            min-height: 297mm !important;
-            padding: 20mm !important;
-            margin: 0 auto !important;
+            margin: 0 !important;
+            padding: 15mm !important;
             border: none !important;
             box-shadow: none !important;
+            background: white !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
         }
 
+        /* FORCE PAGE BREAKS */
         .section-page-break {
             break-before: page !important;
             page-break-before: always !important;
             margin-top: 0 !important;
+            padding-top: 0 !important;
+            visibility: visible !important;
         }
 
         .page-break-avoid {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
+        }
+
+        /* Ensure signatures are visible and at bottom */
+        .mt-20 {
+            margin-top: 40pt !important;
+            visibility: visible !important;
         }
     }
 

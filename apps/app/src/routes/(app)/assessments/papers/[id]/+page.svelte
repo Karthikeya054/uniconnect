@@ -300,19 +300,28 @@
             return blockHtml;
         };
 
+        const pageBreak = '<br clear=all style="mso-special-character:page-break; page-break-before:always">';
+
         html += buildBlock(config[0]?.title || 'PART A', setsA, 1, config[0]?.marks_per_q || 2);
+        
+        // PAGE BREAK BEFORE PART B
+        html += pageBreak;
         
         let subB = 1; setsA.forEach((s: any) => subB += (s.type === 'OR_GROUP' ? 2 : 1));
         html += buildBlock(config[1]?.title || 'PART B', setsB, subB, config[1]?.marks_per_q || 16);
 
-        let subC = subB; setsB.forEach((s: any) => subC += (s.type === 'OR_GROUP' ? 2 : 1));
-        html += buildBlock(config[2]?.title || 'PART C', setsC, subC, config[2]?.marks_per_q || 16);
+        // PAGE BREAK BEFORE PART C
+        if (setsC.length > 0) {
+            html += pageBreak;
+            let subC = subB; setsB.forEach((s: any) => subC += (s.type === 'OR_GROUP' ? 2 : 1));
+            html += buildBlock(config[2]?.title || 'PART C', setsC, subC, config[2]?.marks_per_q || 16);
+        }
 
         html += `
-            <table class="no-border" style="margin-top: 60pt; border-top: 1pt solid #eee;">
+            <table class="no-border" style="margin-top: 50pt; border-top: 1pt solid #444;">
                 <tr>
-                    <td style="width: 50%; text-align: left; padding-top: 10pt; font-size: 9pt;">Name & Signature of DAAC Member</td>
-                    <td style="width: 50%; text-align: right; padding-top: 10pt; font-size: 9pt;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: left; padding-top: 15pt; font-size: 10pt; font-weight: bold;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: right; padding-top: 15pt; font-size: 10pt; font-weight: bold;">Name & Signature of DAAC Member</td>
                 </tr>
             </table>
             </body></html>
