@@ -127,14 +127,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             let pool = (poolByUnitAndMarks[unitId]?.[marks] || [])
                 .filter(q => !excludeInSet.has(q.id));
 
-            // 1. FILTER BY TYPE (MCQ or NORMAL)
+            // 1. FILTER BY TYPE (STRICT)
             if (qType && qType !== 'ANY') {
-                const typeFiltered = pool.filter(q => q.type === qType);
-                if (typeFiltered.length > 0) pool = typeFiltered;
-                else if (qType === 'NORMAL' && marks >= 5) {
-                    // Don't pick MCQ for high mark slots
-                    pool = [];
-                }
+                pool = pool.filter(q => q.type === qType);
+            } else if (marks >= 5) {
+                // DEFAULT SAFETY: Never pick MCQ for 5+ marks unless explicitly asked
+                pool = pool.filter(q => q.type !== 'MCQ');
             }
 
             // 2. FILTER BY BLOOM LEVEL
@@ -164,9 +162,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 .filter((q: any) => !excludeInSet.has(q.id));
 
             if (qType && qType !== 'ANY') {
-                const typeFiltered = fallbackPool.filter((q: any) => q.type === qType);
-                if (typeFiltered.length > 0) fallbackPool = typeFiltered;
-                else if (qType === 'NORMAL' && marks >= 5) fallbackPool = [];
+                fallbackPool = fallbackPool.filter((q: any) => q.type === qType);
+            } else if (marks >= 5) {
+                // DEFAULT SAFETY for fallback
+                fallbackPool = fallbackPool.filter((q: any) => q.type !== 'MCQ');
             }
 
             // Even in fallback, try to respect bloom/co if possible
