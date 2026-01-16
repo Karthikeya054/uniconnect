@@ -24,13 +24,21 @@
         instructions: 'ANSWER ALL QUESTIONS'
     });
 
-    // Initialize state from data once
+    // Initialize state from data
     $effect(() => {
+        const rawSetsData = data.paper.sets_data || {};
+        
+        // Only initialize if we haven't already
         if (Object.keys(editableSets).length === 0) {
-            const rawSetsData = data.paper.sets_data || {};
+            // Ensure A, B, C, D exist
+            const sets = ['A', 'B', 'C', 'D'];
+            const initial: any = {};
+            sets.forEach(s => {
+                initial[s] = rawSetsData[s] || { questions: [] };
+            });
+            editableSets = initial;
+
             const meta = rawSetsData.metadata || rawSetsData.editor_metadata || {};
-            
-            editableSets = JSON.parse(JSON.stringify(rawSetsData));
             paperMeta = {
                 paper_date: meta.paper_date || data.paper.paper_date?.split('T')[0] || new Date().toISOString().split('T')[0],
                 exam_time: meta.exam_time || '',
@@ -45,6 +53,24 @@
         }
     });
 
+    // Helper to find paper structure based on marks
+    let paperStructure = $derived.by(() => {
+        const marks = Number(paperMeta.max_marks);
+        const is100 = marks === 100;
+        if (is100) {
+            return [
+                { title: 'PART A', marks_per_q: 2, count: 10, answered_count: 10 },
+                { title: 'PART B', marks_per_q: 16, count: 5, answered_count: 4 },
+                { title: 'PART C', marks_per_q: 16, count: 1, answered_count: 1 }
+            ];
+        } else {
+            return [
+                { title: 'PART A', marks_per_q: 2, count: 5, answered_count: 5 },
+                { title: 'PART B', marks_per_q: 5, count: 8, answered_count: 8 }
+            ];
+        }
+    });
+
     let isSaving = $state(false);
 
     let currentSetData = $derived(editableSets[activeSet]);
@@ -55,7 +81,14 @@
             const res = await fetch(`/api/assessments/papers/${data.paper.id}`, {
                 method: 'PATCH',
                 body: JSON.stringify({
-                    sets_data: editableSets,
+                    sets_data: { 
+                        ...editableSets,
+                        metadata: {
+                            ...paperMeta,
+                            max_marks: Number(paperMeta.max_marks),
+                            duration_minutes: Number(paperMeta.duration_minutes)
+                        }
+                    },
                     ...paperMeta
                 }),
                 headers: { 'Content-Type': 'application/json' }
@@ -166,6 +199,7 @@
         <CrescentTemplate 
             bind:paperMeta 
             bind:currentSetData={editableSets[activeSet]} 
+            paperStructure={paperStructure}
             activeSet={activeSet}
             courseOutcomes={data.courseOutcomes}
             questionPool={data.questionPool}

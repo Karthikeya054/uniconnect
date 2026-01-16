@@ -25,8 +25,20 @@
     let isSwapSidebarOpen = $state(false);
     let swapContext = $state<any>(null);
 
+    // Unified resolver for questions array
+    let safeQuestions = $derived.by(() => {
+        const raw = currentSetData;
+        if (!raw) return [];
+        const arr = Array.isArray(raw) ? raw : (raw.questions || []);
+        // Ensure IDs for dndzone
+        return arr.map((s: any, i: number) => ({
+            ...s,
+            id: s.id || `slot-${activeSet}-${i}-${s.label || ''}`
+        }));
+    });
+
     function openSwapSidebar(index: number, part: 'A' | 'B' | 'C', subPart?: 'q1' | 'q2') {
-        const slot = currentSetData.questions[index];
+        const slot = safeQuestions[index];
         if (!slot) return;
 
         let currentQ: any = null;
@@ -36,8 +48,8 @@
             currentQ = subPart === 'q1' ? slot.choice1.questions[0] : slot.choice2.questions[0];
         }
 
-        const marks = currentQ?.marks || slot.marks || (part === 'A' ? 2 : 16);
-        const alternates = questionPool.filter(q => q.marks === marks && q.id !== currentQ?.id);
+        const marks = Number(currentQ?.marks || slot.marks || (part === 'A' ? 2 : 16));
+        const alternates = questionPool.filter(q => Number(q.marks) === marks && q.id !== currentQ?.id);
 
         swapContext = {
             slotIndex: index,
@@ -52,7 +64,10 @@
     function selectAlternate(question: any) {
         if (!swapContext) return;
         const { slotIndex, subPart } = swapContext;
-        const slot = currentSetData.questions[slotIndex];
+        
+        // We must update the ORIGINAL bound state
+        const targetArr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
+        const slot = targetArr[slotIndex];
 
         const newQData = {
             id: question.id,
@@ -73,7 +88,12 @@
             else slot.choice2.questions = [newQData];
         }
 
-        currentSetData.questions = [...currentSetData.questions];
+        // Trigger reactivity
+        if (Array.isArray(currentSetData)) {
+            currentSetData = [...currentSetData];
+        } else {
+            currentSetData.questions = [...currentSetData.questions];
+        }
         isSwapSidebarOpen = false;
     }
 
@@ -82,38 +102,59 @@
 
     function handleDndConsider(e: any, part: 'A' | 'B' | 'C') {
         const { items } = e.detail;
-        if (part === 'A') {
-            const others = currentSetData.questions.filter((s: any) => !isPartASlot(s));
-            currentSetData.questions = [...items, ...others];
-        } else if (part === 'B') {
-            currentSetData.questions = [...partASlots, ...items, ...slotsC];
-        } else if (part === 'C') {
-            currentSetData.questions = [...partASlots, ...slotsB, ...items];
-        }
+        updateQuestionsFromDnd(items, part);
     }
 
     function handleDndFinalize(e: any, part: 'A' | 'B' | 'C') {
         const { items } = e.detail;
+        updateQuestionsFromDnd(items, part);
+    }
+
+    function updateQuestionsFromDnd(items: any[], part: 'A' | 'B' | 'C') {
+        const otherParts = safeQuestions.filter(s => {
+            const p = getPartForSlot(s);
+            return p !== part;
+        });
+
+        // Reconstruct the full list
+        let newList: any[] = [];
         if (part === 'A') {
-            const others = currentSetData.questions.filter((s: any) => !isPartASlot(s));
-            currentSetData.questions = [...items, ...others];
+            newList = [...items, ...otherParts];
         } else if (part === 'B') {
-            currentSetData.questions = [...partASlots, ...items, ...slotsC];
+            const partA = safeQuestions.filter(s => getPartForSlot(s) === 'A');
+            const partC = safeQuestions.filter(s => getPartForSlot(s) === 'C');
+            newList = [...partA, ...items, ...partC];
         } else if (part === 'C') {
-            currentSetData.questions = [...partASlots, ...slotsB, ...items];
+             const others = safeQuestions.filter(s => getPartForSlot(s) !== 'C');
+             newList = [...others, ...items];
+        }
+
+        if (Array.isArray(currentSetData)) {
+            currentSetData = newList;
+        } else {
+            currentSetData.questions = newList;
         }
     }
 
     function addQuestion(part: 'A' | 'B' | 'C') {
         const marks = part === 'A' ? 2 : (part === 'B' ? (Number(paperMeta.max_marks) === 50 ? 5 : 16) : 16);
-        const newQ = {
+        const newSlot = {
             id: 'manual-' + Math.random().toString(36).substr(2, 9),
-            text: 'Click to edit question text...',
-            marks: marks,
             type: 'SINGLE',
-            co_id: null
+            label: 'New',
+            questions: [{
+                id: 'q-' + Math.random().toString(36).substr(2, 9),
+                text: 'Click to edit question text...',
+                marks: marks,
+                co_id: null
+            }]
         };
-        currentSetData.questions = [...currentSetData.questions, newQ];
+        
+        if (Array.isArray(currentSetData)) {
+            currentSetData = [...currentSetData, newSlot];
+        } else {
+            currentSetData.questions = [...currentSetData.questions, newSlot];
+        }
     }
 
     function getCOCode(coId: string | undefined) {
@@ -123,67 +164,64 @@
 
     const isEditable = $derived(mode === 'edit');
 
-    // Helper to determine if a slot belongs in Part A (1-mark MCQs or 2-mark questions)
-    const isPartASlot = (slot: any) => {
-        if (!slot) return false;
-        // Check if it's a 1-mark or 2-mark question (Part A questions)
-        if (slot.type === 'SINGLE') {
-            const marks = slot.questions?.[0]?.marks || slot.marks;
-            return marks === 1 || marks === 2;
+    // Robust partitioning based on marks
+    const getPartForSlot = (slot: any) => {
+        if (!slot) return 'B';
+        const marks = Number(slot.questions?.[0]?.marks || slot.marks || 0);
+        if (marks === 1 || marks === 2) return 'A';
+        
+        // For 100m, the last question is Part C
+        const all = safeQuestions;
+        if (Number(paperMeta.max_marks) === 100) {
+            const nonA = all.filter(s => {
+                const m = Number(s.questions?.[0]?.marks || s.marks || 0);
+                return m !== 1 && m !== 2;
+            });
+            if (nonA.length > 0 && slot.id === nonA[nonA.length - 1].id) return 'C';
         }
-        // For OR_GROUP, check if both choices are 1 or 2 marks
-        if (slot.type === 'OR_GROUP') {
-            const marks1 = slot.choice1?.questions?.[0]?.marks || slot.marks;
-            const marks2 = slot.choice2?.questions?.[0]?.marks || slot.marks;
-            return (marks1 === 1 || marks1 === 2) && (marks2 === 1 || marks2 === 2);
-        }
-        return false;
+        return 'B';
     };
 
-    // Smart Partitioning: All 2-mark questions to Part A, everything else to Part B/C
-    let partASlots = $derived(currentSetData.questions.filter(isPartASlot));
-    let nonPartASlots = $derived(currentSetData.questions.filter((s: any) => !isPartASlot(s)));
-
-    let questionsA = $derived(partASlots);
-    let partACount = $derived(partASlots.length);
-
-    let is100m = $derived(Number(paperMeta.max_marks) === 100);
-    
-    let slotsB = $derived(is100m ? nonPartASlots.slice(0, nonPartASlots.length - 1) : nonPartASlots);
-    let slotsC = $derived(is100m ? nonPartASlots.slice(nonPartASlots.length - 1) : []);
-
-    let numberedSections = $derived(() => {
-        let current = partASlots.length + 1;
-        const b = slotsB.map((s: any) => {
+    let questionsA = $derived(safeQuestions.filter(s => getPartForSlot(s) === 'A'));
+    let questionsB = $derived.by(() => {
+        const slots = safeQuestions.filter(s => getPartForSlot(s) === 'B');
+        let current = questionsA.length + 1;
+        return slots.map(s => {
             if (s.type === 'OR_GROUP') {
-                const n1 = current;
-                const n2 = current + 1;
-                current += 2;
+                const n1 = current++;
+                const n2 = current++;
                 return { ...s, n1, n2 };
             } else {
-                const n1 = current;
-                current += 1;
+                const n1 = current++;
                 return { ...s, n1 };
             }
         });
-        const c = slotsC.map((s: any) => {
+    });
+    let questionsC = $derived.by(() => {
+        const slots = safeQuestions.filter(s => getPartForSlot(s) === 'C');
+        let current = questionsA.length + (questionsB.length * 2) + 1; // Approximate but safer
+        // Recalculate correctly
+        current = questionsA.length + 1;
+        questionsB.forEach(s => {
+            if (s.type === 'OR_GROUP') current += 2;
+            else current += 1;
+        });
+
+        return slots.map(s => {
             if (s.type === 'OR_GROUP') {
-                const n1 = current;
-                const n2 = current + 1;
-                current += 2;
+                const n1 = current++;
+                const n2 = current++;
                 return { ...s, n1, n2 };
             } else {
-                const n1 = current;
-                current += 1;
+                const n1 = current++;
                 return { ...s, n1 };
             }
         });
-        return { b, c, totalB: slotsB.length };
     });
 
-    let questionsB = $derived(numberedSections().b);
-    let questionsC = $derived(numberedSections().c);
-    let partBCount = $derived(numberedSections().totalB);
+    let partACount = $derived(questionsA.length);
+    let partBCount = $derived(questionsB.length);
+    let is100m = $derived(Number(paperMeta.max_marks) === 100);
 </script>
 
 <div class="paper-container relative p-[1in] bg-white text-black shadow-none border border-gray-100 {mode === 'preview' ? 'scale-[0.5] origin-top' : ''}">
@@ -344,7 +382,7 @@
 
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'A')}
+                                            onclick={() => openSwapSidebar(safeQuestions.findIndex((s: any) => s.id === slot.id), 'A')}
                                             class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest flex items-center gap-1"
                                         >
                                             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -367,15 +405,23 @@
                     </div>
                 {/each}
             {:else}
-                {#each Array(Number(paperMeta.max_marks) === 50 ? 5 : 10) as _, i}
-                    <div class="flex h-[40px]">
+                {#each Array(Number(paperMeta.max_marks || 100) === 50 ? 5 : 10) as _, i}
+                    <div class="flex h-[40px] items-center">
                         <div class="w-10 border-r border-black p-2 text-center text-[10px] font-bold">{i + 1}.</div>
                         <div class="flex-1 p-2 text-[10px] italic text-gray-300">Question Text Placeholder</div>
-                        <div class="w-20 border-l border-black bg-gray-50/20"></div>
+                        <div class="w-20 border-l border-black bg-gray-50/10 h-full"></div>
                     </div>
                 {/each}
             {/if}
         </div>
+        {#if isEditable}
+            <button 
+                onclick={() => addQuestion('A')}
+                class="w-full py-3 border-2 border-dashed border-gray-100 text-gray-300 text-[10px] font-black uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-400 transition-all rounded-xl mt-2 print:hidden"
+            >
+                + Add Question to Part A
+            </button>
+        {/if}
     </div>
 
     <!-- Part B -->
@@ -404,7 +450,7 @@
                                 </div>
                             {/if}
                             <!-- Choice 1 -->
-                            {#each slot.choice1.questions as q, subIdx}
+                            {#each slot.choice1?.questions || [] as q, subIdx}
                                 <div class="flex border-b border-black last:border-b-0 min-h-[50px]">
                                 <div class="w-12 border-r border-black p-2 text-center text-[11px] font-black">
                                     {subIdx === 0 ? slot.n1 + '.' : ''}
@@ -412,39 +458,32 @@
                                     <div class="w-10 border-r border-black p-2 text-center text-[10px] font-bold flex items-center justify-center">
                                         {q.sub_label || ''}
                                     </div>
-                                    <div class="flex-1 p-3 text-[11px] leading-relaxed">
+                                    <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                         <div contenteditable="true" bind:innerHTML={q.text} class={isEditable ? '' : 'pointer-events-none'}></div>
-                                        
-                                        {#if q.options && q.options.length > 0}
-                                            <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
-                                                {#each q.options as opt}
-                                                    <div class="text-[10px] font-medium leading-tight">{opt}</div>
-                                                {/each}
-                                            </div>
-                                        {/if}
-                                    </div>
-                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
-                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
-                                        <span class="text-[10px] font-black">({q.marks})</span>
                                         {#if isEditable}
                                             <button 
-                                                onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'B', 'q1')}
-                                                class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest"
+                                                onclick={() => openSwapSidebar(safeQuestions.findIndex(s => s.id === slot.id), 'B', 'q1')}
+                                                class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest leading-none flex items-center gap-1"
                                             >
+                                                <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                                 SWAP
                                             </button>
                                         {/if}
+                                    </div>
+                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1">
+                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                        <span class="text-[10px] font-black">({q.marks})</span>
                                     </div>
                                 </div>
                             {/each}
                             
                             <!-- OR Separator -->
-                            <div class="w-full text-center text-[11px] font-black uppercase py-1.5 border-b border-black bg-gray-50/50 italic tracking-[0.3em]">
+                            <div class="w-full text-center text-[10px] font-black uppercase py-1 border-b border-black bg-gray-50/20 italic tracking-[0.2em]">
                                 (OR)
                             </div>
 
                             <!-- Choice 2 -->
-                            {#each slot.choice2.questions as q, subIdx}
+                            {#each slot.choice2?.questions || [] as q, subIdx}
                                 <div class="flex border-b border-black last:border-b-0 min-h-[50px]">
                                 <div class="w-12 border-r border-black p-2 text-center text-[11px] font-black">
                                     {subIdx === 0 ? slot.n2 + '.' : ''}
@@ -452,28 +491,21 @@
                                     <div class="w-10 border-r border-black p-2 text-center text-[10px] font-bold flex items-center justify-center">
                                         {q.sub_label || ''}
                                     </div>
-                                    <div class="flex-1 p-3 text-[11px] leading-relaxed">
+                                    <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                         <div contenteditable="true" bind:innerHTML={q.text} class={isEditable ? '' : 'pointer-events-none'}></div>
-                                        
-                                        {#if q.options && q.options.length > 0}
-                                            <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
-                                                {#each q.options as opt}
-                                                    <div class="text-[10px] font-medium leading-tight">{opt}</div>
-                                                {/each}
-                                            </div>
-                                        {/if}
-                                    </div>
-                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
-                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
-                                        <span class="text-[10px] font-black">({q.marks})</span>
                                         {#if isEditable}
                                             <button 
-                                                onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'B', 'q2')}
-                                                class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest"
+                                                onclick={() => openSwapSidebar(safeQuestions.findIndex(s => s.id === slot.id), 'B', 'q2')}
+                                                class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest leading-none flex items-center gap-1"
                                             >
+                                                <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                                 SWAP
                                             </button>
                                         {/if}
+                                    </div>
+                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1">
+                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                        <span class="text-[10px] font-black">({q.marks})</span>
                                     </div>
                                 </div>
                             {/each}
@@ -493,26 +525,19 @@
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                         <div contenteditable="true" bind:innerHTML={q.text} class="flex-1 {isEditable ? '' : 'pointer-events-none'}"></div>
-                                        
-                                        {#if q.options && q.options.length > 0}
-                                            <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
-                                                {#each q.options as opt}
-                                                    <div class="text-[10px] font-medium leading-tight">{opt}</div>
-                                                {/each}
-                                            </div>
-                                        {/if}
-                                    </div>
-                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
-                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
-                                        <span class="text-[10px] font-black">({q.marks})</span>
                                         {#if isEditable}
                                             <button 
-                                                onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'B')}
-                                                class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest"
+                                                onclick={() => openSwapSidebar(safeQuestions.findIndex(s => s.id === slot.id), 'B')}
+                                                class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest leading-none flex items-center gap-1"
                                             >
+                                                <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                                 SWAP
                                             </button>
                                         {/if}
+                                    </div>
+                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1">
+                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                        <span class="text-[10px] font-black">({q.marks})</span>
                                     </div>
                                 </div>
                             {/each}
@@ -526,6 +551,14 @@
                 </div>
             {/if}
         </div>
+        {#if isEditable}
+            <button 
+                onclick={() => addQuestion('B')}
+                class="w-full py-4 border-2 border-dashed border-gray-100 text-gray-300 text-[10px] font-black uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-400 transition-all rounded-xl mt-4 print:hidden"
+            >
+                + Add Question to Part B
+            </button>
+        {/if}
     </div>
 
     {#if is100m}
@@ -579,9 +612,10 @@
                                     <span class="text-[10px] font-black">({q.marks})</span>
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'C', 'q1')}
-                                            class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black"
+                                            onclick={() => openSwapSidebar(safeQuestions.findIndex((s: any) => s.id === slot.id), 'C', 'q1')}
+                                            class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest leading-none flex items-center gap-1"
                                         >
+                                            <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                             SWAP
                                         </button>
                                     {/if}
@@ -590,12 +624,12 @@
                         {/each}
                         
                         <!-- OR Separator -->
-                        <div class="w-full text-center text-[11px] font-black uppercase py-1.5 border-b border-black bg-gray-50/50 italic tracking-[0.3em]">
+                        <div class="w-full text-center text-[10px] font-black uppercase py-1 border-b border-black bg-gray-50/20 italic tracking-[0.2em]">
                             (OR)
                         </div>
 
                         <!-- Choice 2 -->
-                        {#each slot.choice2.questions as q, subIdx}
+                        {#each slot.choice2?.questions || [] as q, subIdx}
                             <div class="flex border-b border-black last:border-b-0 min-h-[50px]">
                                 <div class="w-12 border-r border-black p-2 text-center text-[11px] font-black">
                                     {subIdx === 0 ? slot.n2 + '.' : ''}
@@ -603,28 +637,21 @@
                                 <div class="w-10 border-r border-black p-2 text-center text-[10px] font-bold flex items-center justify-center">
                                     {q.sub_label || ''}
                                 </div>
-                                <div class="flex-1 p-3 text-[11px] leading-relaxed">
+                                <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                     <div contenteditable="true" bind:innerHTML={q.text} class={isEditable ? '' : 'pointer-events-none'}></div>
-                                    
-                                    {#if q.options && q.options.length > 0}
-                                        <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
-                                            {#each q.options as opt}
-                                                <div class="text-[10px] font-medium leading-tight">{opt}</div>
-                                            {/each}
-                                        </div>
+                                    {#if isEditable}
+                                        <button 
+                                            onclick={() => openSwapSidebar(safeQuestions.findIndex((s: any) => s.id === slot.id), 'C', 'q2')}
+                                            class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest leading-none flex items-center gap-1"
+                                        >
+                                            <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            SWAP
+                                        </button>
                                     {/if}
                                 </div>
                                 <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
                                     <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
                                     <span class="text-[10px] font-black">({q.marks})</span>
-                                    {#if isEditable}
-                                        <button 
-                                            onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'C', 'q2')}
-                                            class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black"
-                                        >
-                                            SWAP
-                                        </button>
-                                    {/if}
                                 </div>
                             </div>
                         {/each}
@@ -632,6 +659,14 @@
                     </div>
                 {/each}
             </div>
+            {#if isEditable}
+                <button 
+                    onclick={() => addQuestion('C')}
+                    class="w-full py-4 border-2 border-dashed border-gray-100 text-gray-300 text-[10px] font-black uppercase tracking-widest hover:border-indigo-200 hover:text-indigo-400 transition-all rounded-xl mt-4 print:hidden"
+                >
+                    + Add Question to Part C
+                </button>
+            {/if}
         </div>
     {/if}
 
