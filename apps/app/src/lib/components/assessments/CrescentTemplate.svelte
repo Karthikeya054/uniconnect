@@ -29,70 +29,51 @@
     // This ensures even raw question objects from DB are wrapped into the "slot" structure expected by the UI
     let safeQuestions = $derived.by(() => {
         const raw = currentSetData;
-        if (!raw) return [];
+        const totalExpectedSlots = paperStructure.reduce((acc, s) => acc + (s.count || 0), 0) || 16;
         
         // Handle various input structures: { questions: [] } or just []
-        const arr = (Array.isArray(raw) ? raw : (raw.questions || [])).filter(Boolean);
+        let arr = (Array.isArray(raw) ? raw : (raw.questions || [])).filter(Boolean);
         
-        return arr.map((item: any, i: number) => {
-            // Helper to get text safely
+        // Map existing data
+        const mapped = arr.map((item: any, i: number) => {
             const getTxt = (q: any) => q.text || q.question_text || 'Click to add question text...';
             const getMarks = (q: any) => Number(q.marks || q.mark || 0);
 
-            // If it's already a slot structure, ensure questions are safe
             if (item.type === 'SINGLE' || item.type === 'OR_GROUP') {
                 let mappedSlot = { ...item };
-                
                 if (item.type === 'SINGLE' && item.questions) {
-                    mappedSlot = {
-                        ...item,
-                        questions: item.questions.map((q: any) => ({
-                            ...q,
-                            text: getTxt(q),
-                            marks: getMarks(q)
-                        }))
-                    };
+                    mappedSlot.questions = item.questions.map((q: any) => ({ ...q, text: getTxt(q), marks: getMarks(q) }));
                 } else if (item.type === 'OR_GROUP') {
-                    mappedSlot = {
-                        ...item,
-                        choice1: item.choice1 ? {
-                            ...item.choice1,
-                            questions: (item.choice1.questions || []).map((q: any) => ({
-                                ...q,
-                                text: getTxt(q),
-                                marks: getMarks(q)
-                            }))
-                        } : item.choice1,
-                        choice2: item.choice2 ? {
-                            ...item.choice2,
-                            questions: (item.choice2.questions || []).map((q: any) => ({
-                                ...q,
-                                text: getTxt(q),
-                                marks: getMarks(q)
-                            }))
-                        } : item.choice2
-                    };
+                    if (item.choice1) item.choice1.questions = (item.choice1.questions || []).map((q: any) => ({ ...q, text: getTxt(q), marks: getMarks(q) }));
+                    if (item.choice2) item.choice2.questions = (item.choice2.questions || []).map((q: any) => ({ ...q, text: getTxt(q), marks: getMarks(q) }));
                 }
-
-                return {
-                    ...mappedSlot,
-                    id: mappedSlot.id || `slot-${activeSet}-${i}-${mappedSlot.label || ''}`
-                };
+                return { ...mappedSlot, id: mappedSlot.id || `slot-${activeSet}-${i}` };
             }
             
-            // Raw question object - wrap it in a SINGLE slot
             return {
                 id: item.id || `q-raw-${activeSet}-${i}`,
                 type: 'SINGLE',
                 label: String(i + 1),
                 marks: getMarks(item),
-                questions: [{
-                    ...item,
-                    text: getTxt(item),
-                    marks: getMarks(item)
-                }]
+                questions: [{ ...item, text: getTxt(item), marks: getMarks(item) }]
             };
         });
+
+        // PAD with empty slots if needed to maintain structure visibility
+        if (mapped.length < totalExpectedSlots) {
+            const padding = [];
+            for (let i = mapped.length; i < totalExpectedSlots; i++) {
+                padding.push({
+                    id: `pad-${activeSet}-${i}`,
+                    type: i < (paperStructure[0]?.count || 10) ? 'SINGLE' : 'OR_GROUP',
+                    label: '?',
+                    questions: []
+                });
+            }
+            return [...mapped, ...padding];
+        }
+
+        return mapped;
     });
 
     function openSwapSidebar(index: number, part: 'A' | 'B' | 'C', subPart?: 'q1' | 'q2') {

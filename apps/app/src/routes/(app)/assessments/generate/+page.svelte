@@ -36,12 +36,15 @@
     let examDuration = $state(90);
     let maxMarks = $state(50); // Default to 50 as suggested for Mid Exams
     let courseCodeManual = $state('');
+    let examTitleHeader = $state('SEMESTER END EXAMINATIONS - NOV/DEC 2025');
+    let paperInstructions = $state('ANSWER ALL QUESTIONS');
 
     // Dynamic Data
     let unitsWithTopics = $state<any[]>([]);
     let courseOutcomes = $state<any[]>([]);
     let availableTemplates = $state<any[]>([]);
     let isLoadingTopics = $state(false);
+    let isGenerating = $state(false);
 
     function initializeStructure() {
         const is100 = Number(maxMarks) === 100;
@@ -227,8 +230,9 @@
 
     async function generateSets() {
         if (selectedUnitIds.length === 0) return alert('Select at least one unit');
-        
-        const res = await fetch('/api/assessments/generate', {
+        isGenerating = true;
+        try {
+            const res = await fetch('/api/assessments/generate', {
             method: 'POST',
             body: JSON.stringify({
                 university_id: selectedUniversityId,
@@ -243,6 +247,8 @@
                 duration_minutes: examDuration,
                 max_marks: maxMarks,
                 course_code: courseCodeManual,
+                exam_title: examTitleHeader,
+                instructions: paperInstructions,
                 generation_mode: generationMode,
                 part_a_type: partAType,
                 template_config: generationMode === 'Modifiable' ? paperStructure : null
@@ -250,9 +256,18 @@
             headers: { 'Content-Type': 'application/json' }
         });
 
-        if (res.ok) {
-            const paper = await res.json();
-            window.location.href = `/assessments/papers/${paper.id}`;
+            if (res.ok) {
+                const paper = await res.json();
+                window.location.href = `/assessments/papers/${paper.id}`;
+            } else {
+                const err = await res.json();
+                alert(`Generation failed: ${err.message || 'Unknown error'}`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('A network error occurred during generation.');
+        } finally {
+            isGenerating = false;
         }
     }
 
@@ -1002,7 +1017,15 @@
                         </div>
                         <div class="space-y-2 md:col-span-2">
                             <label for="course-override" class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Course Code Override</label>
-                            <input id="course-override" type="text" bind:value={courseCodeManual} class="w-full bg-white border-gray-100 rounded-2xl p-4 text-xs font-black focus:ring-2 focus:ring-indigo-500 shadow-sm uppercase" />
+                            <input id="course-override" type="text" bind:value={courseCodeManual} placeholder={activeSubject?.code || 'CS-XXXX'} class="w-full bg-white border-gray-100 rounded-2xl p-4 text-xs font-black focus:ring-2 focus:ring-indigo-500 shadow-sm uppercase" />
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <label for="exam-title" class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Exam Title Header</label>
+                            <input id="exam-title" type="text" bind:value={examTitleHeader} class="w-full bg-white border-gray-100 rounded-2xl p-4 text-xs font-black focus:ring-2 focus:ring-indigo-500 shadow-sm" />
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <label for="instructions" class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Paper Instructions</label>
+                            <input id="instructions" type="text" bind:value={paperInstructions} class="w-full bg-white border-gray-100 rounded-2xl p-4 text-xs font-black focus:ring-2 focus:ring-indigo-500 shadow-sm" />
                         </div>
                     </div>
 
@@ -1046,10 +1069,10 @@
                                     duration_minutes: String(examDuration),
                                     max_marks: String(maxMarks),
                                     course_code: courseCodeManual || activeSubject?.code || 'CS-XXXX',
-                                    exam_title: 'SEMESTER END EXAMINATIONS - NOV/DEC 2025',
+                                    exam_title: examTitleHeader,
                                     programme: activeBranch?.name || 'B.Tech CSE',
                                     semester: String(selectedSemester),
-                                    instructions: 'ANSWER ALL QUESTIONS',
+                                    instructions: paperInstructions,
                                     subject_name: activeSubject?.name
                                 }}
                                 {paperStructure}
@@ -1101,8 +1124,16 @@
                 <div class="flex gap-4">
                     <button 
                         onclick={generateSets}
-                        class="px-10 py-4 bg-indigo-600 text-white text-sm font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95"
-                    >GENERATE ALL 4 SETS</button>
+                        disabled={isGenerating}
+                        class="px-10 py-4 bg-indigo-600 text-white text-sm font-black rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                    >
+                        {#if isGenerating}
+                            <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            GENERATING SETS...
+                        {:else}
+                            GENERATE ALL 4 SETS
+                        {/if}
+                    </button>
                 </div>
             </div>
         {/if}

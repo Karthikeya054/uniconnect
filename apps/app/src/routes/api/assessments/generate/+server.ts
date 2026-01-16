@@ -275,8 +275,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             `INSERT INTO assessment_papers (
                 university_id, batch_id, branch_id, subject_id, 
                 exam_type, semester, paper_date, duration_minutes, 
-                max_marks, sets_data, subject_code, exam_title, instructions
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+                max_marks, sets_data
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
             [
                 university_id, batch_id, branch_id, subject_id,
                 exam_type, semester, paper_date, duration_minutes,
@@ -288,10 +288,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                         duration_minutes, max_marks, course_code, exam_title, instructions,
                         generation_mode, template_config
                     }
-                }),
-                course_code, // Use course_code from body
-                exam_title,
-                instructions
+                })
             ]
         );
 
