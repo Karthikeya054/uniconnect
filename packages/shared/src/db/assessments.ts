@@ -70,6 +70,16 @@ export interface AssessmentCourseOutcome {
     updated_at: Date;
 }
 
+export interface AssessmentTemplate {
+    id: string;
+    university_id: string;
+    name: string;
+    exam_type: string;
+    config: any;
+    created_at: Date;
+    updated_at: Date;
+}
+
 // Batches
 export async function getAssessmentBatches(universityId: string): Promise<AssessmentBatch[]> {
     const { rows } = await db.query(
@@ -345,4 +355,44 @@ export async function updateCourseOutcome(id: string, data: Partial<AssessmentCo
 
 export async function deleteCourseOutcome(id: string): Promise<void> {
     await db.query('DELETE FROM assessment_course_outcomes WHERE id = $1', [id]);
+}
+
+// Assessment Templates
+export async function getAssessmentTemplates(universityId: string): Promise<AssessmentTemplate[]> {
+    const { rows } = await db.query(
+        'SELECT * FROM assessment_templates WHERE university_id = $1 ORDER BY created_at DESC',
+        [universityId]
+    );
+    return rows;
+}
+
+export async function createAssessmentTemplate(data: Partial<AssessmentTemplate>): Promise<AssessmentTemplate> {
+    const { rows } = await db.query(
+        'INSERT INTO assessment_templates (university_id, name, exam_type, config) VALUES ($1, $2, $3, $4) RETURNING *',
+        [data.university_id, data.name, data.exam_type, data.config]
+    );
+    return rows[0];
+}
+
+export async function updateAssessmentTemplate(id: string, data: Partial<AssessmentTemplate>): Promise<AssessmentTemplate> {
+    const fields: string[] = [];
+    const params: any[] = [];
+    let i = 1;
+
+    if (data.name) { fields.push(`name = $${i++}`); params.push(data.name); }
+    if (data.exam_type) { fields.push(`exam_type = $${i++}`); params.push(data.exam_type); }
+    if (data.config) { fields.push(`config = $${i++}`); params.push(data.config); }
+
+    fields.push(`updated_at = NOW()`);
+    params.push(id);
+
+    const { rows } = await db.query(
+        `UPDATE assessment_templates SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
+        params
+    );
+    return rows[0];
+}
+
+export async function deleteAssessmentTemplate(id: string): Promise<void> {
+    await db.query('DELETE FROM assessment_templates WHERE id = $1', [id]);
 }

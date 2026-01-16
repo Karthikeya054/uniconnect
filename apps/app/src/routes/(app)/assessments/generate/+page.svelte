@@ -39,6 +39,8 @@
 
     // Dynamic Data
     let unitsWithTopics = $state<any[]>([]);
+    let courseOutcomes = $state<any[]>([]);
+    let availableTemplates = $state<any[]>([]);
     let isLoadingTopics = $state(false);
 
     function initializeStructure() {
@@ -66,7 +68,8 @@
                 marks: marksA, 
                 unit: 'Auto', 
                 qType: typeA,
-                hasSubQuestions: false, 
+                hasSubQuestions: false,
+                bloom: 'ANY',
                 marks_a: Number((marksA/2).toFixed(1)), 
                 marks_b: Number((marksA/2).toFixed(1)) 
             });
@@ -93,8 +96,8 @@
                 type: 'OR_GROUP',
                 marks: marksB,
                 choices: [
-                    { label: `${qNum}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: marksB, marks_a: Number((marksB/2).toFixed(1)), marks_b: Number((marksB/2).toFixed(1)) },
-                    { label: `${qNum+1}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: marksB, marks_a: Number((marksB/2).toFixed(1)), marks_b: Number((marksB/2).toFixed(1)) }
+                    { label: `${qNum}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: marksB, bloom: 'ANY', marks_a: Number((marksB/2).toFixed(1)), marks_b: Number((marksB/2).toFixed(1)) },
+                    { label: `${qNum+1}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: marksB, bloom: 'ANY', marks_a: Number((marksB/2).toFixed(1)), marks_b: Number((marksB/2).toFixed(1)) }
                 ]
             });
         }
@@ -115,8 +118,8 @@
                 type: 'OR_GROUP',
                 marks: 16,
                 choices: [
-                    { label: `${startC}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: 16, marks_a: 8, marks_b: 8 },
-                    { label: `${startC+1}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: 16, marks_a: 8, marks_b: 8 }
+                    { label: `${startC}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: 16, bloom: 'ANY', marks_a: 8, marks_b: 8 },
+                    { label: `${startC+1}`, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: 16, bloom: 'ANY', marks_a: 8, marks_b: 8 }
                 ]
             });
             structure.push(partC);
@@ -192,8 +195,13 @@
         if (!selectedSubjectId) return;
         isLoadingTopics = true;
         try {
-            const res = await fetch(`/api/assessments/topics?subjectId=${selectedSubjectId}`);
-            if (res.ok) unitsWithTopics = await res.json();
+            const [topicsRes, coRes] = await Promise.all([
+                fetch(`/api/assessments/topics?subjectId=${selectedSubjectId}`),
+                fetch(`/api/assessments/course-outcomes?subjectId=${selectedSubjectId}`)
+            ]);
+            
+            if (topicsRes.ok) unitsWithTopics = await topicsRes.json();
+            if (coRes.ok) courseOutcomes = await coRes.json();
         } finally {
             isLoadingTopics = false;
         }
@@ -248,6 +256,44 @@
         }
     }
 
+    async function saveAsTemplate() {
+        const templateName = prompt('Enter a name for this template:', `${selectedExamType} Format - ${maxMarks}M`);
+        if (!templateName) return;
+
+        const res = await fetch('/api/assessments/templates', {
+            method: 'POST',
+            body: JSON.stringify({
+                university_id: selectedUniversityId,
+                name: templateName,
+                exam_type: selectedExamType,
+                config: paperStructure
+            }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+            alert('Template saved successfully!');
+            fetchTemplates(); // Refresh list
+        } else {
+            alert('Failed to save template');
+        }
+    }
+
+    async function fetchTemplates() {
+        if (!selectedUniversityId) return;
+        const res = await fetch(`/api/assessments/templates?universityId=${selectedUniversityId}`);
+        if (res.ok) availableTemplates = await res.json();
+    }
+
+    function applyTemplate(templateId: string) {
+        const template = availableTemplates.find(t => t.id === templateId);
+        if (template && template.config) {
+            paperStructure = JSON.parse(JSON.stringify(template.config));
+            selectedExamType = template.exam_type;
+            refreshLabels();
+        }
+    }
+
     function refreshLabels() {
         let currentNum = 1;
         paperStructure.forEach((section: any) => {
@@ -279,6 +325,7 @@
             marks: section.marks_per_q,
             unit: 'Auto',
             qType: 'NORMAL',
+            bloom: 'ANY',
             hasSubQuestions: false,
             marks_a: Number((section.marks_per_q/2).toFixed(1)),
             marks_b: Number((section.marks_per_q/2).toFixed(1))
@@ -294,8 +341,8 @@
             type: 'OR_GROUP',
             marks: section.marks_per_q,
             choices: [
-                { label: ``, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: section.marks_per_q, marks_a: Number((section.marks_per_q/2).toFixed(1)), marks_b: Number((section.marks_per_q/2).toFixed(1)) },
-                { label: ``, unit: 'Auto', qType: 'NORMAL', hasSubQuestions: false, marks: section.marks_per_q, marks_a: Number((section.marks_per_q/2).toFixed(1)), marks_b: Number((section.marks_per_q/2).toFixed(1)) }
+                { label: ``, unit: 'Auto', qType: 'NORMAL', bloom: 'ANY', hasSubQuestions: false, marks: section.marks_per_q, marks_a: Number((section.marks_per_q/2).toFixed(1)), marks_b: Number((section.marks_per_q/2).toFixed(1)) },
+                { label: ``, unit: 'Auto', qType: 'NORMAL', bloom: 'ANY', hasSubQuestions: false, marks: section.marks_per_q, marks_a: Number((section.marks_per_q/2).toFixed(1)), marks_b: Number((section.marks_per_q/2).toFixed(1)) }
             ]
         });
         refreshLabels();
@@ -335,6 +382,14 @@
     $effect(() => {
         if (data.selectedBranchId && !selectedBranchId) {
             selectedBranchId = data.selectedBranchId;
+        }
+    });
+
+    $effect(() => {
+        if (selectedUniversityId) {
+            // Assuming fetchBatches() is defined elsewhere or will be added.
+            // For this specific change, we only focus on fetchTemplates.
+            fetchTemplates();
         }
     });
 
@@ -657,6 +712,18 @@
                                             >+ OR Pair</button>
                                         </div>
                                     </div>
+
+                                    {#if generationMode === 'Modifiable'}
+                                        <div class="flex justify-end mb-2 pr-2">
+                                            <button 
+                                                onclick={saveAsTemplate}
+                                                class="px-4 py-1.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-md flex items-center gap-2"
+                                            >
+                                                <svg class="w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                                Save Format as Repository Template
+                                            </button>
+                                        </div>
+                                    {/if}
                                 </div>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -698,6 +765,32 @@
                                                             <option value="SHORT">Short</option>
                                                             <option value="LONG">Long</option>
                                                             <option value="MCQ">MCQ</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="space-y-2">
+                                                        <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Bloom's Level</div>
+                                                        <div class="flex gap-1">
+                                                            {#each ['ANY', 'L1', 'L2', 'L3'] as level}
+                                                                <button 
+                                                                    onclick={() => slot.bloom = level}
+                                                                    class="flex-1 py-1.5 rounded-lg text-[10px] font-black border transition-all
+                                                                    {slot.bloom === level ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-400 border-gray-100'}"
+                                                                >{level}</button>
+                                                            {/each}
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="space-y-2">
+                                                        <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Course Outcome</div>
+                                                        <select 
+                                                            bind:value={slot.co_id}
+                                                            class="w-full bg-white border border-gray-100 rounded-xl p-2 text-[10px] font-black text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                        >
+                                                            <option value={null}>Any CO</option>
+                                                            {#each courseOutcomes as co}
+                                                                <option value={co.id}>{co.code}</option>
+                                                            {/each}
                                                         </select>
                                                     </div>
 
@@ -803,6 +896,30 @@
                                                                     </select>
                                                                 </div>
                                                                 <div class="space-y-2">
+                                                                    <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Bloom's Level</div>
+                                                                    <div class="flex gap-1">
+                                                                        {#each ['ANY', 'L1', 'L2', 'L3'] as level}
+                                                                            <button 
+                                                                                onclick={() => choice.bloom = level}
+                                                                                class="flex-1 py-1 px-1 rounded-lg text-[9px] font-black border transition-all
+                                                                                {choice.bloom === level ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-400 border-gray-100'}"
+                                                                            >{level}</button>
+                                                                        {/each}
+                                                                    </div>
+                                                                </div>
+                                                                <div class="space-y-2">
+                                                                    <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">CO</div>
+                                                                    <select 
+                                                                        bind:value={choice.co_id}
+                                                                        class="w-full bg-white border border-gray-100 rounded-lg p-1.5 text-[9px] font-black text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                                                                    >
+                                                                        <option value={null}>Any</option>
+                                                                        {#each courseOutcomes as co}
+                                                                            <option value={co.id}>{co.code}</option>
+                                                                        {/each}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="space-y-2">
                                                                     <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Unit</div>
                                                                     <div class="grid grid-cols-3 gap-1">
                                                                         <button 
@@ -869,6 +986,19 @@
                     </div>
 
                     <div class="space-y-4">
+                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Load Saved Format</h4>
+                        <select 
+                            onchange={(e: any) => applyTemplate(e.target.value)}
+                            class="w-full bg-white border-2 border-indigo-100/50 rounded-2xl p-4 text-xs font-black focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                        >
+                            <option value="">-- Select a Format --</option>
+                            {#each availableTemplates as template}
+                                <option value={template.id}>{template.name} ({template.exam_type})</option>
+                            {/each}
+                        </select>
+                    </div>
+
+                    <div class="space-y-4">
                         <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Assessment Type</h4>
                         <div class="grid grid-cols-2 gap-3">
                             {#each ['MID1', 'MID2', 'SEM', 'INTERNAL_LAB', 'EXTERNAL_LAB'] as type}
@@ -902,6 +1032,7 @@
                                     subject_name: activeSubject?.name
                                 }}
                                 {paperStructure}
+                                {courseOutcomes}
                                 mode="preview"
                             />
                         </div>

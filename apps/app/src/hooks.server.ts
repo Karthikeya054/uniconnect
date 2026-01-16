@@ -17,7 +17,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                 // Handle active university selection
                 const activeUnivId = event.cookies.get('active_university_id');
                 if (activeUnivId) {
-                    const hasAccess = user.universities.some(u => u.id === activeUnivId);
+                    const hasAccess = user.universities?.some(u => u.id === activeUnivId);
                     if (hasAccess || user.role === 'ADMIN' || user.role === 'PROGRAM_OPS') {
                         // If 'ALL' is selected, we set university_id to null to indicate global context
                         user.university_id = activeUnivId === 'ALL' ? null : activeUnivId;

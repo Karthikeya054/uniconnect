@@ -104,22 +104,33 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const globalUsageCount: Record<string, number> = {};
 
         // Helper to pick a single question with preference
-        function pickOne(marks: number, unitId: string, excludeInSet: Set<string>, qType?: string) {
+        function pickOne(marks: number, unitId: string, excludeInSet: Set<string>, qType?: string, bloom?: string, co_id?: string) {
             let pool = (poolByUnitAndMarks[unitId]?.[marks] || [])
                 .filter(q => !excludeInSet.has(q.id));
 
-            // STRICT filtering: If a type is specified (MCQ or NORMAL), we MUST respect it if possible.
-            // We should only fall back to 'ANY' if the user explicitly set qType to 'ANY'.
+            // 1. FILTER BY TYPE (MCQ or NORMAL)
             if (qType && qType !== 'ANY') {
                 const typeFiltered = pool.filter(q => q.type === qType);
                 if (typeFiltered.length > 0) pool = typeFiltered;
-                else if (qType === 'NORMAL') {
-                    // If looking for a 5/16 mark NORMAL question and none found, 
-                    // DON'T pick an MCQ. An MCQ in a 5/16 mark slot is obviously wrong.
+                else if (qType === 'NORMAL' && marks >= 5) {
+                    // Don't pick MCQ for high mark slots
                     pool = [];
                 }
             }
 
+            // 2. FILTER BY BLOOM LEVEL
+            if (bloom && bloom !== 'ANY' && pool.length > 0) {
+                const bloomFiltered = pool.filter(q => q.bloom_level === bloom);
+                if (bloomFiltered.length > 0) pool = bloomFiltered;
+            }
+
+            // 3. FILTER BY CO_ID
+            if (co_id && pool.length > 0) {
+                const coFiltered = pool.filter(q => q.co_id === co_id);
+                if (coFiltered.length > 0) pool = coFiltered;
+            }
+
+            // Sort by usage count to avoid duplicates across sets if possible
             pool = pool.sort((a, b) => (globalUsageCount[a.id] || 0) - (globalUsageCount[b.id] || 0) || Math.random() - 0.5);
 
             if (pool.length > 0) {
@@ -136,7 +147,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             if (qType && qType !== 'ANY') {
                 const typeFiltered = fallbackPool.filter((q: any) => q.type === qType);
                 if (typeFiltered.length > 0) fallbackPool = typeFiltered;
-                else if (qType === 'NORMAL') fallbackPool = [];
+                else if (qType === 'NORMAL' && marks >= 5) fallbackPool = [];
+            }
+
+            // Even in fallback, try to respect bloom/co if possible
+            if (bloom && bloom !== 'ANY' && fallbackPool.length > 0) {
+                const bloomFiltered = fallbackPool.filter((q: any) => q.bloom_level === bloom);
+                if (bloomFiltered.length > 0) fallbackPool = bloomFiltered;
+            }
+            if (co_id && fallbackPool.length > 0) {
+                const coFiltered = fallbackPool.filter((q: any) => q.co_id === co_id);
+                if (coFiltered.length > 0) fallbackPool = coFiltered;
             }
 
             fallbackPool = fallbackPool.sort((a: any, b: any) => {
@@ -157,15 +178,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         }
 
         // Helper to pick questions for a choice (can be sub-questions)
-        function pickQuestionsForChoice(marks: number, unitId: string, hasSubGroups: boolean, excludeInSet: Set<string>, manualMarks?: number[], qType?: string) {
+        function pickQuestionsForChoice(marks: number, unitId: string, hasSubGroups: boolean, excludeInSet: Set<string>, manualMarks?: number[], qType?: string, bloom?: string, co_id?: string) {
             if (!hasSubGroups) {
-                const q = pickOne(marks, unitId, excludeInSet, qType);
+                const q = pickOne(marks, unitId, excludeInSet, qType, bloom, co_id);
                 return q ? [q] : [];
             } else {
                 const splitMarks = manualMarks || [Number((marks / 2).toFixed(1)), Number((marks / 2).toFixed(1))];
                 const picked: any[] = [];
                 splitMarks.forEach((m, idx) => {
-                    const q = pickOne(m, unitId, excludeInSet, qType);
+                    const q = pickOne(m, unitId, excludeInSet, qType, bloom, co_id);
                     if (q) picked.push({ ...q, sub_label: `(${String.fromCharCode(idx + 97)})` }); // (a), (b)
                 });
                 return picked;
@@ -187,7 +208,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     }
 
                     const manualMarks = slot.hasSubQuestions ? [slot.marks_a, slot.marks_b] : undefined;
-                    const questions = pickQuestionsForChoice(slot.marks, unitId, slot.hasSubQuestions, excludeInSet, manualMarks, slot.qType);
+                    const questions = pickQuestionsForChoice(slot.marks, unitId, slot.hasSubQuestions, excludeInSet, manualMarks, slot.qType, slot.bloom, slot.co_id);
 
                     setQuestions.push({
                         type: 'SINGLE',
@@ -223,8 +244,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     const m1 = c1.hasSubQuestions ? [c1.marks_a, c1.marks_b] : undefined;
                     const m2 = c2.hasSubQuestions ? [c2.marks_a, c2.marks_b] : undefined;
 
-                    const questions1 = pickQuestionsForChoice(c1.marks, u1, c1.hasSubQuestions, excludeInSet, m1, c1.qType);
-                    const questions2 = pickQuestionsForChoice(c2.marks, u2, c2.hasSubQuestions, excludeInSet, m2, c2.qType);
+                    const questions1 = pickQuestionsForChoice(c1.marks, u1, c1.hasSubQuestions, excludeInSet, m1, c1.qType, c1.bloom, c1.co_id);
+                    const questions2 = pickQuestionsForChoice(c2.marks, u2, c2.hasSubQuestions, excludeInSet, m2, c2.qType, c2.bloom, c2.co_id);
 
                     setQuestions.push({
                         type: 'OR_GROUP',

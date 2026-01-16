@@ -118,7 +118,7 @@ export async function getTaskStats(universityId?: string) {
 
 export async function getDayPlanReport(date: string, universityId?: string) {
     // ... same code ...
-    const whereTasks = universityId ? `AND university_id = $2` : ``;
+    const whereTasks = universityId ? `AND t.university_id = $2` : ``;
     const whereCampaigns = universityId ? `AND university_id = $2` : ``;
     const params = universityId ? [date, universityId] : [date];
 
