@@ -165,7 +165,7 @@
     <div id="paper-content" class="bg-white rounded-[1rem] shadow-2xl overflow-hidden print:shadow-none print:m-0 print:p-0">
         <CrescentTemplate 
             bind:paperMeta 
-            currentSetData={currentSetData} 
+            bind:currentSetData={editableSets[activeSet]} 
             activeSet={activeSet}
             courseOutcomes={data.courseOutcomes}
             questionPool={data.questionPool}

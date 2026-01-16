@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { dndzone } from "svelte-dnd-action";
+    import { flip } from "svelte/animate";
+    import { fade, fly } from "svelte/transition";
     let { 
         paperMeta = $bindable({
             paper_date: '',
@@ -10,19 +13,22 @@
             semester: '1',
             instructions: 'ANSWER ALL QUESTIONS'
         }),
-        currentSetData = { questions: [] as any[] },
-        paperStructure = [] as any[],
+        currentSetData = $bindable({ questions: [] }),
+        paperStructure = [],
         activeSet = 'A',
         courseOutcomes = [],
-        questionPool = [] as any[],
-        mode = 'view' // 'view', 'edit', 'preview'
+        questionPool = [],
+        mode = 'view' 
     } = $props();
 
-    function replaceQuestion(index: number, part: 'A' | 'B' | 'C', subPart?: 'q1' | 'q2') {
+    // Sidebar state
+    let isSwapSidebarOpen = $state(false);
+    let swapContext = $state<any>(null);
+
+    function openSwapSidebar(index: number, part: 'A' | 'B' | 'C', subPart?: 'q1' | 'q2') {
         const slot = currentSetData.questions[index];
         if (!slot) return;
 
-        // Determine which specific question object we are replacing
         let currentQ: any = null;
         if (slot.type === 'SINGLE') {
             currentQ = slot.questions?.[0];
@@ -31,35 +37,71 @@
         }
 
         const marks = currentQ?.marks || slot.marks || (part === 'A' ? 2 : 16);
-        
-        // Find other questions with same marks
         const alternates = questionPool.filter(q => q.marks === marks && q.id !== currentQ?.id);
-        if (alternates.length === 0) return alert('No other questions found in the pool for this mark.');
-        
-        const randomQ = alternates[Math.floor(Math.random() * alternates.length)];
-        
+
+        swapContext = {
+            slotIndex: index,
+            part,
+            subPart,
+            currentMark: marks,
+            alternates
+        };
+        isSwapSidebarOpen = true;
+    }
+
+    function selectAlternate(question: any) {
+        if (!swapContext) return;
+        const { slotIndex, subPart } = swapContext;
+        const slot = currentSetData.questions[slotIndex];
+
         const newQData = {
-            id: randomQ.id,
-            text: randomQ.question_text,
-            marks: randomQ.marks,
-            type: randomQ.type,
-            options: randomQ.options,
-            co_id: randomQ.co_id,
-            bloom: randomQ.bloom_level
+            id: question.id,
+            text: question.question_text,
+            marks: question.marks,
+            type: question.type,
+            options: question.options,
+            co_id: question.co_id,
+            bloom: question.bloom_level
         };
 
         if (slot.type === 'SINGLE') {
             slot.questions = [newQData];
-            // Backward compatibility
-            slot.text = randomQ.question_text;
-            slot.id = randomQ.id;
+            slot.text = question.question_text;
+            slot.id = question.id;
         } else if (slot.type === 'OR_GROUP') {
             if (subPart === 'q1') slot.choice1.questions = [newQData];
             else slot.choice2.questions = [newQData];
         }
-        
-        // Trigger reactivity
+
         currentSetData.questions = [...currentSetData.questions];
+        isSwapSidebarOpen = false;
+    }
+
+    // DND Handlers
+    const dndFlipDurationMs = 300;
+
+    function handleDndConsider(e: any, part: 'A' | 'B' | 'C') {
+        const { items } = e.detail;
+        if (part === 'A') {
+            const others = currentSetData.questions.filter((s: any) => !isPartASlot(s));
+            currentSetData.questions = [...items, ...others];
+        } else if (part === 'B') {
+            currentSetData.questions = [...partASlots, ...items, ...slotsC];
+        } else if (part === 'C') {
+            currentSetData.questions = [...partASlots, ...slotsB, ...items];
+        }
+    }
+
+    function handleDndFinalize(e: any, part: 'A' | 'B' | 'C') {
+        const { items } = e.detail;
+        if (part === 'A') {
+            const others = currentSetData.questions.filter((s: any) => !isPartASlot(s));
+            currentSetData.questions = [...items, ...others];
+        } else if (part === 'B') {
+            currentSetData.questions = [...partASlots, ...items, ...slotsC];
+        } else if (part === 'C') {
+            currentSetData.questions = [...partASlots, ...slotsB, ...items];
+        }
     }
 
     function addQuestion(part: 'A' | 'B' | 'C') {
@@ -263,12 +305,24 @@
             {paperStructure[0]?.title || 'PART A'} 
             ({partACount} X {paperStructure[0]?.marks_per_q || (is100m ? 2 : 2)} = {partACount * (paperStructure[0]?.marks_per_q || 2)} MARKS)
         </div>
-        <div class="w-full border border-black divide-y divide-black">
+        <div 
+            class="w-full border border-black divide-y divide-black"
+            use:dndzone={{items: questionsA, flipDurationMs: dndFlipDurationMs, dragDisabled: !isEditable}}
+            onconsider={(e) => handleDndConsider(e, 'A')}
+            onfinalize={(e) => handleDndFinalize(e, 'A')}
+        >
             {#if questionsA.length > 0}
-                {#each questionsA as slot, i}
+                {#each questionsA as slot, i (slot.id)}
+                    <div animate:flip={{duration: dndFlipDurationMs}}>
                     {#if slot.type === 'SINGLE'}
                         {#each slot.questions || [] as q}
-                            <div class="flex min-h-[40px] page-break-avoid">
+                            <div class="flex min-h-[40px] page-break-avoid relative group">
+                                {#if isEditable}
+                                    <div class="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden cursor-grab active:cursor-grabbing">
+                                        <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h2v2H7v-2zm0 4h2v2H7v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/></svg>
+                                    </div>
+                                {/if}
+
                                 <div class="w-10 border-r border-black p-2 text-center text-[10px] font-bold">
                                     {i + 1}.
                                 </div>
@@ -290,11 +344,11 @@
 
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => replaceQuestion(currentSetData.questions.indexOf(slot), 'A')}
-                                            class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
-                                            title="Replace Question"
+                                            onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'A')}
+                                            class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest flex items-center gap-1"
                                         >
                                             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            SWAP
                                         </button>
                                     {/if}
                                 </div>
@@ -310,6 +364,7 @@
                              <div class="text-[10px] font-bold text-center">Slot {i+1} (OR Question Support)</div>
                         </div>
                     {/if}
+                    </div>
                 {/each}
             {:else}
                 {#each Array(Number(paperMeta.max_marks) === 50 ? 5 : 10) as _, i}
@@ -332,10 +387,22 @@
             {paperStructure[1]?.title || 'PART B'} 
             ({partBCount} X {paperStructure[1]?.marks_per_q || 5} = {partBCount * (paperStructure[1]?.marks_per_q || 5)} MARKS)
         </div>
-        <div class="space-y-6">
-                {#each questionsB as slot, idx}
+        <div 
+            class="space-y-6"
+            use:dndzone={{items: questionsB, flipDurationMs: dndFlipDurationMs, dragDisabled: !isEditable}}
+            onconsider={(e) => handleDndConsider(e, 'B')}
+            onfinalize={(e) => handleDndFinalize(e, 'B')}
+        >
+            {#if questionsB.length > 0}
+                {#each questionsB as slot, idx (slot.id)}
+                    <div animate:flip={{duration: dndFlipDurationMs}}>
                     {#if slot.type === 'OR_GROUP'}
-                        <div class="border-2 border-black page-break-avoid mb-6">
+                        <div class="border-2 border-black page-break-avoid mb-6 relative group">
+                            {#if isEditable}
+                                <div class="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden cursor-grab active:cursor-grabbing">
+                                    <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h2v2H7v-2zm0 4h2v2H7v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/></svg>
+                                </div>
+                            {/if}
                             <!-- Choice 1 -->
                             {#each slot.choice1.questions as q, subIdx}
                                 <div class="flex border-b border-black last:border-b-0 min-h-[50px]">
@@ -356,16 +423,15 @@
                                             </div>
                                         {/if}
                                     </div>
-                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group relative">
+                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
                                         <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
                                         <span class="text-[10px] font-black">({q.marks})</span>
                                         {#if isEditable}
                                             <button 
-                                                onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'B', 'q1')}
-                                                class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
-                                                title="Replace Question"
+                                                onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'B', 'q1')}
+                                                class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest"
                                             >
-                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                SWAP
                                             </button>
                                         {/if}
                                     </div>
@@ -397,16 +463,15 @@
                                             </div>
                                         {/if}
                                     </div>
-                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group relative">
+                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
                                         <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
                                         <span class="text-[10px] font-black">({q.marks})</span>
                                         {#if isEditable}
                                             <button 
-                                                onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'B', 'q2')}
-                                                class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
-                                                title="Replace Question"
+                                                onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'B', 'q2')}
+                                                class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest"
                                             >
-                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                SWAP
                                             </button>
                                         {/if}
                                     </div>
@@ -414,46 +479,52 @@
                             {/each}
                         </div>
                     {:else}
-                    <!-- SINGLE in Part B -->
-                    <div class="border-2 border-black page-break-avoid mb-6">
-                        {#each slot.questions || [] as q}
-                            <div class="flex min-h-[50px]">
-                                <div class="w-12 border-r border-black p-2 text-center text-[11px] font-black">
-                                    {slot.n1 + '.'}
+                        <!-- SINGLE in Part B -->
+                        <div class="border-2 border-black page-break-avoid mb-6 relative group">
+                            {#if isEditable}
+                                <div class="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden cursor-grab active:cursor-grabbing">
+                                    <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h2v2H7v-2zm0 4h2v2H7v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/></svg>
                                 </div>
-                                <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
-                                    <div contenteditable="true" bind:innerHTML={q.text} class="flex-1 {isEditable ? '' : 'pointer-events-none'}"></div>
-                                    
-                                    {#if q.options && q.options.length > 0}
-                                        <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
-                                            {#each q.options as opt}
-                                                <div class="text-[10px] font-medium leading-tight">{opt}</div>
-                                            {/each}
-                                        </div>
-                                    {/if}
+                            {/if}
+                            {#each slot.questions || [] as q}
+                                <div class="flex min-h-[50px]">
+                                    <div class="w-12 border-r border-black p-2 text-center text-[11px] font-black">
+                                        {slot.n1 + '.'}
+                                    </div>
+                                    <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
+                                        <div contenteditable="true" bind:innerHTML={q.text} class="flex-1 {isEditable ? '' : 'pointer-events-none'}"></div>
+                                        
+                                        {#if q.options && q.options.length > 0}
+                                            <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
+                                                {#each q.options as opt}
+                                                    <div class="text-[10px] font-medium leading-tight">{opt}</div>
+                                                {/each}
+                                            </div>
+                                        {/if}
+                                    </div>
+                                    <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
+                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                        <span class="text-[10px] font-black">({q.marks})</span>
+                                        {#if isEditable}
+                                            <button 
+                                                onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'B')}
+                                                class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest"
+                                            >
+                                                SWAP
+                                            </button>
+                                        {/if}
+                                    </div>
                                 </div>
-                                <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group relative">
-                                    <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
-                                    <span class="text-[10px] font-black">({q.marks})</span>
-                                    {#if isEditable}
-                                        <button 
-                                            onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.questions?.[0]?.id === slot.questions?.[0]?.id), 'B')}
-                                            class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
-                                            title="Replace Question"
-                                        >
-                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                        </button>
-                                    {/if}
-                                </div>
-                            </div>
-                        {/each}
+                            {/each}
+                        </div>
+                    {/if}
                     </div>
-                {/if}
+                {/each}
             {:else}
                 <div class="border border-dashed border-gray-200 p-10 text-center text-[10px] text-gray-300 italic">
                     Part B Questions will appear here
                 </div>
-            {/each}
+            {/if}
         </div>
     </div>
 
@@ -469,9 +540,20 @@
                     PART C (1 X 16 = 16 MARKS)
                 {/if}
             </div>
-            <div class="space-y-6">
-                {#each questionsC as slot, idx}
-                    <div class="border-2 border-black page-break-avoid">
+        <div 
+            class="space-y-6"
+            use:dndzone={{items: questionsC, flipDurationMs: dndFlipDurationMs, dragDisabled: !isEditable}}
+            onconsider={(e) => handleDndConsider(e, 'C')}
+            onfinalize={(e) => handleDndFinalize(e, 'C')}
+        >
+                {#each questionsC as slot, idx (slot.id)}
+                    <div animate:flip={{duration: dndFlipDurationMs}}>
+                    <div class="border-2 border-black page-break-avoid relative group">
+                        {#if isEditable}
+                                <div class="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden cursor-grab active:cursor-grabbing">
+                                    <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h2v2H7v-2zm0 4h2v2H7v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/></svg>
+                                </div>
+                        {/if}
                         <!-- Choice 1 -->
                         {#each slot.choice1.questions as q, subIdx}
                             <div class="flex border-b border-black last:border-b-0 min-h-[50px]">
@@ -492,16 +574,15 @@
                                         </div>
                                     {/if}
                                 </div>
-                                <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group relative">
+                                <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
                                     <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
                                     <span class="text-[10px] font-black">({q.marks})</span>
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'C', 'q1')}
-                                            class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
-                                            title="Replace Question"
+                                            onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'C', 'q1')}
+                                            class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black"
                                         >
-                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            SWAP
                                         </button>
                                     {/if}
                                 </div>
@@ -533,21 +614,21 @@
                                         </div>
                                     {/if}
                                 </div>
-                                <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group relative">
+                                <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/btn relative">
                                     <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
                                     <span class="text-[10px] font-black">({q.marks})</span>
                                     {#if isEditable}
                                         <button 
-                                            onclick={() => replaceQuestion(currentSetData.questions.findIndex((s: any) => s.choice1?.questions?.[0]?.id === slot.choice1?.questions?.[0]?.id), 'C', 'q2')}
-                                            class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white p-1 rounded-full shadow-lg transition-all z-20 print:hidden"
-                                            title="Replace Question"
+                                            onclick={() => openSwapSidebar(currentSetData.questions.indexOf(slot), 'C', 'q2')}
+                                            class="absolute -right-2 top-0 opacity-0 group-hover/btn:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black"
                                         >
-                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            SWAP
                                         </button>
                                     {/if}
                                 </div>
                             </div>
                         {/each}
+                    </div>
                     </div>
                 {/each}
             </div>
@@ -564,6 +645,85 @@
         </div>
     </div>
 </div>
+
+{#if isSwapSidebarOpen && swapContext}
+    <div 
+        class="fixed inset-0 z-[100] flex justify-end"
+        transition:fade={{duration: 200}}
+    >
+        <!-- Overlay -->
+        <button 
+            class="absolute inset-0 bg-black/40 backdrop-blur-sm w-full h-full border-none cursor-default"
+            onclick={() => isSwapSidebarOpen = false}
+            aria-label="Close Sidebar"
+        ></button>
+
+        <!-- Sidebar -->
+        <div 
+            class="relative w-[400px] bg-white h-full shadow-2xl flex flex-col"
+            transition:fly={{x: 400, duration: 300}}
+        >
+            <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div>
+                    <h2 class="text-lg font-black text-gray-900 tracking-tight">SWAP QUESTION</h2>
+                    <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mt-1">
+                        Displaying {swapContext.currentMark} Mark Alternates
+                    </p>
+                </div>
+                <button 
+                    onclick={() => isSwapSidebarOpen = false}
+                    class="p-2 hover:bg-white rounded-full transition-colors shadow-sm"
+                >
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/30">
+                {#if swapContext.alternates.length === 0}
+                    <div class="flex flex-col items-center justify-center h-64 text-gray-400 text-center space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <p class="text-xs font-bold uppercase tracking-widest leading-loose">
+                            No alternative questions found<br/>in the question bank for {swapContext.currentMark} marks.
+                        </p>
+                    </div>
+                {:else}
+                    {#each swapContext.alternates as q}
+                        <button 
+                            onclick={() => selectAlternate(q)}
+                            class="w-full text-left bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all group relative overflow-hidden"
+                        >
+                            <!-- Selection Overlay -->
+                            <div class="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/[0.02] transition-colors"></div>
+                            
+                            <div class="flex justify-between items-start gap-4 mb-3">
+                                <span class="px-2 py-0.5 bg-gray-900 text-white text-[9px] font-black rounded-md uppercase tracking-tighter italic">
+                                    {q.bloom_level}
+                                </span>
+                                <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">
+                                    {getCOCode(q.co_id) || 'General'}
+                                </span>
+                            </div>
+
+                            <p class="text-xs leading-relaxed text-gray-800 font-medium">
+                                {q.question_text}
+                            </p>
+
+                            <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                                <span class="text-[10px] text-gray-400 font-black uppercase tracking-tighter">{q.marks} Marks</span>
+                                <span class="opacity-0 group-hover:opacity-100 text-indigo-600 text-[10px] font-black uppercase tracking-widest transition-opacity flex items-center gap-1">
+                                    Select This
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                </span>
+                            </div>
+                        </button>
+                    {/each}
+                {/if}
+            </div>
+        </div>
+    </div>
+{/if}
 
 <style>
     .paper-container {
@@ -602,5 +762,10 @@
 
     :global(.tracking-widest) {
         letter-spacing: 0.15em;
+    }
+
+    /* Transition backdrop */
+    :global(.fixed) {
+        transition: all 0.3s ease;
     }
 </style>
