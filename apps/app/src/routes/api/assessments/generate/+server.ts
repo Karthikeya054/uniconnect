@@ -37,7 +37,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         // Group pool for balanced picking
         const poolByUnitAndMarks: Record<string, Record<number, any[]>> = {};
-        unit_ids.forEach((uid: string) => { poolByUnitAndMarks[uid] = {}; });
+
+        // Ensure all unique unit IDs in allQuestions are initialized in the pool
+        const allPossibleUnitIds = new Set([...unit_ids, ...allQuestions.map(q => q.unit_id as string)]);
+        allPossibleUnitIds.forEach(uid => {
+            if (uid) poolByUnitAndMarks[uid] = {};
+        });
 
         allQuestions.forEach(q => {
             const uid = q.unit_id as string;

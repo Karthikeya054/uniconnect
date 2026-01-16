@@ -264,59 +264,49 @@
 
     const isEditable = $derived(mode === 'edit');
 
-    // Robust partitioning based on marks
-    const getPartForSlot = (slot: any) => {
-        if (!slot) return 'B';
-        // Check slot questions first, then fallback to top-level marks if it's a raw question
-        const marks = Number(slot.questions?.[0]?.marks || slot.marks || 0);
-        
-        if (marks === 1 || marks === 2) return 'A';
-        
-        // For 100m, the last question is Part C
-        const all = safeQuestions;
-        if (Number(paperMeta.max_marks) === 100) {
-            const nonA = all.filter((s: any) => {
-                const m = Number(s.questions?.[0]?.marks || s.marks || 0);
-                return m > 2;
-            });
-            // If this is the last question in the entire set, and it's not Part A, it's Part C
-            if (nonA.length > 0 && slot.id === nonA[nonA.length - 1].id) return 'C';
-        }
-        return 'B';
-    };
+    // Partition using slicing based on counts from paperStructure
+    let questionsA = $derived.by(() => {
+        const count = paperStructure[0]?.count || 10;
+        return safeQuestions.slice(0, count).map((s: any, idx: number) => ({ ...s, n1: idx + 1 }));
+    });
 
-    let questionsA = $derived(safeQuestions.filter((s: any) => getPartForSlot(s) === 'A'));
     let questionsB = $derived.by(() => {
-        const slots = safeQuestions.filter((s: any) => getPartForSlot(s) === 'B');
-        let current = questionsA.length + 1;
+        const start = paperStructure[0]?.count || 10;
+        const count = paperStructure[1]?.count || 5;
+        const slots = safeQuestions.slice(start, start + count);
+        
+        let currentNum = questionsA.length + 1;
         return slots.map((s: any) => {
             if (s.type === 'OR_GROUP') {
-                const n1 = current++;
-                const n2 = current++;
+                const n1 = currentNum++;
+                const n2 = currentNum++;
                 return { ...s, n1, n2 };
             } else {
-                const n1 = current++;
+                const n1 = currentNum++;
                 return { ...s, n1 };
             }
         });
     });
+
     let questionsC = $derived.by(() => {
-        const slots = safeQuestions.filter((s: any) => getPartForSlot(s) === 'C');
-        let current = questionsA.length + (questionsB.length * 2) + 1; // Approximate but safer
-        // Recalculate correctly
-        current = questionsA.length + 1;
+        const start = (paperStructure[0]?.count || 10) + (paperStructure[1]?.count || 5);
+        const count = paperStructure[2]?.count || 1;
+        const slots = safeQuestions.slice(start, start + count);
+        
+        // Calculate starting number for Part C
+        let currentNum = questionsA.length + 1;
         questionsB.forEach((s: any) => {
-            if (s.type === 'OR_GROUP') current += 2;
-            else current += 1;
+            if (s.type === 'OR_GROUP') currentNum += 2;
+            else currentNum += 1;
         });
 
         return slots.map((s: any) => {
             if (s.type === 'OR_GROUP') {
-                const n1 = current++;
-                const n2 = current++;
+                const n1 = currentNum++;
+                const n2 = currentNum++;
                 return { ...s, n1, n2 };
             } else {
-                const n1 = current++;
+                const n1 = currentNum++;
                 return { ...s, n1 };
             }
         });
