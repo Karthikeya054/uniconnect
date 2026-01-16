@@ -130,6 +130,10 @@
         const content = document.getElementById('paper-content')?.innerHTML;
         if (!content) return;
 
+        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+            .map(el => el.outerHTML)
+            .join('\n');
+
         const printWindow = window.open('', '_blank', 'width=1100,height=900');
         if (!printWindow) {
             alert('Please allow popups to print the paper');
@@ -140,19 +144,18 @@
             <html>
                 <head>
                     <title>Assessment Paper</title>
-                    <link rel="stylesheet" href="/global.css">
+                    ${styles}
                     <style>
                         @media print {
                             @page { size: A4; margin: 0; }
-                            body { margin: 0; padding: 0; background: white; font-family: 'Times New Roman', serif; }
-                            .paper-container { width: 210mm !important; margin: 0 auto !important; padding: 15mm !important; }
-                            .no-print, nav, header, sidebar, .print\\:hidden { display: none !important; }
+                            body { margin: 0; padding: 0 !important; background: white !important; font-family: 'Times New Roman', serif; }
+                            .paper-container { width: 210mm !important; margin: 0 auto !important; padding: 15mm !important; border: none !important; box-shadow: none !important; }
+                            .no-print, nav, header, sidebar, .print\\:hidden, .fixed { display: none !important; }
                             .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
-                            .section-page-break { margin-top: 30pt !important; break-before: auto !important; }
                         }
                         body { padding: 40px; background: #eee; font-family: 'Times New Roman', serif; overflow-y: scroll; }
                         .paper-container { background: white; width: 210mm; margin: 0 auto; padding: 20mm; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-                        .no-print, nav, header, sidebar, .print\\:hidden { display: none !important; }
+                        .no-print, nav, header, sidebar, .print\\:hidden, .fixed { display: none !important; }
                     </style>
                 </head>
                 <body>
@@ -163,10 +166,9 @@
                         window.onload = () => {
                             setTimeout(() => {
                                 window.print();
-                                // window.close(); // User might want to keep it open
-                            }, 500);
+                            }, 800);
                         };
-                    </script>
+                    </${'script'}>
                 </body>
             </html>
         `);
@@ -210,57 +212,57 @@
 
         // 1. PRECISION HEADER - ULTRA FIDELITY
         html += `
-            <table class="no-border" style="margin-bottom: 2pt;">
+            <table class="no-border" style="margin-bottom: 2pt; border-collapse: collapse;">
                 <tr>
                     <td style="width: 15%; text-align: left; vertical-align: middle;">
                         <img src="https://uniconnect-app.up.railway.app/crescent-logo.png" width="95" height="95" />
                     </td>
-                    <td style="width: 60%; text-align: center; vertical-align: middle;">
-                        <div style="font-size: 19pt; font-weight: bold; font-family: Arial, sans-serif;">BS Abdur Rahman</div>
-                        <div style="font-size: 16pt; font-weight: bold; font-family: Arial, sans-serif;">Crescent Institute of Science & Technology</div>
-                        <div style="font-size: 8.5pt; color: #444; margin-top: 2pt;">Deemed to be University u/s 3 of the UGC Act, 1956</div>
+                    <td style="width: 55%; text-align: center; vertical-align: middle;">
+                        <div style="font-size: 19.5pt; font-weight: bold; color: #003366; font-family: 'Arial Black', Gadget, sans-serif; line-height: 1.1;">BS Abdur Rahman</div>
+                        <div style="font-size: 15.5pt; font-weight: bold; color: #003366; font-family: Arial, sans-serif; margin-top: 2pt;">Crescent Institute of Science & Technology</div>
+                        <div style="font-size: 8.5pt; color: #555555; margin-top: 3pt;">Deemed to be University u/s 3 of the UGC Act, 1956</div>
                     </td>
-                    <td style="width: 25%; text-align: right; vertical-align: bottom;">
-                        <div style="font-weight: bold; margin-bottom: 12pt; font-size: 13pt;">&lt;${meta.course_code || ''}&gt;</div>
-                        <table style="width: auto; float: right; border-collapse: collapse;" cellspacing="0">
+                    <td style="width: 30%; text-align: right; vertical-align: bottom; padding-bottom: 2pt;">
+                        <div style="font-weight: bold; margin-bottom: 12pt; font-size: 12.5pt; color: #000; font-family: 'Times New Roman', serif;">&lt;${meta.course_code || ''}&gt;</div>
+                        <table border="0" align="right" style="width: auto; border-collapse: collapse;">
                             <tr>
-                                <td style="border: 1pt solid black; font-size: 8.5pt; padding: 3pt 5pt; font-weight: bold; background: #eee;">RRN</td>
-                                ${Array(10).fill('<td style="border: 1pt solid black; width: 15pt; height: 18pt;">&nbsp;</td>').join('')}
+                                <td style="border: 1pt solid black; font-size: 9pt; padding: 4pt 6pt; font-weight: bold; background: #e8e8e8; vertical-align: middle;">RRN</td>
+                                ${Array(10).fill('<td style="border: 1.2pt solid black; width: 17pt; height: 19pt; vertical-align: middle;">&nbsp;</td>').join('')}
                             </tr>
                         </table>
                     </td>
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 14pt; margin: 10pt 0; text-transform: uppercase; letter-spacing: 0.5pt;">
+            <div style="text-align: center; font-weight: bold; font-size: 14.5pt; margin: 12pt 0; text-transform: uppercase; font-family: 'Times New Roman', serif;">
                 ${meta.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025'}
             </div>
 
             <!-- METADATA TABLE -->
-            <table class="metadata-table">
+            <table class="metadata-table" style="border: 1.5pt solid black;">
                 <tr>
-                    <td style="width: 25%; background: #f9f9f9;">Programme & Branch</td>
-                    <td colspan="3" style="font-weight: normal;">: ${meta.programme || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">PROGRAMME & BRANCH</td>
+                    <td colspan="3" style="font-weight: normal; border: 1pt solid black;">: ${meta.programme || ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; background: #f9f9f9;">Semester</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.semester || ''}</td>
-                    <td style="width: 25%; background: #f9f9f9; border-left: 1.5pt solid black;">Date & Session</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal; font-size: 9.5pt;">: ${meta.paper_date || ''} ${meta.exam_time ? `[${meta.exam_time}]` : ''}</td>
+                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">SEMESTER</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal; border: 1pt solid black;">: ${meta.semester || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4; border-left: 1.5pt solid black; border: 1pt solid black;">DATE & SESSION</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal; font-size: 9.5pt; border: 1pt solid black;">: ${meta.paper_date || ''} ${meta.exam_time ? `[${meta.exam_time}]` : ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; background: #f9f9f9;">Course Code & Name</td>
-                    <td colspan="3" style="font-weight: normal;">: ${meta.course_code || ''} - ${meta.subject_name || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">COURSE CODE & NAME</td>
+                    <td colspan="3" style="font-weight: normal; border: 1pt solid black;">: ${meta.course_code || ''} - ${meta.subject_name || ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; background: #f9f9f9;">Duration</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.duration_minutes || ''} Minutes</td>
-                    <td style="width: 25%; background: #f9f9f9; border-left: 1.5pt solid black;">Maximum Marks</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.max_marks || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">DURATION</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal; border: 1pt solid black;">: ${meta.duration_minutes || ''} Minutes</td>
+                    <td style="width: 25%; background: #f4f4f4; border-left: 1.5pt solid black; border: 1pt solid black;">MAXIMUM MARKS</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal; border: 1pt solid black;">: ${meta.max_marks || ''}</td>
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 12pt 0; text-decoration: underline; letter-spacing: 2pt;">
+            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 15pt 0; text-decoration: underline; letter-spacing: 3pt; font-family: Arial, sans-serif;">
                 ${meta.instructions || 'ANSWER ALL QUESTIONS'}
             </div>
         `;
@@ -277,7 +279,7 @@
         const buildBlock = (title: string, slots: any[], startNum: number, marksPerQ: number) => {
             if (slots.length === 0) return '';
             let blockHtml = `<div class="part-header">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</div>`;
-            blockHtml += `<table style="width: 100%; border: 1.2pt solid black; margin-top: -1pt;">`;
+            blockHtml += `<table style="width: 100%; border: 1.5pt solid black; margin-top: -1.5pt;">`;
             
             let currentNum = startNum;
             slots.forEach((s) => {
@@ -286,20 +288,24 @@
                     const q2 = (s.choice2?.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 35pt; text-align: center; font-weight: bold; border-bottom: 0.5pt solid #eee;">${currentNum}.</td>
-                            <td style="width: auto; border-bottom: 0.5pt solid #eee;">${q1.text || ''}</td>
-                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; border-bottom: 0.5pt solid #eee; font-size: 9.5pt;">
+                            <td style="width: 40pt; text-align: center; font-weight: bold; border-bottom: 0.5pt solid #ddd; vertical-align: middle;">${currentNum}.</td>
+                            <td style="width: auto; border-bottom: 0.5pt solid #ddd;">
+                                <div style="margin-bottom: 5pt; font-size: 11pt;">${q1.text || ''}</div>
+                            </td>
+                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; border-bottom: 0.5pt solid #ddd; font-size: 10pt;">
                                 <div>(${fetchCO(q1)})</div>
                                 <div style="font-weight: bold;">(${q1.marks || s.marks || 0})</div>
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="3" style="text-align: center; font-style: italic; font-weight: bold; font-size: 10.5pt; padding: 5pt; background: #ffffff;">(OR)</td>
+                            <td colspan="3" style="text-align: center; font-style: italic; font-weight: bold; font-size: 10.5pt; padding: 7pt; background: #ffffff;">(OR)</td>
                         </tr>
                         <tr>
-                            <td style="width: 35pt; text-align: center; font-weight: bold;">&nbsp;</td>
-                            <td style="width: auto;">${q2.text || ''}</td>
-                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 9.5pt;">
+                            <td style="width: 40pt; text-align: center; font-weight: bold; vertical-align: middle;">&nbsp;</td>
+                            <td style="width: auto;">
+                                <div style="margin-bottom: 5pt; font-size: 11pt;">${q2.text || ''}</div>
+                            </td>
+                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 10pt;">
                                 <div>(${fetchCO(q2)})</div>
                                 <div style="font-weight: bold;">(${q2.marks || s.marks || 0})</div>
                             </td>
@@ -310,26 +316,30 @@
                     const q = (s.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 35pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
+                            <td style="width: 40pt; text-align: center; font-weight: bold; vertical-align: middle;">${currentNum++}.</td>
                             <td style="width: auto;">
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>${q.text || ''}</span>
-                                    ${q.type === 'MCQ' ? '<span style="float: right; font-weight: bold;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</span>' : ''}
-                                </div>
+                                <table border="0" style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="border: none !important; padding: 0 !important; font-size: 11pt;">${q.text || ''}</td>
+                                        ${q.type === 'MCQ' ? `
+                                            <td style="border: none !important; padding: 0 !important; width: 45pt; text-align: right; font-weight: bold; font-family: Courier New, monospace;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</td>
+                                        ` : ''}
+                                    </tr>
+                                </table>
                                 ${q.options && q.options.length > 0 ? `
-                                    <table class="no-border" style="margin-top: 10pt; margin-left: 20pt; width: 90%;">
+                                    <table border="0" style="margin-top: 12pt; margin-left: 20pt; width: 95%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(a) ${q.options[0] || ''}</td>
-                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(b) ${q.options[1] || ''}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(a) ${q.options[0] || ''}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(b) ${q.options[1] || ''}</td>
                                         </tr>
                                         <tr>
-                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(c) ${q.options[2] || ''}</td>
-                                            <td style="width: 50%; padding: 2pt; font-size: 10pt;">(d) ${q.options[3] || ''}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(c) ${q.options[2] || ''}</td>
+                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(d) ${q.options[3] || ''}</td>
                                         </tr>
                                     </table>
                                 ` : ''}
                             </td>
-                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 9.5pt;">
+                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 10pt; vertical-align: middle;">
                                 <div>(${fetchCO(q)})</div>
                                 <div style="font-weight: bold;">(${q.marks || s.marks || 0})</div>
                             </td>
@@ -348,10 +358,10 @@
         }
 
         html += `
-            <table class="no-border" style="margin-top: 60pt; border-top: 1.2pt solid black;">
+            <table class="no-border" style="margin-top: 50pt; border-top: 1.5pt solid black;">
                 <tr>
-                    <td style="width: 50%; text-align: left; padding-top: 25pt; font-size: 10.5pt; font-weight: bold;">Name & Signature of DAAC Member</td>
-                    <td style="width: 50%; text-align: right; padding-top: 25pt; font-size: 10.5pt; font-weight: bold;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: left; padding-top: 30pt; font-size: 11pt; font-weight: bold;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: right; padding-top: 30pt; font-size: 11pt; font-weight: bold;">Name & Signature of DAAC Member</td>
                 </tr>
             </table>
             </body></html>
