@@ -65,10 +65,10 @@
                 max_marks: String(meta.max_marks || paper.max_marks || 100),
                 course_code: meta.course_code || paper.subject_code || 'CS-XXXX',
                 subject_name: meta.subject_name || paper.subject_name || 'Question Paper',
-                exam_title: meta.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025',
+                exam_title: meta.exam_title || paper.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025',
                 programme: meta.programme || paper.branch_name || 'B.Tech - COMPUTER SCIENCE AND ENGINEERING',
                 semester: String(meta.semester || paper.semester || 1),
-                instructions: meta.instructions || 'ANSWER ALL QUESTIONS'
+                instructions: meta.instructions || paper.instructions || 'ANSWER ALL QUESTIONS'
             };
         }
     });

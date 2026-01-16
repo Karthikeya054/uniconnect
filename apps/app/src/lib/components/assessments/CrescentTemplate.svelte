@@ -189,22 +189,17 @@
     }
 
     function updateQuestionsFromDnd(items: any[], part: 'A' | 'B' | 'C') {
-        const otherParts = safeQuestions.filter((s: any) => {
-            const p = getPartForSlot(s);
-            return p !== part;
-        });
+        const countA = paperStructure[0]?.count || 10;
+        const countB = paperStructure[1]?.count || 5;
 
-        // Reconstruct the full list
+        // Reconstruct full list based on current segments
         let newList: any[] = [];
         if (part === 'A') {
-            newList = [...items, ...otherParts];
+            newList = [...items, ...safeQuestions.slice(countA)];
         } else if (part === 'B') {
-            const partA = safeQuestions.filter((s: any) => getPartForSlot(s) === 'A');
-            const partC = safeQuestions.filter((s: any) => getPartForSlot(s) === 'C');
-            newList = [...partA, ...items, ...partC];
+            newList = [...safeQuestions.slice(0, countA), ...items, ...safeQuestions.slice(countA + countB)];
         } else if (part === 'C') {
-             const others = safeQuestions.filter((s: any) => getPartForSlot(s) !== 'C');
-             newList = [...others, ...items];
+            newList = [...safeQuestions.slice(0, countA + countB), ...items];
         }
 
         if (Array.isArray(currentSetData)) {
@@ -479,23 +474,23 @@
                     <div animate:flip={{duration: dndFlipDurationMs}}>
                     {#if slot.type === 'SINGLE'}
                         {#each slot.questions || [] as q}
-                            <div class="flex min-h-[40px] page-break-avoid relative group">
+                            <div class="flex min-h-[40px] page-break-avoid relative group border-b border-black last:border-b-0">
                                 {#if isEditable}
                                     <div class="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity print:hidden cursor-grab active:cursor-grabbing">
                                         <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10h2v2H7v-2zm0 4h2v2H7v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/></svg>
                                     </div>
                                 {/if}
 
-                                <div class="w-10 border-r border-black p-2 text-center text-[10px] font-bold">
+                                <div class="w-12 border-r border-black p-2 text-center text-[11px] font-black">
                                     {i + 1}.
                                 </div>
-                                <div class="flex-1 p-2 text-[10px] leading-relaxed group relative">
+                                <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                     <div class="flex justify-between items-start gap-4">
                                         <div 
                                             contenteditable="true" 
                                             oninput={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id)}
                                             class="flex-1 {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
-                                        >{q.text}</div>
+                                        >{@html q.text}</div>
                                         {#if q.type === 'MCQ'}
                                             <div class="flex-shrink-0 font-black text-[11px] whitespace-nowrap">[&nbsp;&nbsp;&nbsp;&nbsp;]</div>
                                         {/if}
@@ -588,7 +583,11 @@
                                         {q.sub_label || ''}
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
-                                        <div contenteditable="true" bind:innerHTML={q.text} class={isEditable ? '' : 'pointer-events-none'}></div>
+                                        <div 
+                                            contenteditable="true" 
+                                            oninput={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice1')}
+                                            class={isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}
+                                        >{@html q.text}</div>
                                         {#if isEditable}
                                             <button 
                                                 onclick={() => openSwapSidebar(safeQuestions.findIndex((s: any) => s.id === slot.id), 'B', 'q1')}
@@ -625,7 +624,7 @@
                                             contenteditable="true" 
                                             oninput={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice2')}
                                             class={isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}
-                                        >{q.text}</div>
+                                        >{@html q.text}</div>
                                         {#if isEditable}
                                             <button 
                                                 onclick={() => openSwapSidebar(safeQuestions.findIndex((s: any) => s.id === slot.id), 'B', 'q2')}
