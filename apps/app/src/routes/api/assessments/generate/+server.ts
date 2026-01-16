@@ -127,12 +127,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             let pool = (poolByUnitAndMarks[unitId]?.[marks] || [])
                 .filter(q => !excludeInSet.has(q.id));
 
+            // Heuristic to detect MCQs or Fill-in-the-blanks hidden in "NORMAL" type
+            const isShortOrMcq = (q: any) => {
+                const text = (q.question_text || '').toLowerCase();
+                const hasBlank = text.includes('___') || text.includes('____') || text.includes('.....');
+                const hasOptionsPattern = /\([a-d]\)/i.test(text) || /\b[a-d]\)/i.test(text);
+                const hasOptionsField = Array.isArray(q.options) && q.options.length > 0;
+                return hasBlank || hasOptionsPattern || hasOptionsField;
+            };
+
             // 1. FILTER BY TYPE (STRICT)
             if (qType && qType !== 'ANY') {
                 pool = pool.filter(q => q.type === qType);
+
+                // If we specifically want NORMAL, further exclude heuristic MCQs
+                if (qType === 'NORMAL') {
+                    pool = pool.filter(q => !isShortOrMcq(q));
+                }
             } else if (marks >= 5) {
-                // DEFAULT SAFETY: Never pick MCQ for 5+ marks unless explicitly asked
-                pool = pool.filter(q => q.type !== 'MCQ');
+                // DEFAULT SAFETY: Never pick MCQ or short questions for 5+ marks unless explicitly asked
+                pool = pool.filter(q => q.type !== 'MCQ' && !isShortOrMcq(q));
             }
 
             // 2. FILTER BY BLOOM LEVEL
@@ -163,9 +177,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
             if (qType && qType !== 'ANY') {
                 fallbackPool = fallbackPool.filter((q: any) => q.type === qType);
+                if (qType === 'NORMAL') {
+                    fallbackPool = fallbackPool.filter(q => !isShortOrMcq(q));
+                }
             } else if (marks >= 5) {
                 // DEFAULT SAFETY for fallback
-                fallbackPool = fallbackPool.filter((q: any) => q.type !== 'MCQ');
+                fallbackPool = fallbackPool.filter((q: any) => q.type !== 'MCQ' && !isShortOrMcq(q));
             }
 
             // Even in fallback, try to respect bloom/co if possible
