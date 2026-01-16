@@ -131,119 +131,186 @@
     }
 
     function downloadDOCX() {
-        const paperElement = document.getElementById('paper-content');
-        if (!paperElement) return;
-
-        // Clone for safe manipulation
-        const clone = paperElement.cloneNode(true) as HTMLElement;
+        const meta = paperMeta;
+        const currentSetQuestions = (editableSets[activeSet] || editableSets['A'] || { questions: [] }).questions;
         
-        // --- AGGRESSIVE CLEANING ---
-        // 1. Remove all buttons (SWAP, Add Question, etc.)
-        clone.querySelectorAll('button').forEach(el => el.remove());
-        
-        // 2. Remove all SVGs and interactive icons
-        clone.querySelectorAll('svg').forEach(el => el.remove());
+        // Helper to normalize question data
+        const getQs = (slot: any) => {
+            if (slot.type === 'SINGLE') return slot.questions || [];
+            if (slot.type === 'OR_GROUP') return [...(slot.choice1?.questions || []), ...(slot.choice2?.questions || [])];
+            return [slot];
+        };
 
-        // 3. Remove all elements with print:hidden or UI-specific utility classes
-        const selectorsToRemove = [
-            '.print\\:hidden', 
-            '.cursor-grab', 
-            '.active\\:cursor-grabbing',
-            '.transition-all',
-            '.group-hover\\:opacity-100',
-            '[style*="transition"]',
-            '.pointer-events-none'
-        ];
-        selectorsToRemove.forEach(sel => {
-            clone.querySelectorAll(sel).forEach(el => el.remove());
-        });
-
-        // 4. Force specific structural elements to be visible
-        clone.querySelectorAll('.section-page-break').forEach(el => {
-            (el as HTMLElement).style.pageBreakBefore = 'always';
-        });
-
-        const content = clone.innerHTML;
-        
-        const wordStyles = `
-            <style>
-                /* MSO (Microsoft Office) Specific Layout Rules */
-                @page { margin: 0.75in; }
-                body { 
-                    font-family: 'Segoe UI', Arial, sans-serif; 
-                    font-size: 11pt; 
-                    color: black; 
-                    line-height: 1.4;
-                }
-                
-                /* Layout Reset for Word */
-                div { box-sizing: border-box; }
-                table { border-collapse: collapse; width: 100%; border-spacing: 0; }
-                td, th { padding: 4pt; vertical-align: top; border: 0.5pt solid black; }
-
-                /* Header & Metadata */
-                .paper-container { padding: 0 !important; border: none !important; width: 100% !important; }
-                .border-2 { border: 1.5pt solid black !important; }
-                .border { border: 0.5pt solid black !important; }
-                .text-center { text-align: center !important; }
-                .font-black { font-weight: 900 !important; }
-                .font-bold { font-weight: bold !important; }
-                .uppercase { text-transform: uppercase !important; }
-                
-                /* RRN Box specific fix for Word */
-                .flex.border.border-black { border: 1pt solid black; display: inline-block; }
-                
-                /* Section Headers */
-                .section-part-a, .section-part-b, .section-part-c { margin-top: 25pt; clear: both; }
-                .divide-y > * + * { border-top: 1pt solid black !important; }
-                
-                /* Question Layout */
-                .flex { display: table !important; width: 100% !important; }
-                .w-12 { display: table-cell !important; width: 35pt !important; border-right: 0.5pt solid black !important; text-align: center; }
-                .flex-1 { display: table-cell !important; padding-left: 10pt !important; }
-                .w-20 { display: table-cell !important; width: 60pt !important; border-left: 0.5pt solid black !important; text-align: center; font-size: 8pt; color: #666; }
-                
-                /* Grid support via Tables */
-                .grid { display: table !important; width: 100% !important; margin-left: 20pt; }
-                .grid-cols-2 { display: table !important; }
-                .grid-cols-2 > div { display: inline-block !important; width: 45% !important; font-size: 10pt; padding: 2pt; }
-
-                /* OR Group specific spacing */
-                .italic.tracking-\\[0\\.2em\\] { 
-                    padding: 5pt 0 !important; 
-                    background-color: #f9f9f9 !important; 
-                    border-bottom: 0.5pt solid black !important;
-                }
-            </style>
-        `;
-
-        const header = `
+        let html = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head>
                 <meta charset='utf-8'>
-                <title>Assessment Paper</title>
-                <!--[if gte mso 9]>
-                <xml>
-                    <w:WordDocument>
-                        <w:View>Print</w:View>
-                        <w:Zoom>90</w:Zoom>
-                    </w:WordDocument>
-                </xml>
-                <![endif]-->
-                ${wordStyles}
+                <style>
+                    @page { margin: 0.75in; }
+                    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: black; line-height: 1.3; }
+                    table { border-collapse: collapse; width: 100%; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+                    td { vertical-align: top; border: 1pt solid black; padding: 6pt; }
+                    .no-border td { border: none !important; padding: 2pt; }
+                    .metadata-table td { font-weight: bold; border: 1pt solid black; }
+                    .part-header { 
+                        text-align: center; 
+                        font-weight: bold; 
+                        padding: 6pt; 
+                        border: 1pt solid black; 
+                        background-color: #f2f2f2;
+                        text-transform: uppercase;
+                        margin-top: 20pt;
+                    }
+                    .text-center { text-align: center; }
+                    .font-black { font-weight: bold; }
+                </style>
             </head>
-            <body>`;
-        const footer = "</body></html>";
-        const sourceHTML = header + content + footer;
+            <body>
+        `;
+
+        // 1. HEADER SECTION
+        html += `
+            <table class="no-border" style="margin-bottom: 5pt;">
+                <tr>
+                    <td style="width: 70%;">
+                        <div style="font-size: 16pt; font-weight: bold;">BS Abdur Rahman</div>
+                        <div style="font-size: 14pt; font-weight: bold;">Crescent Institute of Science & Technology</div>
+                        <div style="font-size: 8pt;">Deemed to be University u/s 3 of the UGC Act, 1956</div>
+                    </td>
+                    <td style="width: 30%; text-align: right;">
+                        <div style="font-weight: bold; margin-bottom: 5pt;">&lt;${meta.course_code || ''}&gt;</div>
+                        <table style="width: auto; float: right; border-collapse: collapse;" cellspacing="0">
+                            <tr>
+                                <td style="border: 1pt solid black; font-size: 9pt; padding: 2pt 5pt;">RRN</td>
+                                ${Array(10).fill('<td style="border: 1pt solid black; width: 14pt; height: 18pt;">&nbsp;</td>').join('')}
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="text-align: center; font-weight: bold; font-size: 13pt; margin: 15pt 0; text-transform: uppercase;">
+                ${meta.exam_title || ''}
+            </div>
+
+            <!-- 2. METADATA TABLE -->
+            <table class="metadata-table">
+                <tr>
+                    <td style="width: 25%;">Programme & Branch</td>
+                    <td colspan="3">${meta.programme || ''}</td>
+                </tr>
+                <tr>
+                    <td style="width: 25%;">Semester</td>
+                    <td style="width: 25%;">${meta.semester || ''}</td>
+                    <td style="width: 25%;">Date & Session</td>
+                    <td style="width: 25%; font-size: 10pt;">${meta.paper_date || ''} ${meta.exam_time ? `[${meta.exam_time}]` : ''}</td>
+                </tr>
+                <tr>
+                    <td style="width: 25%;">Course Code & Name</td>
+                    <td colspan="3">${meta.course_code || ''} - ${meta.subject_name || ''}</td>
+                </tr>
+                <tr>
+                    <td style="width: 25%;">Duration</td>
+                    <td style="width: 25%;">${meta.duration_minutes || ''} Minutes</td>
+                    <td style="width: 25%;">Maximum Marks</td>
+                    <td style="width: 25%;">${meta.max_marks || ''}</td>
+                </tr>
+            </table>
+
+            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 15pt 0; text-decoration: underline;">
+                ${meta.instructions || 'ANSWER ALL QUESTIONS'}
+            </div>
+        `;
+
+        // 3. QUESTIONS RECONSTRUCTION
+        const config = paperStructure;
+        const countA = config[0]?.count || 0;
+        const countB = config[1]?.count || 0;
         
-        const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+        const setsA = currentSetQuestions.slice(0, countA);
+        const setsB = currentSetQuestions.slice(countA, countA + countB);
+        const setsC = currentSetQuestions.slice(countA + countB);
+
+        const buildBlock = (title: string, slots: any[], startNum: number, marksPerQ: number) => {
+            if (slots.length === 0) return '';
+            let blockHtml = `<div class="part-header">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</div>`;
+            blockHtml += `<table style="width: 100%; border: 1pt solid black; margin-top: -1pt;">`;
+            
+            let currentNum = startNum;
+            slots.forEach((s) => {
+                if (s.type === 'OR_GROUP') {
+                    // Choice 1
+                    blockHtml += `
+                        <tr>
+                            <td style="width: 35pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
+                            <td style="width: auto;">${s.choice1?.questions?.[0]?.text || ''}</td>
+                            <td style="width: 60pt; text-align: center; border-left: 1pt solid black;">(${s.marks})</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="text-align: center; font-style: italic; font-size: 9pt; border-top: 0.5pt dashed #ccc; border-bottom: 0.5pt dashed #ccc; padding: 2pt;">(OR)</td>
+                        </tr>
+                        <tr>
+                            <td style="width: 35pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
+                            <td style="width: auto;">${s.choice2?.questions?.[0]?.text || ''}</td>
+                            <td style="width: 60pt; text-align: center; border-left: 1pt solid black;">(${s.marks})</td>
+                        </tr>
+                    `;
+                } else {
+                    const q = (s.questions || [])[0] || {};
+                    blockHtml += `
+                        <tr>
+                            <td style="width: 35pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
+                            <td style="width: auto;">
+                                <div>${q.text || ''}</div>
+                                ${q.options ? `
+                                    <table class="no-border" style="margin-top: 5pt; margin-left: 20pt;">
+                                        <tr>
+                                            ${q.options[0] ? `<td style="width: 50%;">${q.options[0]}</td>` : ''}
+                                            ${q.options[1] ? `<td style="width: 50%;">${q.options[1]}</td>` : ''}
+                                        </tr>
+                                        ${q.options[2] ? `
+                                        <tr>
+                                            <td style="width: 50%;">${q.options[2]}</td>
+                                            <td style="width: 50%;">${q.options[3] || ''}</td>
+                                        </tr>` : ''}
+                                    </table>
+                                ` : ''}
+                            </td>
+                            <td style="width: 60pt; text-align: center; border-left: 1pt solid black;">(${s.marks || marksPerQ})</td>
+                        </tr>
+                    `;
+                }
+            });
+            blockHtml += `</table>`;
+            return blockHtml;
+        };
+
+        html += buildBlock(config[0]?.title || 'PART A', setsA, 1, config[0]?.marks_per_q || 2);
+        
+        let subB = 1; setsA.forEach((s: any) => subB += (s.type === 'OR_GROUP' ? 2 : 1));
+        html += buildBlock(config[1]?.title || 'PART B', setsB, subB, config[1]?.marks_per_q || 16);
+
+        let subC = subB; setsB.forEach((s: any) => subC += (s.type === 'OR_GROUP' ? 2 : 1));
+        html += buildBlock(config[2]?.title || 'PART C', setsC, subC, config[2]?.marks_per_q || 16);
+
+        html += `
+            <table class="no-border" style="margin-top: 60pt;">
+                <tr>
+                    <td style="width: 50%; text-align: left;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: right;">Name & Signature of DAAC Member</td>
+                </tr>
+            </table>
+            </body></html>
+        `;
+
+        const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
-        const fileDownload = document.createElement("a");
-        document.body.appendChild(fileDownload);
-        fileDownload.href = url;
-        fileDownload.download = `${data.paper.subject_name}_Final_Paper.doc`;
-        fileDownload.click();
-        document.body.removeChild(fileDownload);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${meta.subject_name || 'Paper'}_HighFidelity.doc`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
 </script>
