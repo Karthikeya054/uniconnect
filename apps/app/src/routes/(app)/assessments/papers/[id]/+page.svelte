@@ -148,14 +148,33 @@
                     <style>
                         @media print {
                             @page { size: A4; margin: 0; }
-                            body { margin: 0; padding: 0 !important; background: white !important; font-family: 'Times New Roman', serif; }
-                            .paper-container { width: 210mm !important; margin: 0 auto !important; padding: 15mm !important; border: none !important; box-shadow: none !important; }
+                            body { margin: 0; padding: 0 !important; background: white !important; }
+                            .paper-container { 
+                                width: 210mm !important; 
+                                margin: 0 auto !important; 
+                                padding: 18mm !important; 
+                                border: none !important; 
+                                box-shadow: none !important;
+                                box-sizing: border-box !important;
+                                position: relative !important;
+                            }
                             .no-print, nav, header, sidebar, .print\\:hidden, .fixed { display: none !important; }
-                            .page-break-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
                         }
-                        body { padding: 40px; background: #eee; font-family: 'Times New Roman', serif; overflow-y: scroll; }
-                        .paper-container { background: white; width: 210mm; margin: 0 auto; padding: 20mm; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-                        .no-print, nav, header, sidebar, .print\\:hidden, .fixed { display: none !important; }
+                        body { 
+                            margin: 0; 
+                            background: #ccc; 
+                            font-family: 'Times New Roman', serif;
+                            display: flex;
+                            justify-content: center;
+                        }
+                        .paper-container { 
+                            background: white; 
+                            width: 210mm; 
+                            min-height: 297mm;
+                            padding: 20mm; 
+                            box-shadow: 0 0 40px rgba(0,0,0,0.2); 
+                            box-sizing: border-box;
+                        }
                     </style>
                 </head>
                 <body>
@@ -164,9 +183,7 @@
                     </div>
                     <script>
                         window.onload = () => {
-                            setTimeout(() => {
-                                window.print();
-                            }, 800);
+                            setTimeout(() => { window.print(); }, 1200);
                         };
                     </${'script'}>
                 </body>
@@ -181,7 +198,19 @@
         
         const fetchCO = (q: any) => {
             if (!q.co_id) return '';
-            return data.courseOutcomes.find((c: any) => c.id === q.co_id)?.code || '';
+            const code = data.courseOutcomes.find((c: any) => c.id === q.co_id)?.code;
+            return code && code !== '0' ? code : '';
+        };
+
+        const cleanOption = (txt: string) => {
+            if (!txt) return '';
+            return txt.replace(/^\s*(\([a-dA-D]\)|[a-dA-D][\.\)])\s*/i, '').trim();
+        };
+
+        const cleanQuestionText = (txt: string) => {
+            if (!txt) return '';
+            // Strip any trailing (a)...(d) blocks
+            return txt.replace(/\s*\(a\).+$/is, '').trim();
         };
 
         let html = `
@@ -189,20 +218,17 @@
             <head>
                 <meta charset='utf-8'>
                 <style>
-                    @page { margin: 0.7in; mso-header-margin: 0.5in; mso-footer-margin: 0.5in; }
+                    @page { margin: 0.6in; mso-header-margin: 0.5in; mso-footer-margin: 0.5in; }
                     body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; color: black; line-height: 1.15; }
                     table { border-collapse: collapse; width: 100%; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-                    td { vertical-align: top; border: 1.2pt solid black; padding: 6pt; }
+                    td { vertical-align: top; border: 1pt solid black; padding: 6pt; }
                     .no-border td { border: none !important; padding: 1pt; }
-                    .metadata-table td { font-weight: bold; border: 1pt solid black; padding: 4.5pt 6pt; text-transform: uppercase; font-size: 10pt; }
-                    .part-header { 
+                    .metadata-table td { font-weight: bold; border: 1pt solid black; padding: 4pt 6pt; text-transform: uppercase; font-size: 9.5pt; }
+                    .part-header-row { 
                         text-align: center; 
                         font-weight: bold; 
-                        padding: 7pt; 
-                        border: 1.2pt solid black; 
-                        background-color: #f1f1f1;
-                        text-transform: uppercase;
-                        margin-top: 15pt;
+                        padding: 8pt; 
+                        background-color: #f2f2f2;
                         font-size: 11.5pt;
                     }
                 </style>
@@ -210,76 +236,73 @@
             <body>
         `;
 
-        // 1. PRECISION HEADER - ULTRA FIDELITY
+        // 1. HEADER
         html += `
-            <table class="no-border" style="margin-bottom: 2pt; border-collapse: collapse;">
+            <table class="no-border" style="margin-bottom: 2pt;">
                 <tr>
                     <td style="width: 15%; text-align: left; vertical-align: middle;">
                         <img src="https://uniconnect-app.up.railway.app/crescent-logo.png" width="95" height="95" />
                     </td>
                     <td style="width: 55%; text-align: center; vertical-align: middle;">
-                        <div style="font-size: 19.5pt; font-weight: bold; color: #003366; font-family: 'Arial Black', Gadget, sans-serif; line-height: 1.1;">BS Abdur Rahman</div>
-                        <div style="font-size: 15.5pt; font-weight: bold; color: #003366; font-family: Arial, sans-serif; margin-top: 2pt;">Crescent Institute of Science & Technology</div>
-                        <div style="font-size: 8.5pt; color: #555555; margin-top: 3pt;">Deemed to be University u/s 3 of the UGC Act, 1956</div>
+                        <div style="font-size: 19pt; font-weight: bold; color: #003366; font-family: Arial, sans-serif;">BS Abdur Rahman</div>
+                        <div style="font-size: 15.5pt; font-weight: bold; color: #003366; font-family: Arial, sans-serif;">Crescent Institute of Science & Technology</div>
+                        <div style="font-size: 7.5pt; color: #555; margin-top: 2pt;">Deemed to be University u/s 3 of the UGC Act, 1956</div>
                     </td>
                     <td style="width: 30%; text-align: right; vertical-align: bottom; padding-bottom: 2pt;">
-                        <div style="font-weight: bold; margin-bottom: 12pt; font-size: 12.5pt; color: #000; font-family: 'Times New Roman', serif;">&lt;${meta.course_code || ''}&gt;</div>
+                        <div style="font-weight: bold; margin-bottom: 10pt; font-size: 11pt;">&lt;${meta.course_code || ''}&gt;</div>
                         <table border="0" align="right" style="width: auto; border-collapse: collapse;">
                             <tr>
-                                <td style="border: 1pt solid black; font-size: 9pt; padding: 4pt 6pt; font-weight: bold; background: #e8e8e8; vertical-align: middle;">RRN</td>
-                                ${Array(10).fill('<td style="border: 1.2pt solid black; width: 17pt; height: 19pt; vertical-align: middle;">&nbsp;</td>').join('')}
+                                <td style="border: 1pt solid black; font-size: 8.5pt; padding: 4pt 6pt; font-weight: bold; background: #eee;">RRN</td>
+                                ${Array(10).fill('<td style="border: 1pt solid black; width: 17pt; height: 18pt;">&nbsp;</td>').join('')}
                             </tr>
                         </table>
                     </td>
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 14.5pt; margin: 12pt 0; text-transform: uppercase; font-family: 'Times New Roman', serif;">
+            <div style="text-align: center; font-weight: bold; font-size: 14pt; margin: 10pt 0; text-transform: uppercase; letter-spacing: 0.5pt;">
                 ${meta.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025'}
             </div>
 
-            <!-- METADATA TABLE -->
-            <table class="metadata-table" style="border: 1.5pt solid black;">
+            <table class="metadata-table">
                 <tr>
-                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">PROGRAMME & BRANCH</td>
-                    <td colspan="3" style="font-weight: normal; border: 1pt solid black;">: ${meta.programme || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4;">PROGRAMME & BRANCH</td>
+                    <td colspan="3" style="font-weight: normal;">: ${meta.programme || ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">SEMESTER</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal; border: 1pt solid black;">: ${meta.semester || ''}</td>
-                    <td style="width: 25%; background: #f4f4f4; border-left: 1.5pt solid black; border: 1pt solid black;">DATE & SESSION</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal; font-size: 9.5pt; border: 1pt solid black;">: ${meta.paper_date || ''} ${meta.exam_time ? `[${meta.exam_time}]` : ''}</td>
+                    <td style="width: 25%; background: #f4f4f4;">SEMESTER</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.semester || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4; border-left: 1pt solid black;">DATE & SESSION</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal; font-size: 9pt;">: ${meta.paper_date || ''} ${meta.exam_time ? `[${meta.exam_time}]` : ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">COURSE CODE & NAME</td>
-                    <td colspan="3" style="font-weight: normal; border: 1pt solid black;">: ${meta.course_code || ''} - ${meta.subject_name || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4;">COURSE CODE & NAME</td>
+                    <td colspan="3" style="font-weight: normal;">: ${meta.course_code || ''} - ${meta.subject_name || ''}</td>
                 </tr>
                 <tr>
-                    <td style="width: 25%; background: #f4f4f4; border: 1pt solid black;">DURATION</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal; border: 1pt solid black;">: ${meta.duration_minutes || ''} Minutes</td>
-                    <td style="width: 25%; background: #f4f4f4; border-left: 1.5pt solid black; border: 1pt solid black;">MAXIMUM MARKS</td>
-                    <td style="width: 25%; text-align: center; font-weight: normal; border: 1pt solid black;">: ${meta.max_marks || ''}</td>
+                    <td style="width: 25%; background: #f4f4f4;">DURATION</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.duration_minutes || ''} Minutes</td>
+                    <td style="width: 25%; background: #f4f4f4; border-left: 1pt solid black;">MAXIMUM MARKS</td>
+                    <td style="width: 25%; text-align: center; font-weight: normal;">: ${meta.max_marks || ''}</td>
                 </tr>
             </table>
 
-            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 15pt 0; text-decoration: underline; letter-spacing: 3pt; font-family: Arial, sans-serif;">
+            <div style="text-align: center; font-weight: bold; font-size: 10pt; margin: 12pt 0; text-decoration: underline;">
                 ${meta.instructions || 'ANSWER ALL QUESTIONS'}
             </div>
         `;
 
-        // 3. PRECISION QUESTIONS - FIXED WIDTHS
         const config = paperStructure;
         const countA = config[0]?.count || 0;
         const countB = config[1]?.count || 0;
-        
         const setsA = currentSetQuestions.slice(0, countA);
         const setsB = currentSetQuestions.slice(countA, countA + countB);
         const setsC = currentSetQuestions.slice(countA + countB);
 
         const buildBlock = (title: string, slots: any[], startNum: number, marksPerQ: number) => {
             if (slots.length === 0) return '';
-            let blockHtml = `<div class="part-header">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</div>`;
-            blockHtml += `<table style="width: 100%; border: 1.5pt solid black; margin-top: -1.5pt;">`;
+            let blockHtml = `<table style="width: 100%; border: 1pt solid black; margin-top: 15pt;">`;
+            blockHtml += `<tr><td colspan="3" class="part-header-row">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</td></tr>`;
             
             let currentNum = startNum;
             slots.forEach((s) => {
@@ -288,25 +311,21 @@
                     const q2 = (s.choice2?.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold; border-bottom: 0.5pt solid #ddd; vertical-align: middle;">${currentNum}.</td>
-                            <td style="width: auto; border-bottom: 0.5pt solid #ddd;">
-                                <div style="margin-bottom: 5pt; font-size: 11pt;">${q1.text || ''}</div>
-                            </td>
-                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; border-bottom: 0.5pt solid #ddd; font-size: 10pt;">
-                                <div>(${fetchCO(q1)})</div>
+                            <td style="width: 40pt; text-align: center; font-weight: bold; border-bottom: 0.5pt solid #eee;">${currentNum}.</td>
+                            <td style="width: auto; border-bottom: 0.5pt solid #eee;">${cleanQuestionText(q1.text)}</td>
+                            <td style="width: 75pt; text-align: center; border-left: 1pt solid black; border-bottom: 0.5pt solid #eee; font-size: 9.5pt;">
+                                ${fetchCO(q1) ? `<div>(${fetchCO(q1)})</div>` : ''}
                                 <div style="font-weight: bold;">(${q1.marks || s.marks || 0})</div>
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="3" style="text-align: center; font-style: italic; font-weight: bold; font-size: 10.5pt; padding: 7pt; background: #ffffff;">(OR)</td>
+                            <td colspan="3" style="text-align: center; font-style: italic; font-weight: bold; font-size: 10.5pt; padding: 6pt;">(OR)</td>
                         </tr>
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold; vertical-align: middle;">&nbsp;</td>
-                            <td style="width: auto;">
-                                <div style="margin-bottom: 5pt; font-size: 11pt;">${q2.text || ''}</div>
-                            </td>
-                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 10pt;">
-                                <div>(${fetchCO(q2)})</div>
+                            <td style="width: 40pt; text-align: center; font-weight: bold;">&nbsp;</td>
+                            <td style="width: auto;">${cleanQuestionText(q2.text)}</td>
+                            <td style="width: 75pt; text-align: center; border-left: 1pt solid black; font-size: 9.5pt;">
+                                ${fetchCO(q2) ? `<div>(${fetchCO(q2)})</div>` : ''}
                                 <div style="font-weight: bold;">(${q2.marks || s.marks || 0})</div>
                             </td>
                         </tr>
@@ -316,31 +335,25 @@
                     const q = (s.questions || [])[0] || {};
                     blockHtml += `
                         <tr>
-                            <td style="width: 40pt; text-align: center; font-weight: bold; vertical-align: middle;">${currentNum++}.</td>
+                            <td style="width: 40pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
                             <td style="width: auto;">
-                                <table border="0" style="width: 100%; border-collapse: collapse;">
-                                    <tr>
-                                        <td style="border: none !important; padding: 0 !important; font-size: 11pt;">${q.text || ''}</td>
-                                        ${q.type === 'MCQ' ? `
-                                            <td style="border: none !important; padding: 0 !important; width: 45pt; text-align: right; font-weight: bold; font-family: Courier New, monospace;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</td>
-                                        ` : ''}
-                                    </tr>
-                                </table>
+                                <div style="margin-bottom: 4pt; font-size: 11pt;">${cleanQuestionText(q.text)}</div>
+                                ${q.type === 'MCQ' ? '<div style="text-align: right; font-weight: bold; margin-top: -15pt;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</div>' : ''}
                                 ${q.options && q.options.length > 0 ? `
-                                    <table border="0" style="margin-top: 12pt; margin-left: 20pt; width: 95%; border-collapse: collapse;">
+                                    <table border="0" style="margin-top: 8pt; margin-left: 20pt; width: 95%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(a) ${q.options[0] || ''}</td>
-                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(b) ${q.options[1] || ''}</td>
+                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(a) ${cleanOption(q.options[0])}</td>
+                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(b) ${cleanOption(q.options[1])}</td>
                                         </tr>
                                         <tr>
-                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(c) ${q.options[2] || ''}</td>
-                                            <td style="width: 50%; border: none !important; padding: 3pt 5pt; font-size: 10.5pt;">(d) ${q.options[3] || ''}</td>
+                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(c) ${cleanOption(q.options[2])}</td>
+                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(d) ${cleanOption(q.options[3])}</td>
                                         </tr>
                                     </table>
                                 ` : ''}
                             </td>
-                            <td style="width: 75pt; text-align: center; border-left: 1.2pt solid black; font-size: 10pt; vertical-align: middle;">
-                                <div>(${fetchCO(q)})</div>
+                            <td style="width: 75pt; text-align: center; border-left: 1pt solid black; font-size: 9.5pt;">
+                                ${fetchCO(q) ? `<div>(${fetchCO(q)})</div>` : ''}
                                 <div style="font-weight: bold;">(${q.marks || s.marks || 0})</div>
                             </td>
                         </tr>
@@ -358,10 +371,10 @@
         }
 
         html += `
-            <table class="no-border" style="margin-top: 50pt; border-top: 1.5pt solid black;">
+            <table class="no-border" style="margin-top: 50pt;">
                 <tr>
-                    <td style="width: 50%; text-align: left; padding-top: 30pt; font-size: 11pt; font-weight: bold;">Name & Signature of DAAC Member</td>
-                    <td style="width: 50%; text-align: right; padding-top: 30pt; font-size: 11pt; font-weight: bold;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: left; padding-top: 30pt; font-size: 11pt; font-weight: bold; border-top: 1pt solid black;">Name & Signature of DAAC Member</td>
+                    <td style="width: 50%; text-align: right; padding-top: 30pt; font-size: 11pt; font-weight: bold; border-top: 1pt solid black;">Name & Signature of DAAC Member</td>
                 </tr>
             </table>
             </body></html>
@@ -377,6 +390,7 @@
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
+
 </script>
 
 <div class="max-w-6xl mx-auto space-y-6 pb-32 print:p-0 print:m-0 print:max-w-none">
