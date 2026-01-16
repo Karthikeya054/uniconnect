@@ -41,29 +41,39 @@
 
             // If it's already a slot structure, ensure questions are safe
             if (item.type === 'SINGLE' || item.type === 'OR_GROUP') {
-                const mappedSlot = { ...item };
-                if (mappedSlot.type === 'SINGLE' && mappedSlot.questions) {
-                    mappedSlot.questions = mappedSlot.questions.map((q: any) => ({
-                        ...q,
-                        text: getTxt(q),
-                        marks: getMarks(q)
-                    }));
-                } else if (mappedSlot.type === 'OR_GROUP') {
-                    if (mappedSlot.choice1?.questions) {
-                        mappedSlot.choice1.questions = mappedSlot.choice1.questions.map((q: any) => ({
+                let mappedSlot = { ...item };
+                
+                if (item.type === 'SINGLE' && item.questions) {
+                    mappedSlot = {
+                        ...item,
+                        questions: item.questions.map((q: any) => ({
                             ...q,
                             text: getTxt(q),
                             marks: getMarks(q)
-                        }));
-                    }
-                    if (mappedSlot.choice2?.questions) {
-                        mappedSlot.choice2.questions = mappedSlot.choice2.questions.map((q: any) => ({
-                            ...q,
-                            text: getTxt(q),
-                            marks: getMarks(q)
-                        }));
-                    }
+                        }))
+                    };
+                } else if (item.type === 'OR_GROUP') {
+                    mappedSlot = {
+                        ...item,
+                        choice1: item.choice1 ? {
+                            ...item.choice1,
+                            questions: (item.choice1.questions || []).map((q: any) => ({
+                                ...q,
+                                text: getTxt(q),
+                                marks: getMarks(q)
+                            }))
+                        } : item.choice1,
+                        choice2: item.choice2 ? {
+                            ...item.choice2,
+                            questions: (item.choice2.questions || []).map((q: any) => ({
+                                ...q,
+                                text: getTxt(q),
+                                marks: getMarks(q)
+                            }))
+                        } : item.choice2
+                    };
                 }
+
                 return {
                     ...mappedSlot,
                     id: mappedSlot.id || `slot-${activeSet}-${i}-${mappedSlot.label || ''}`

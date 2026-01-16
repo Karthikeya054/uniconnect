@@ -407,7 +407,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
         <div class="flex items-center gap-6">
             <a 
-                href="/assessments/papers"
+                href="/assessments"
                 class="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-100 transition-all active:scale-95"
                 title="Back to Papers"
             >

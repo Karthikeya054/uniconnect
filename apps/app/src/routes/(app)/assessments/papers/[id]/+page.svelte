@@ -11,13 +11,19 @@
     const availableSets = ['A', 'B', 'C', 'D'];
     
     // We deep clone paper data to allow local edits
-    let editableSets = $state<any>({});
+    let editableSets = $state<any>({
+        'A': { questions: [] },
+        'B': { questions: [] },
+        'C': { questions: [] },
+        'D': { questions: [] }
+    });
     let paperMeta = $state({
         paper_date: '',
         exam_time: '',
         duration_minutes: '180',
         max_marks: '100',
         course_code: 'CS-XXXX',
+        subject_name: 'Question Paper',
         exam_title: 'SEMESTER END EXAMINATIONS - NOV/DEC 2025',
         programme: 'B.Tech - COMPUTER SCIENCE AND ENGINEERING',
         semester: '1',
@@ -29,14 +35,25 @@
         const paper = data?.paper;
         if (!paper) return;
 
-        const rawSetsData = paper.sets_data || paper.sets || paper.json_data || {};
+        let rawSetsData = paper.sets_data || paper.sets || paper.json_data || {};
+        
+        // Handle case where sets_data might be a string (SQLite or some PG drivers)
+        if (typeof rawSetsData === 'string') {
+            try {
+                rawSetsData = JSON.parse(rawSetsData);
+            } catch (e) {
+                console.error('Failed to parse sets_data', e);
+                rawSetsData = {};
+            }
+        }
         
         // Only initialize if we haven't already
         if (Object.keys(editableSets).length === 0) {
             const initial: any = {};
             availableSets.forEach(s => {
                 const val = rawSetsData[s] || rawSetsData[s.toLowerCase()];
-                initial[s] = val || { questions: [] };
+                // DEEP CLONE to prevent mutation of reactive props
+                initial[s] = val ? JSON.parse(JSON.stringify(val)) : { questions: [] };
             });
             editableSets = initial;
 
@@ -47,6 +64,7 @@
                 duration_minutes: String(meta.duration_minutes || paper.duration_minutes || 180),
                 max_marks: String(meta.max_marks || paper.max_marks || 100),
                 course_code: meta.course_code || paper.subject_code || 'CS-XXXX',
+                subject_name: meta.subject_name || paper.subject_name || 'Question Paper',
                 exam_title: meta.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025',
                 programme: meta.programme || paper.branch_name || 'B.Tech - COMPUTER SCIENCE AND ENGINEERING',
                 semester: String(meta.semester || paper.semester || 1),
@@ -134,7 +152,7 @@
     <div class="bg-gray-900 text-white rounded-[2rem] p-4 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 print:hidden">
         <div class="flex items-center gap-6 px-4">
             <a 
-                href="/assessments/papers"
+                href="/assessments"
                 class="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
                 title="Back to Papers"
             >
