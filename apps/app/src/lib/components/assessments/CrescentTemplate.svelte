@@ -26,15 +26,32 @@
     let swapContext = $state<any>(null);
 
     // Unified resolver for questions array
+    // This ensures even raw question objects from DB are wrapped into the "slot" structure expected by the UI
     let safeQuestions = $derived.by(() => {
         const raw = currentSetData;
         if (!raw) return [];
+        
+        // Handle various input structures: { questions: [] } or just []
         const arr = Array.isArray(raw) ? raw : (raw.questions || []);
-        // Ensure IDs for dndzone
-        return arr.map((s: any, i: number) => ({
-            ...s,
-            id: s.id || `slot-${activeSet}-${i}-${s.label || ''}`
-        }));
+        
+        return arr.map((item: any, i: number) => {
+            // If it's already a slot structure, just ensure it has an ID
+            if (item.type === 'SINGLE' || item.type === 'OR_GROUP') {
+                return {
+                    ...item,
+                    id: item.id || `slot-${activeSet}-${i}-${item.label || ''}`
+                };
+            }
+            
+            // Raw question object - wrap it in a SINGLE slot
+            return {
+                id: item.id || `q-raw-${activeSet}-${i}`,
+                type: 'SINGLE',
+                label: String(i + 1),
+                marks: Number(item.marks || 2),
+                questions: [item] // The raw question becomes the first (and only) question in the slot
+            };
+        });
     });
 
     function openSwapSidebar(index: number, part: 'A' | 'B' | 'C', subPart?: 'q1' | 'q2') {
@@ -45,11 +62,11 @@
         if (slot.type === 'SINGLE') {
             currentQ = slot.questions?.[0];
         } else if (slot.type === 'OR_GROUP') {
-            currentQ = subPart === 'q1' ? slot.choice1.questions[0] : slot.choice2.questions[0];
+            currentQ = subPart === 'q1' ? slot.choice1?.questions?.[0] : slot.choice2?.questions?.[0];
         }
 
         const marks = Number(currentQ?.marks || slot.marks || (part === 'A' ? 2 : 16));
-        const alternates = questionPool.filter(q => Number(q.marks) === marks && q.id !== currentQ?.id);
+        const alternates = questionPool.filter((q: any) => Number(q.marks) === marks && q.id !== currentQ?.id);
 
         swapContext = {
             slotIndex: index,
@@ -67,7 +84,10 @@
         
         // We must update the ORIGINAL bound state
         const targetArr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
+        if (!targetArr) return;
+        
         const slot = targetArr[slotIndex];
+        if (!slot) return;
 
         const newQData = {
             id: question.id,
@@ -79,10 +99,14 @@
             bloom: question.bloom_level
         };
 
-        if (slot.type === 'SINGLE') {
-            slot.questions = [newQData];
-            slot.text = question.question_text;
-            slot.id = question.id;
+        // If the slot itself is raw, we replace it entirely or wrap it
+        if (!slot.type || slot.type === 'SINGLE') {
+            if (slot.questions) {
+                slot.questions = [newQData];
+            } else {
+                // Replace raw question
+                targetArr[slotIndex] = newQData;
+            }
         } else if (slot.type === 'OR_GROUP') {
             if (subPart === 'q1') slot.choice1.questions = [newQData];
             else slot.choice2.questions = [newQData];
@@ -111,7 +135,7 @@
     }
 
     function updateQuestionsFromDnd(items: any[], part: 'A' | 'B' | 'C') {
-        const otherParts = safeQuestions.filter(s => {
+        const otherParts = safeQuestions.filter((s: any) => {
             const p = getPartForSlot(s);
             return p !== part;
         });
@@ -121,11 +145,11 @@
         if (part === 'A') {
             newList = [...items, ...otherParts];
         } else if (part === 'B') {
-            const partA = safeQuestions.filter(s => getPartForSlot(s) === 'A');
-            const partC = safeQuestions.filter(s => getPartForSlot(s) === 'C');
+            const partA = safeQuestions.filter((s: any) => getPartForSlot(s) === 'A');
+            const partC = safeQuestions.filter((s: any) => getPartForSlot(s) === 'C');
             newList = [...partA, ...items, ...partC];
         } else if (part === 'C') {
-             const others = safeQuestions.filter(s => getPartForSlot(s) !== 'C');
+             const others = safeQuestions.filter((s: any) => getPartForSlot(s) !== 'C');
              newList = [...others, ...items];
         }
 
@@ -137,7 +161,7 @@
     }
 
     function addQuestion(part: 'A' | 'B' | 'C') {
-        const marks = part === 'A' ? 2 : (part === 'B' ? (Number(paperMeta.max_marks) === 50 ? 5 : 16) : 16);
+        const marks = part === 'A' ? 2 : 16;
         const newSlot = {
             id: 'manual-' + Math.random().toString(36).substr(2, 9),
             type: 'SINGLE',
@@ -167,16 +191,19 @@
     // Robust partitioning based on marks
     const getPartForSlot = (slot: any) => {
         if (!slot) return 'B';
+        // Check slot questions first, then fallback to top-level marks if it's a raw question
         const marks = Number(slot.questions?.[0]?.marks || slot.marks || 0);
+        
         if (marks === 1 || marks === 2) return 'A';
         
         // For 100m, the last question is Part C
         const all = safeQuestions;
         if (Number(paperMeta.max_marks) === 100) {
-            const nonA = all.filter(s => {
+            const nonA = all.filter((s: any) => {
                 const m = Number(s.questions?.[0]?.marks || s.marks || 0);
-                return m !== 1 && m !== 2;
+                return m > 2;
             });
+            // If this is the last question in the entire set, and it's not Part A, it's Part C
             if (nonA.length > 0 && slot.id === nonA[nonA.length - 1].id) return 'C';
         }
         return 'B';
