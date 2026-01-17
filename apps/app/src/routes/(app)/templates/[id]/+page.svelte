@@ -5,18 +5,18 @@
   // @ts-ignore
   let { data }: { data: any } = $props();
 
-  let name = $state(data.template.name);
-  let subject = $state(data.template.subject);
-  let html = $state(data.template.html);
-  let config = $state({
-    showTable: data.template.config?.showTable ?? false,
-    tableRows: data.template.config?.tableRows ?? [],
-    showActionButton: data.template.config?.showActionButton ?? false,
-    actionButtonText: data.template.config?.actionButtonText ?? 'Click Here',
-    actionButtonUrl: data.template.config?.actionButtonUrl ?? ''
+  let name = $state('');
+  let subject = $state('');
+  let html = $state('');
+  let config = $state<any>({
+    showTable: false,
+    tableRows: [],
+    showActionButton: false,
+    actionButtonText: 'Click Here',
+    actionButtonUrl: ''
   });
 
-  $effect(() => {
+  $effect.pre(() => {
     name = data.template.name;
     subject = data.template.subject;
     html = data.template.html;

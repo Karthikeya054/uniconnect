@@ -11,9 +11,9 @@
   let isLoadingRecipients = $state(false);
   let showRecipients = $state(false);
 
-  let testEmail = $state(data.user?.email || '');
+  let testEmail = $state('');
 
-  $effect(() => {
+  $effect.pre(() => {
     testEmail = data.user?.email || '';
   });
   let isSendingTest = $state(false);

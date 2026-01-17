@@ -4,9 +4,9 @@
   import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
   let { children, data } = $props();
   let user = $derived(data.user);
-  let currentTheme = $state<'light' | 'dark'>(data.theme || 'light');
+  let currentTheme = $state<'light' | 'dark'>('light');
 
-  $effect(() => {
+  $effect.pre(() => {
     if (data.theme && data.theme !== currentTheme) {
       currentTheme = data.theme;
     }

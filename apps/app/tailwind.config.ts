@@ -8,6 +8,9 @@ export default {
 
   theme: {
     extend: {
+      boxShadow: {
+        'glass': '0 8px 32px rgba(0, 0, 0, 0.04)',
+      },
       colors: {
         // Custom colors based on the screenshot/theme if needed
         primary: {

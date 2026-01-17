@@ -3,9 +3,9 @@
     // @ts-ignore
     let { data } = $props();
 
-  let selectedDate = $state(data.selectedDate);
+  let selectedDate = $state<string>('');
 
-  $effect(() => {
+  $effect.pre(() => {
     selectedDate = data.selectedDate;
   });
 

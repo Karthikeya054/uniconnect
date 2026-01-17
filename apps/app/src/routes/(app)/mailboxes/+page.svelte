@@ -3,11 +3,11 @@
   // @ts-ignore
   let { data } = $props();
 
-  let selectedUniversityId = $state(data.userUniversityId || '');
+  let selectedUniversityId = $state('');
   let isLoading = $state(false);
-  let mailboxes = $state(data.mailboxes);
+  let mailboxes = $state<any[]>([]);
 
-  $effect(() => {
+  $effect.pre(() => {
     selectedUniversityId = data.userUniversityId || '';
     mailboxes = data.mailboxes;
   });

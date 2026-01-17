@@ -9,9 +9,9 @@
     let limit = $state(50);
     let offset = $state(0);
     let isLoading = $state(true);
-    let universityId = $state((data.user?.university_id as string) || '');
+    let universityId = $state('');
 
-    $effect(() => {
+    $effect.pre(() => {
         universityId = (data.user?.university_id as string) || '';
     });
 

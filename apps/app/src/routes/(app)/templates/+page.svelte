@@ -3,9 +3,9 @@
   // @ts-ignore
   let { data } = $props();
 
-  let selectedUniversityId = $state(data.selectedUniversityId || '');
+  let selectedUniversityId = $state('');
 
-  $effect(() => {
+  $effect.pre(() => {
     selectedUniversityId = data.selectedUniversityId || '';
   });
 
