@@ -1,33 +1,37 @@
 <script lang="ts">
-    import { onMount, flushSync } from 'svelte';
-    import { fade, scale, fly } from 'svelte/transition';
+    import { invalidateAll } from '$app/navigation';
+    import { scale } from 'svelte/transition';
+    import { onMount } from 'svelte';
 
     let { currentTheme = $bindable('light') } = $props<{ currentTheme: 'light' | 'dark' }>();
 
-    function toggleTheme(e: MouseEvent) {
-        // Use flushSync to ensure the UI updates immediately
-        flushSync(() => {
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-        });
+    async function toggleTheme(e: MouseEvent) {
+        // Prevent any default behavior that might interfere
+        e.preventDefault();
         
-        // Persist in cookie
-        document.cookie = `theme=${currentTheme}; path=/; max-age=31536000; SameSite=Lax`;
-    }
-
-    $effect(() => {
+        const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+        currentTheme = nextTheme;
+        
+        // INSTANT DOM UPDATE (Maximum responsiveness)
         const root = document.documentElement;
-        if (currentTheme === 'dark') {
+        if (nextTheme === 'dark') {
             root.classList.add('dark');
             root.style.colorScheme = 'dark';
         } else {
             root.classList.remove('dark');
             root.style.colorScheme = 'light';
         }
-    });
+
+        // Persist
+        document.cookie = `theme=${nextTheme}; path=/; max-age=31536000; SameSite=Lax`;
+        
+        // Sync with server state
+        await invalidateAll();
+    }
 </script>
 
 <button
-    onmousedown={toggleTheme}
+    onclick={toggleTheme}
     class="relative w-16 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 transition-all duration-500 hover:scale-105 active:scale-95 focus:outline-none group overflow-hidden shadow-inner"
     aria-label="Toggle Theme"
 >

@@ -2,13 +2,31 @@
   import { page } from '$app/stores';
   import { fade, fly } from 'svelte/transition';
   import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
+  import { untrack } from 'svelte';
   let { children, data } = $props();
   let user = $derived(data.user);
-  let currentTheme = $state<'light' | 'dark'>('light');
+  let currentTheme = $state<'light' | 'dark'>(data.theme || 'light');
 
-  $effect.pre(() => {
-    if (data.theme && data.theme !== currentTheme) {
-      currentTheme = data.theme;
+  $effect(() => {
+    // Root application of theme
+    const root = document.documentElement;
+    if (currentTheme === 'dark') {
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
+    } else {
+      root.classList.remove('dark');
+      root.style.colorScheme = 'light';
+    }
+  });
+
+  $effect(() => {
+    // Sync from server data without creating a loop
+    if (data.theme) {
+      untrack(() => {
+        if (currentTheme !== data.theme) {
+          currentTheme = data.theme;
+        }
+      });
     }
   });
 
