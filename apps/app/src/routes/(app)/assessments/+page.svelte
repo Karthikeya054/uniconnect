@@ -936,7 +936,7 @@
     }
 
     .glass {
-        @apply bg-white/70 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 shadow-xl;
+        @apply bg-white/80 dark:bg-gray-900/40 backdrop-blur-xl border border-gray-200/50 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-2xl;
     }
 
     .custom-scrollbar::-webkit-scrollbar {

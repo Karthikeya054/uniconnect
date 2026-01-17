@@ -85,7 +85,6 @@
         <span class="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none">UniConnect</span>
       </div>
       <div class="flex items-center gap-2">
-        <ThemeToggle bind:currentTheme />
         <button 
             onclick={() => isSidebarOpen = !isSidebarOpen} 
             class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"
@@ -192,9 +191,6 @@
     <div class="px-8 py-10 border-t border-gray-100 dark:border-gray-800 bg-gray-50/10 dark:bg-gray-900/10">
       <div class="px-2 mb-4 flex justify-between items-center">
         <p class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] opacity-40">System Integrity</p>
-        <div class="hidden lg:block">
-            <ThemeToggle bind:currentTheme />
-        </div>
       </div>
       <div class="px-2 flex items-center gap-3">
         <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.5)]"></div>
@@ -215,7 +211,9 @@
   <!-- Main Content -->
   <main class="flex-1 w-0 min-w-0 overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-950 focus:outline-none flex flex-col transition-colors duration-500">
     <div class="sticky top-0 z-40 bg-gray-50/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100/50 dark:border-gray-800/50 w-full flex justify-center">
-      <div class="w-full max-w-[1280px] px-4 sm:px-6 md:px-8 py-3 flex justify-end items-center gap-6">
+      <div class="w-full max-w-[1280px] px-4 sm:px-6 md:px-8 py-3 flex justify-end items-center gap-4">
+        <ThemeToggle bind:currentTheme />
+        
         
         <!-- Institutional Context Selector -->
         {#if user && (user.role === 'ADMIN' || user.role === 'PROGRAM_OPS' || (user.universities && user.universities.length > 1))}
