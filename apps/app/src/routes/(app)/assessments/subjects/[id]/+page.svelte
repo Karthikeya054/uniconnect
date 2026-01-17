@@ -1212,7 +1212,7 @@
                 <h3 class="text-sm font-black text-gray-900 uppercase tracking-tight">Edit Question</h3>
                 <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Modify question details and answer</p>
             </div>
-            <button onclick={() => editingQuestion = null} class="p-2 text-gray-400 hover:text-gray-600">
+            <button onclick={() => editingQuestion = null} class="p-2 text-gray-400 hover:text-gray-600" aria-label="Close Edit Modal">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -1254,12 +1254,12 @@
 
             <div class="grid grid-cols-3 gap-6">
                 <div>
-                    <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Marks</label>
-                    <input type="number" bind:value={editingQuestion.marks} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20" />
+                    <label for="eq-marks" class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Marks</label>
+                    <input id="eq-marks" type="number" bind:value={editingQuestion.marks} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20" />
                 </div>
                 <div>
-                    <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">CO Code</label>
-                    <select bind:value={editingQuestion.co_id} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20">
+                    <label for="eq-co" class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">CO Code</label>
+                    <select id="eq-co" bind:value={editingQuestion.co_id} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20">
                         <option value={null}>None</option>
                         {#each data.courseOutcomes as co}
                             <option value={co.id}>{co.code}</option>
@@ -1270,8 +1270,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Level</label>
-                    <select bind:value={editingQuestion.bloom_level} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20">
+                    <label for="eq-level" class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Level</label>
+                    <select id="eq-level" bind:value={editingQuestion.bloom_level} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20">
                         <option value="L1">L1 - Remember</option>
                         <option value="L2">L2 - Understand</option>
                         <option value="L3">L3 - Apply</option>
@@ -1279,8 +1279,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Category</label>
-                    <select bind:value={editingQuestion.type} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20">
+                    <label for="eq-category" class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Category</label>
+                    <select id="eq-category" bind:value={editingQuestion.type} class="w-full bg-gray-50 border-gray-100 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20">
                         <option value="NORMAL">Normal</option>
                         <option value="SHORT">Short</option>
                         <option value="LONG">Long</option>
@@ -1292,9 +1292,10 @@
             {#if editingQuestion.type === 'MCQ'}
                 <div class="space-y-4 p-6 bg-indigo-50/30 rounded-[2rem] border border-indigo-100">
                     <div class="flex justify-between items-center">
-                        <label class="text-[9px] font-black text-indigo-600 uppercase tracking-widest">MCQ Options</label>
+                        <span class="text-[9px] font-black text-indigo-600 uppercase tracking-widest">MCQ Options</span>
                         <button 
-                            onclick={() => editingQuestion.options = [...(editingQuestion.options || []), `(${String.fromCharCode(97 + (editingQuestion.options?.length || 0))}) Option Text`]}
+                            type="button" 
+                            onclick={() => editingQuestion.options = [...editingQuestion.options, '']}
                             class="px-2 py-1 bg-white border border-indigo-100 rounded-lg text-[8px] font-black text-indigo-600 uppercase"
                         >+ Option</button>
                     </div>
@@ -1302,12 +1303,14 @@
                         {#each editingQuestion.options || [] as opt, idx}
                             <div class="flex gap-2">
                                 <input 
+                                    id="mcq-opt-{idx}"
                                     type="text" 
                                     bind:value={editingQuestion.options[idx]}
                                     class="flex-1 bg-white border-gray-100 rounded-xl text-[10px] font-bold py-2.5 px-4 focus:ring-2 focus:ring-indigo-500/20"
                                 />
                                 <button 
                                     onclick={() => editingQuestion.options = editingQuestion.options.filter((_: any, i: number) => i !== idx)}
+                                    aria-label="Remove Option"
                                     class="p-2 text-gray-300 hover:text-red-500 transition-colors"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -1319,25 +1322,33 @@
             {/if}
 
             <div>
-                <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Question Text</label>
+                <label for="q-editor" class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Question Text</label>
                 <div 
+                    id="q-editor"
                     bind:this={qEditorEl}
                     bind:innerHTML={editingQuestion.question_text}
                     contenteditable="true" 
                     onfocus={() => activeEditor = 'question'}
                     onpaste={(e) => handlePaste(e, 'question')}
+                    role="textbox"
+                    tabindex="0"
+                    aria-multiline="true"
                     class="w-full bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-medium py-3 px-4 leading-relaxed focus:ring-2 focus:ring-indigo-500/20 min-h-[100px] outline-none overflow-y-auto rich-editor"
                 ></div>
             </div>
 
             <div>
-                <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Answer / Solution</label>
+                <label for="a-editor" class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 text-indigo-400">Answer / Solution</label>
                 <div 
+                    id="a-editor"
                     bind:this={aEditorEl}
                     bind:innerHTML={editingQuestion.answer_key}
                     contenteditable="true" 
                     onfocus={() => activeEditor = 'answer'}
                     onpaste={(e) => handlePaste(e, 'answer')}
+                    role="textbox"
+                    tabindex="0"
+                    aria-multiline="true"
                     class="w-full bg-gray-50 border border-gray-100 rounded-xl text-[10px] font-medium py-3 px-4 leading-relaxed focus:ring-2 focus:ring-indigo-500/20 min-h-[150px] outline-none overflow-y-auto rich-editor"
                 ></div>
                 <p class="text-[8px] font-bold text-gray-300 uppercase mt-2">Paste images directly or use buttons for tables and formatting</p>

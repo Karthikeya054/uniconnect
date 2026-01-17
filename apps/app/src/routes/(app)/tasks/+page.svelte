@@ -78,7 +78,7 @@
             description: '',
             priority: 'MEDIUM',
             assigned_to: (isGlobalAdmin || isUnivAdmin) ? '' : data.user.id,
-            university_id: isGlobalAdmin ? '' : data.user.university_id,
+            university_id: isGlobalAdmin ? '' : (data.user.university_id || ''),
             due_date: ''
         };
         showModal = true;
@@ -232,16 +232,17 @@
     <div class="flex flex-wrap items-end gap-6 bg-gray-50/50 p-6 rounded-[32px] border border-gray-100 shadow-inner">
         <div class="flex items-center gap-3">
             <input 
+                id="select-all-checkbox"
                 type="checkbox" 
                 bind:checked={selectAll}
                 onchange={toggleSelectAll}
                 class="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
             />
-            <label class="text-sm font-bold text-gray-700 cursor-pointer" onclick={toggleSelectAll}>Select All</label>
+            <label for="select-all-checkbox" class="text-sm font-bold text-gray-700 cursor-pointer">Select All</label>
         </div>
         <div class="flex-1 min-w-[200px]">
-            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
-            <select bind:value={filterStatus} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
+            <label for="filter-status" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
+            <select id="filter-status" bind:value={filterStatus} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
                 <option value="">All Statuses</option>
                 <option value="PENDING">⏳ Pending</option>
                 <option value="IN_PROGRESS">🚀 Processing</option>
@@ -251,8 +252,8 @@
         </div>
         {#if (data.user.role === 'ADMIN' || data.user.role === 'PROGRAM_OPS')}
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">University</label>
-                <select bind:value={filterUniversity} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
+                <label for="filter-university" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">University</label>
+                <select id="filter-university" bind:value={filterUniversity} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
                     <option value="">All Universities</option>
                     {#each data.universities as univ}
                         <option value={univ.id}>{univ.name}</option>
@@ -261,8 +262,8 @@
             </div>
         {/if}
         <div class="flex-1 min-w-[200px]">
-            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Assigned To</label>
-            <select bind:value={filterAssignedTo} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
+            <label for="filter-assigned" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Assigned To</label>
+            <select id="filter-assigned" bind:value={filterAssignedTo} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
                 <option value="">All Members</option>
                 {#each data.users as user}
                     <option value={user.id}>{user.name || user.email}</option>
@@ -398,7 +399,7 @@
 <!-- Premium Task Modal -->
 {#if showModal}
 <div class="fixed inset-0 z-50 flex items-center justify-center px-4" transition:fade={{ duration: 200 }}>
-    <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onclick={() => showModal = false}></div>
+    <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onclick={() => showModal = false} onkeydown={(e) => e.key === 'Escape' && (showModal = false)} role="button" tabindex="-1" aria-label="Close modal background"></div>
     
     <div 
         class="bg-white rounded-3xl w-full max-w-lg shadow-2xl relative overflow-hidden"
@@ -408,7 +409,7 @@
             <h3 class="text-2xl font-bold">{editingTask ? 'Edit Task Details' : 'Design New Task'}</h3>
             <p class="text-indigo-100 text-sm opacity-80">{editingTask ? 'Refine parameters and reassign if needed.' : 'Set clear goals and assign to team members.'}</p>
             <div class="absolute right-6 top-6">
-                <button onclick={() => showModal = false} class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <button onclick={() => showModal = false} class="p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="Close Modal">
                     <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>

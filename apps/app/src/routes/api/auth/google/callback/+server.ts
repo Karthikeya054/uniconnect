@@ -104,8 +104,9 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
                 // Refresh local user object
                 user = await getUserByEmail(email) as any;
             }
-            // Update last login
-            await updateLastLogin(user.id);
+            if (user) {
+                await updateLastLogin(user.id);
+            }
         }
 
         if (!user) {

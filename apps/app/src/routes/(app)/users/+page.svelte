@@ -221,17 +221,17 @@
     <!-- Search & Filters -->
     <div class="flex flex-wrap items-end gap-6 bg-gray-50/50 p-6 rounded-[32px] border border-gray-100 shadow-inner">
         <div class="flex-1 min-w-[280px]">
-            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Search Members</label>
+            <label for="u-search" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Search Members</label>
             <div class="relative">
-                <input type="text" bind:value={searchQuery} placeholder="Search by name or email identity..." class="w-full bg-white border border-gray-200 rounded-2xl pl-12 pr-6 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
+                <input id="u-search" type="text" bind:value={searchQuery} placeholder="Search by name or email identity..." class="w-full bg-white border border-gray-200 rounded-2xl pl-12 pr-6 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
                 <svg class="w-5 h-5 absolute left-4 top-3.5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
         </div>
         
         {#if data.isGlobalAdmin}
             <div class="w-[240px]">
-                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">University Filter</label>
-                <select bind:value={filterUniversity} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
+                <label for="filter-univ" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">University Filter</label>
+                <select id="filter-univ" bind:value={filterUniversity} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
                     <option value="">All Universities</option>
                     {#each data.universities as univ}
                         <option value={univ.id}>{univ.name}</option>
@@ -241,8 +241,8 @@
         {/if}
 
         <div class="w-[220px]">
-            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Role Filter</label>
-            <select bind:value={filterRole} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
+            <label for="filter-role" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Role Filter</label>
+            <select id="filter-role" bind:value={filterRole} class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm">
                 <option value="">All Roles</option>
                 <option value="ADMIN">Admin</option>
                 <option value="UNIVERSITY_OPERATOR">University Admin</option>
@@ -336,7 +336,9 @@
         {#if selectedUser}
             <div class="w-80 h-fit sticky top-6 bg-white rounded-2xl border border-indigo-100 shadow-xl overflow-hidden animate-in slide-in-from-right-8 duration-300">
                 <div class="h-24 bg-gradient-to-br from-indigo-600 to-blue-700 relative">
-                     <button onclick={() => selectedUser = null} class="absolute top-4 right-4 p-1.5 bg-black/10 hover:bg-black/20 rounded-full text-white transition-colors"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                     <button onclick={() => selectedUser = null} class="absolute top-4 right-4 p-1.5 bg-black/10 hover:bg-black/20 rounded-full text-white transition-colors" aria-label="Close Details">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
                 <div class="px-6 pb-8 -mt-10 relative">
                     <div class="h-20 w-20 rounded-2xl bg-white p-1 shadow-lg border border-gray-50 flex items-center justify-center mx-auto mb-4">
@@ -352,19 +354,19 @@
 
                     <div class="mt-8 space-y-5">
                         <div class="space-y-1">
-                            <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Contact Email</label>
+                            <span class="block text-[9px] font-black text-gray-400 uppercase tracking-widest">Contact Email</span>
                             <p class="text-sm font-bold text-gray-700 break-all">{selectedUser.email}</p>
                         </div>
                         
                         {#if selectedUser.university_name}
                             <div class="space-y-1">
-                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Institution</label>
+                                <span class="block text-[9px] font-black text-gray-400 uppercase tracking-widest">Institution</span>
                                 <p class="text-sm font-bold text-gray-700">{selectedUser.university_name}</p>
                             </div>
                         {/if}
 
                         <div class="space-y-1">
-                            <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Contact Options</label>
+                            <span class="block text-[9px] font-black text-gray-400 uppercase tracking-widest">Contact Options</span>
                             <div class="flex gap-2 pt-1">
                                 <a href="mailto:{selectedUser.email}" class="flex-1 py-1.5 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg border border-gray-100 text-[10px] font-black text-center transition-all uppercase tracking-tighter">📧 Email</a>
                                 {#if selectedUser.phone}
@@ -375,7 +377,7 @@
 
                         {#if selectedUser.bio}
                             <div class="space-y-1">
-                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">About / Bio</label>
+                                <span class="block text-[9px] font-black text-gray-400 uppercase tracking-widest">About / Bio</span>
                                 <p class="text-[11px] font-medium text-gray-500 leading-relaxed italic border-l-2 border-gray-100 pl-3">"{selectedUser.bio}"</p>
                             </div>
                         {/if}
@@ -446,7 +448,7 @@
 <!-- Refined Invite Modal -->
 {#if showModal}
 <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
-  <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick={closeModal}></div>
+  <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick={closeModal} onkeydown={(e) => e.key === 'Escape' && closeModal()} role="button" tabindex="-1" aria-label="Close modal background"></div>
   <div class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100 animate-in zoom-in-95 duration-200">
     <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 px-8 py-6 text-white">
         <h3 class="text-2xl font-black tracking-tight flex items-center justify-between" id="modal-title">
@@ -496,13 +498,13 @@
             {#if data.isGlobalAdmin}
             <div class="col-span-2">
                 <div class="flex items-center justify-between mb-3 px-1">
-                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Assign to Institutions</label>
+                    <span id="assign-inst-label" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Assign to Institutions</span>
                     <div class="flex gap-3">
                         <button type="button" onclick={selectAll} class="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest transition-colors">Select All</button>
                         <button type="button" onclick={clearSelection} class="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest transition-colors">Clear</button>
                     </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 max-h-48 overflow-y-auto space-y-2 shadow-inner">
+                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 max-h-48 overflow-y-auto space-y-2 shadow-inner" aria-labelledby="assign-inst-label">
                     {#each data.universities as univ}
                         <label class="flex items-center gap-3 px-4 py-3 bg-white border border-gray-100 rounded-xl hover:bg-indigo-50/50 hover:border-indigo-100 cursor-pointer transition-all group">
                             <input

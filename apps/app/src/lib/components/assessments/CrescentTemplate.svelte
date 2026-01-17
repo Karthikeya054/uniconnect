@@ -345,11 +345,11 @@
 
     // Part-Based filtering: NO INDEX SLICING
     let questionsA = $derived.by(() => {
-        return safeQuestions.filter(s => s.part === 'A').map((s: any, idx: number) => ({ ...s, n1: idx + 1 }));
+        return safeQuestions.filter((s: any) => s.part === 'A').map((s: any, idx: number) => ({ ...s, n1: idx + 1 }));
     });
 
     let questionsB = $derived.by(() => {
-        const slots = safeQuestions.filter(s => s.part === 'B');
+        const slots = safeQuestions.filter((s: any) => s.part === 'B');
         let currentNum = questionsA.length + 1;
         return slots.map((s: any) => {
             if (s.type === 'OR_GROUP') {
@@ -364,7 +364,7 @@
     });
 
     let questionsC = $derived.by(() => {
-        const slots = safeQuestions.filter(s => s.part === 'C');
+        const slots = safeQuestions.filter((s: any) => s.part === 'C');
         
         // Calculate starting number
         let currentNum = questionsA.length + 1;
