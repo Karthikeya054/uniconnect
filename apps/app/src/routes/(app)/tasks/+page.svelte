@@ -242,7 +242,7 @@
         </div>
         <div class="flex-1 min-w-[200px]">
             <label for="filter-status" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
-            <select id="filter-status" bind:value={filterStatus} class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all shadow-sm">
+            <select id="filter-status" bind:value={filterStatus} class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all shadow-sm" style="color: inherit; background-color: inherit;">
                 <option value="" class="dark:bg-slate-800">All Statuses</option>
                 <option value="PENDING" class="dark:bg-slate-800">⏳ Pending</option>
                 <option value="IN_PROGRESS" class="dark:bg-slate-800">🚀 Processing</option>
@@ -253,7 +253,7 @@
         {#if (data.user.role === 'ADMIN' || data.user.role === 'PROGRAM_OPS')}
             <div class="flex-1 min-w-[200px]">
                 <label for="filter-university" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">University</label>
-                <select id="filter-university" bind:value={filterUniversity} class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all shadow-sm">
+                <select id="filter-university" bind:value={filterUniversity} class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all shadow-sm" style="color: inherit; background-color: inherit;">
                     <option value="" class="dark:bg-slate-800">All Universities</option>
                     {#each data.universities as univ}
                         <option value={univ.id} class="dark:bg-slate-800">{univ.name}</option>
@@ -263,7 +263,7 @@
         {/if}
         <div class="flex-1 min-w-[200px]">
             <label for="filter-assigned" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Assigned To</label>
-            <select id="filter-assigned" bind:value={filterAssignedTo} class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all shadow-sm">
+            <select id="filter-assigned" bind:value={filterAssignedTo} class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 text-sm font-bold text-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all shadow-sm" style="color: inherit; background-color: inherit;">
                 <option value="" class="dark:bg-slate-800">All Members</option>
                 {#each data.users as user}
                     <option value={user.id} class="dark:bg-slate-800">{user.name || user.email}</option>
