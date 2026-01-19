@@ -71,19 +71,17 @@
         };
 
         arr.forEach((item: any) => {
-            ensureId(item, 'slot-');
-            if (item.questions) {
-                item.questions.forEach((q: any) => ensureId(q, 'q-'));
+            if (item) {
+                ensureId(item, 'slot-');
+                if (item.questions) item.questions.forEach((q: any) => ensureId(q, 'q-'));
+                if (item.choice1?.questions) item.choice1.questions.forEach((q: any) => ensureId(q, 'q-'));
+                if (item.choice2?.questions) item.choice2.questions.forEach((q: any) => ensureId(q, 'q-'));
             }
-            ['choice1', 'choice2'].forEach(c => {
-                if (item[c]?.questions) {
-                    item[c].questions.forEach((q: any) => ensureId(q, 'q-'));
-                }
-            });
         });
 
+        // ONLY trigger a re-assignment if we actually had to add new IDs
+        // This prevents infinite loops and UI flickers during drags
         if (changed) {
-            console.log('Greedy ID Injection triggered update');
             if (Array.isArray(currentSetData)) currentSetData = [...currentSetData];
             else currentSetData.questions = [...currentSetData.questions];
         }
@@ -252,39 +250,32 @@
     }
 
     function updateQuestionsFromDnd(items: any[], part: 'A' | 'B' | 'C') {
-        // Strip UI-specific metadata and ensure part property is set
-        const cleanItems = items.map(item => {
+        const masterList = Array.isArray(currentSetData) ? [...currentSetData] : [...currentSetData.questions];
+        
+        // 1. Get source objects from the DND items, tagging them with the destination part
+        const updatedZoneItems = items.map(item => {
             const base = item._raw || item;
-            // Ensure the part is correctly preserved/set
             return { ...base, part };
         });
 
-        const masterList = Array.isArray(currentSetData) ? [...currentSetData] : [...currentSetData.questions];
-        
-        // Find the original position of this part's items
-        const firstIdx = masterList.findIndex(s => s.part === part);
-        
-        // Remove ALL currently matching items from the master list
-        const filtered = masterList.filter(s => s.part !== part);
-        
-        let newList;
-        if (firstIdx !== -1) {
-            // Insert at the same relative position
-            filtered.splice(firstIdx, 0, ...cleanItems);
-            newList = filtered;
-        } else {
-            // Fallback insertion logic if no items of this part existed
-            if (part === 'A') {
-                newList = [...cleanItems, ...filtered];
-            } else if (part === 'B') {
-                const partA = filtered.filter(s => s.part === 'A');
-                const others = filtered.filter(s => s.part !== 'A');
-                newList = [...partA, ...cleanItems, ...others];
-            } else {
-                newList = [...filtered, ...cleanItems];
-            }
-        }
+        const updatedIds = new Set(updatedZoneItems.map(i => i.id));
 
+        // 2. Separate the master list, EXCLUDING items that are now managed by this zone
+        const others = masterList.filter(s => !updatedIds.has(s.id));
+        
+        const otherA = others.filter(s => s.part === 'A');
+        const otherB = others.filter(s => s.part === 'B');
+        const otherC = others.filter(s => s.part === 'C');
+        const remainder = others.filter(s => !['A', 'B', 'C'].includes(s.part));
+
+        // 3. Reconstruct in the correct sequence
+        let newList;
+        if (part === 'A') newList = [...updatedZoneItems, ...otherB, ...otherC, ...remainder];
+        else if (part === 'B') newList = [...otherA, ...updatedZoneItems, ...otherC, ...remainder];
+        else if (part === 'C') newList = [...otherA, ...otherB, ...updatedZoneItems, ...remainder];
+        else newList = [...others, ...updatedZoneItems];
+
+        // 4. Update the source state once
         if (Array.isArray(currentSetData)) {
             currentSetData = newList;
         } else {
