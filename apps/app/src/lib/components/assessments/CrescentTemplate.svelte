@@ -321,20 +321,32 @@
 
     function updateText(e: Event, type: 'META' | 'QUESTION', key: string, slotId?: string, questionId?: string, subPart?: 'choice1' | 'choice2') {
         const target = e.target as HTMLElement;
-        // Use innerHTML for questions to preserve subscripts/styling, innerText for meta
-        const value = type === 'QUESTION' ? target.innerHTML : target.innerText;
+        let value = type === 'QUESTION' ? target.innerHTML : target.innerText;
+
+        // Basic normalization to prevent feedback loops on negligible white-space/tag differences
+        if (type === 'QUESTION') {
+            value = value.trim();
+        }
         
         if (type === 'META') {
             if ((paperMeta as any)[key] === value) return;
             (paperMeta as any)[key] = value;
         } else if (type === 'QUESTION') {
             const arr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
-            const slot = arr.find((s: any) => s.id === slotId);
+            
+            // Try ID first, fallback to index if ID is missing (should be fixed by source injection)
+            let slot = arr.find((s: any) => s.id === slotId);
+            if (!slot && slotId?.startsWith('slot-')) {
+                const idx = parseInt(slotId.split('-').pop() || '');
+                if (!isNaN(idx)) slot = arr[idx];
+            }
+
             if (!slot) return;
 
             let q: any = null;
-            if (slot.type === 'SINGLE') {
-                q = slot.questions.find((q: any) => q.id === questionId);
+            if (slot.type === 'SINGLE' || !slot.type) {
+                const subArr = slot.questions || [slot];
+                q = subArr.find((q: any) => q.id === questionId);
             } else if (slot.type === 'OR_GROUP') {
                  const choice = subPart === 'choice1' ? slot.choice1 : slot.choice2;
                  q = choice.questions.find((q: any) => q.id === questionId);
@@ -493,7 +505,7 @@
                 <div class="text-[12px] font-black text-gray-900 uppercase tracking-tighter">
                     &lt;<span 
                         contenteditable="true" 
-                        oninput={(e) => updateText(e, 'META', 'course_code')}
+                        onblur={(e) => updateText(e, 'META', 'course_code')}
                         class={isEditable ? '' : 'pointer-events-none outline-none'}
                     >{paperMeta.course_code}</span>&gt;
                 </div>
@@ -513,7 +525,7 @@
         <div class="w-full text-center mb-4">
             <h3 
                 contenteditable="true" 
-                oninput={(e) => updateText(e, 'META', 'exam_title')}
+                onblur={(e) => updateText(e, 'META', 'exam_title')}
                 class="text-[14px] font-black uppercase tracking-wide border-b border-white hover:border-gray-200 outline-none inline-block pb-0.5 {isEditable ? '' : 'pointer-events-none'}"
                 style="color: black !important;"
             >
@@ -532,7 +544,7 @@
                         <td class="border border-gray-900 p-2 font-black uppercase" colspan="4">
                             <div 
                                 contenteditable="true" 
-                                oninput={(e) => updateText(e, 'META', 'programme')}
+                                onblur={(e) => updateText(e, 'META', 'programme')}
                                 class={isEditable ? 'outline-none' : 'pointer-events-none'}
                             >{paperMeta.programme}</div>
                         </td>
@@ -544,7 +556,7 @@
                         <td class="border border-gray-900 p-2 font-black w-[15%]">
                             <div 
                                 contenteditable="true" 
-                                oninput={(e) => updateText(e, 'META', 'semester')}
+                                onblur={(e) => updateText(e, 'META', 'semester')}
                                 class={isEditable ? 'outline-none' : 'pointer-events-none'}
                             >{paperMeta.semester}</div>
                         </td>
@@ -553,7 +565,7 @@
                         <td class="border border-gray-900 p-2 font-black uppercase">
                             <span 
                                 contenteditable="true" 
-                                oninput={(e) => updateText(e, 'META', 'paper_date')}
+                                onblur={(e) => updateText(e, 'META', 'paper_date')}
                                 class={isEditable ? 'outline-none' : 'pointer-events-none'}
                             >{paperMeta.paper_date}</span>
                             {#if paperMeta.exam_time}
@@ -568,11 +580,11 @@
                         <td class="border border-gray-900 p-2 font-black uppercase" colspan="4">
                             <span 
                                 contenteditable="true" 
-                                oninput={(e) => updateText(e, 'META', 'course_code')}
+                                onblur={(e) => updateText(e, 'META', 'course_code')}
                                 class={isEditable ? 'outline-none' : 'pointer-events-none'}
                             >{paperMeta.course_code}</span> - <span 
                                 contenteditable="true" 
-                                oninput={(e) => updateText(e, 'META', 'subject_name')}
+                                onblur={(e) => updateText(e, 'META', 'subject_name')}
                                 class={isEditable ? 'outline-none' : 'pointer-events-none'}
                             >{paperMeta.subject_name}</span>
                         </td>
@@ -584,7 +596,7 @@
                         <td class="border border-gray-900 p-2 font-black w-[15%]">
                             <div 
                                 contenteditable="true" 
-                                oninput={(e) => updateText(e, 'META', 'duration_minutes')}
+                                onblur={(e) => updateText(e, 'META', 'duration_minutes')}
                                 class={isEditable ? 'outline-none' : 'pointer-events-none'}
                             >{paperMeta.duration_minutes} Minutes</div>
                         </td>
@@ -593,7 +605,7 @@
                         <td class="border border-gray-900 p-2 font-black">
                             <div 
                                 contenteditable="true" 
-                                oninput={(e) => updateText(e, 'META', 'max_marks')}
+                                onblur={(e) => updateText(e, 'META', 'max_marks')}
                                 class={isEditable ? 'outline-none' : 'pointer-events-none'}
                             >{paperMeta.max_marks}</div>
                         </td>
@@ -647,11 +659,13 @@
                                 </div>
                                 <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                     <div class="flex justify-between items-start gap-4">
-                                        <div 
-                                            contenteditable="true" 
-                                            onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id)}
-                                            class="flex-1 {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
-                                        >{@html q.text}</div>
+                                        <div class="flex-1">
+                                            <div 
+                                                contenteditable="true" 
+                                                onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id)}
+                                                class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
+                                            >{@html q.text}</div>
+                                        </div>
                                         {#if q.type === 'MCQ'}
                                             <div class="flex-shrink-0 font-black text-[11px] whitespace-nowrap">[&nbsp;&nbsp;&nbsp;&nbsp;]</div>
                                         {/if}
@@ -771,11 +785,13 @@
                                         {q.sub_label || ''}
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
-                                        <div 
-                                            contenteditable="true" 
-                                            onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice1')}
-                                            class={isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}
-                                        >{@html q.text}</div>
+                                        <div class="w-full">
+                                            <div 
+                                                contenteditable="true" 
+                                                onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice1')}
+                                                class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
+                                            >{@html q.text}</div>
+                                        </div>
                                         {#if isEditable}
                                             <button 
                                                 onclick={() => openSwapSidebar(slot, 'B', 'q1')}
@@ -808,11 +824,13 @@
                                         {q.sub_label || ''}
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
-                                        <div 
-                                            contenteditable="true" 
-                                            onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice2')}
-                                            class={isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}
-                                        >{@html q.text}</div>
+                                        <div class="w-full">
+                                            <div 
+                                                contenteditable="true" 
+                                                onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice2')}
+                                                class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
+                                            >{@html q.text}</div>
+                                        </div>
                                         {#if isEditable}
                                             <button 
                                                 onclick={() => openSwapSidebar(slot, 'B', 'q2')}
@@ -853,11 +871,13 @@
                                         {slot.n1 + '.'}
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
-                                        <div 
-                                            contenteditable="true" 
-                                            onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id)}
-                                            class="flex-1 {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
-                                        >{@html q.text}</div>
+                                        <div class="w-full">
+                                            <div 
+                                                contenteditable="true" 
+                                                onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id)}
+                                                class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
+                                            >{@html q.text}</div>
+                                        </div>
                                         {#if isEditable}
                                             <button 
                                                 onclick={() => openSwapSidebar(slot, 'B')}
@@ -939,11 +959,13 @@
                                     {q.sub_label || ''}
                                 </div>
                                 <div class="flex-1 p-3 text-[11px] leading-relaxed">
-                                    <div 
-                                        contenteditable="true" 
-                                        onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice1')}
-                                        class={isEditable ? 'outline-none focus:bg-gray-50 dark:focus:bg-gray-800/50' : 'pointer-events-none'}
-                                    >{@html q.text}</div>
+                                    <div class="w-full">
+                                        <div 
+                                            contenteditable="true" 
+                                            onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice1')}
+                                            class="w-full block {isEditable ? 'outline-none focus:bg-gray-50 dark:focus:bg-gray-800/50' : 'pointer-events-none'}"
+                                        >{@html q.text}</div>
+                                    </div>
                                     
                                     {#if q.options && q.options.length > 0}
                                         <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
@@ -984,11 +1006,13 @@
                                     {q.sub_label || ''}
                                 </div>
                                 <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
-                                    <div 
-                                        contenteditable="true" 
-                                        onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice2')}
-                                        class={isEditable ? 'outline-none focus:bg-gray-50 dark:focus:bg-gray-800/50' : 'pointer-events-none'}
-                                    >{@html q.text}</div>
+                                    <div class="w-full">
+                                        <div 
+                                            contenteditable="true" 
+                                            onblur={(e) => updateText(e, 'QUESTION', 'text', slot.id, q.id, 'choice2')}
+                                            class="w-full block {isEditable ? 'outline-none focus:bg-gray-50 dark:focus:bg-gray-800/50' : 'pointer-events-none'} "
+                                        >{@html q.text}</div>
+                                    </div>
                                     {#if isEditable}
                                         <button 
                                             onclick={() => openSwapSidebar(slot, 'C', 'q2')}

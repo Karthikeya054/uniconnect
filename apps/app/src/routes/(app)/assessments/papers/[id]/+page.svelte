@@ -26,7 +26,36 @@
         const initial: any = {};
         availableSets.forEach(s => {
             const val = rawSetsData[s] || rawSetsData[s.toLowerCase()];
-            initial[s] = val ? JSON.parse(JSON.stringify(val)) : { questions: [] };
+            const setObj = val ? JSON.parse(JSON.stringify(val)) : { questions: [] };
+            
+            // CRITICAL: Ensure every slot and question has a stable ID at the source
+            // This prevents updateText from failing when questions are raw/un-ID'd
+            if (setObj.questions) {
+                setObj.questions = setObj.questions.map((q: any, idx: number) => {
+                    if (!q.id) q.id = `q-source-${s}-${idx}`;
+                    if (q.questions) {
+                        q.questions = q.questions.map((subQ: any, subIdx: number) => {
+                            if (!subQ.id) subQ.id = `sub-q-${s}-${idx}-${subIdx}`;
+                            return subQ;
+                        });
+                    }
+                    if (q.choice1?.questions) {
+                        q.choice1.questions = q.choice1.questions.map((subQ: any, subIdx: number) => {
+                            if (!subQ.id) subQ.id = `c1-${s}-${idx}-${subIdx}`;
+                            return subQ;
+                        });
+                    }
+                    if (q.choice2?.questions) {
+                        q.choice2.questions = q.choice2.questions.map((subQ: any, subIdx: number) => {
+                            if (!subQ.id) subQ.id = `c2-${s}-${idx}-${subIdx}`;
+                            return subQ;
+                        });
+                    }
+                    return q;
+                });
+            }
+
+            initial[s] = setObj;
         });
         return initial;
     }
