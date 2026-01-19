@@ -234,39 +234,37 @@
     }
 
     function updateQuestionsFromDnd(items: any[], part: 'A' | 'B' | 'C') {
-        // Strip UI-specific metadata before saving back to source state
-        // This prevents state pollution and recursive derived loops
+        // Strip UI-specific metadata and ensure part property is set
         const cleanItems = items.map(item => {
-            if (item._raw) return item._raw;
-            const { _raw, n1, n2, id, ...rest } = item;
-            return rest;
+            const base = item._raw || item;
+            // Ensure the part is correctly preserved/set
+            return { ...base, part };
         });
 
         const masterList = Array.isArray(currentSetData) ? [...currentSetData] : [...currentSetData.questions];
         
-        let writeIdx = 0;
-        if (part === 'A') {
-            writeIdx = masterList.findIndex(s => s.part === 'A');
-        } else if (part === 'B') {
-            writeIdx = masterList.findIndex(s => s.part === 'B');
-        } else {
-            writeIdx = masterList.findIndex(s => s.part === 'C');
-        }
-
-        if (writeIdx === -1) writeIdx = masterList.length;
-
-        const otherParts = masterList.filter(s => s.part !== part);
+        // Find the original position of this part's items
+        const firstIdx = masterList.findIndex(s => s.part === part);
         
-        // Reconstruct list based on part
-        let newList = [];
-        if (part === 'A') {
-            newList = [...cleanItems, ...otherParts];
-        } else if (part === 'B') {
-            const partA = otherParts.filter(s => s.part === 'A');
-            const partC = otherParts.filter(s => s.part === 'C');
-            newList = [...partA, ...cleanItems, ...partC];
+        // Remove ALL currently matching items from the master list
+        const filtered = masterList.filter(s => s.part !== part);
+        
+        let newList;
+        if (firstIdx !== -1) {
+            // Insert at the same relative position
+            filtered.splice(firstIdx, 0, ...cleanItems);
+            newList = filtered;
         } else {
-            newList = [...otherParts, ...cleanItems];
+            // Fallback insertion logic if no items of this part existed
+            if (part === 'A') {
+                newList = [...cleanItems, ...filtered];
+            } else if (part === 'B') {
+                const partA = filtered.filter(s => s.part === 'A');
+                const others = filtered.filter(s => s.part !== 'A');
+                newList = [...partA, ...cleanItems, ...others];
+            } else {
+                newList = [...filtered, ...cleanItems];
+            }
         }
 
         if (Array.isArray(currentSetData)) {
