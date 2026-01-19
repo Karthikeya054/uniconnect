@@ -3,7 +3,7 @@
   import { fade, fly } from 'svelte/transition';
   import { invalidateAll } from '$app/navigation';
 
-  let roles = ['ADMIN', 'PROGRAM_OPS', 'UNIVERSITY_OPERATOR', 'COS', 'PM', 'PMA', 'BOA'];
+  let roles = ['ADMIN', 'PROGRAM_OPS', 'UNIVERSITY_OPERATOR', 'COS', 'PM', 'PMA', 'BOA', 'CMA', 'CMA_MANAGER'];
   let features = [
     { id: 'dashboard', label: 'Dashboard', desc: 'Main overview and stats' },
     { id: 'tasks', label: 'Tasks', desc: 'Task management and tracking' },
