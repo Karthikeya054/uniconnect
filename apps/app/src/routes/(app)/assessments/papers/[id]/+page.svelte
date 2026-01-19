@@ -344,75 +344,113 @@
         `;
 
         const config = paperStructure;
-        const countA = config[0]?.count || 0;
-        const countB = config[1]?.count || 0;
-        const setsA = currentSetQuestions.slice(0, countA);
-        const setsB = currentSetQuestions.slice(countA, countA + countB);
-        const setsC = currentSetQuestions.slice(countA + countB);
+        const setsA = currentSetQuestions.filter((q: any) => q.part === 'A');
+        const setsB = currentSetQuestions.filter((q: any) => q.part === 'B');
+        const setsC = currentSetQuestions.filter((q: any) => q.part === 'C');
 
         const buildBlock = (title: string, slots: any[], startNum: number, marksPerQ: number) => {
             if (slots.length === 0) return '';
+            
+            // Calculate total marks for header
+            let total = 0;
+            slots.forEach(s => {
+                const marks = Number(s.marks || marksPerQ);
+                total += (s.type === 'OR_GROUP' ? marks * 2 : marks);
+            });
+
             let blockHtml = `<table style="width: 100%; border: 1pt solid black; margin-top: 15pt;">`;
-            blockHtml += `<tr><td colspan="3" class="part-header-row">${title} (${slots.length} X ${marksPerQ} = ${slots.length * marksPerQ} MARKS)</td></tr>`;
+            blockHtml += `<tr><td colspan="3" class="part-header-row">${title} (${slots.length} x ${marksPerQ} = ${total} MARKS)</td></tr>`;
             
             let currentNum = startNum;
             slots.forEach((s) => {
                 if (s.type === 'OR_GROUP') {
-                    const q1 = (s.choice1?.questions || [])[0] || {};
-                    const q2 = (s.choice2?.questions || [])[0] || {};
+                    const n1 = currentNum++;
+                    const n2 = currentNum++;
+                    const q1s = s.choice1?.questions || [];
+                    const q2s = s.choice2?.questions || [];
+                    
+                    // Choice 1
+                    q1s.forEach((q: any, qi: number) => {
+                        blockHtml += `
+                            <tr>
+                                <td style="width: 45pt; text-align: center; font-weight: bold; border-bottom: ${qi === q1s.length - 1 ? '1pt solid black' : 'none'} !important;">
+                                    ${qi === 0 ? n1 + '.' : ''}
+                                </td>
+                                <td style="width: auto; border-bottom: ${qi === q1s.length - 1 ? '1pt solid black' : 'none'} !important; padding: 8pt;">
+                                    <div style="display: flex; gap: 8pt;">
+                                        ${q.sub_label ? `<div style="width: 25pt; font-weight: bold;">${q.sub_label}</div>` : ''}
+                                        <div style="flex: 1;">${q.text || ''}</div>
+                                    </div>
+                                </td>
+                                <td style="width: 80pt; text-align: center; border-left: 1pt solid black; border-bottom: ${qi === q1s.length - 1 ? '1pt solid black' : 'none'} !important; font-size: 10pt; vertical-align: middle;">
+                                    ${fetchCO(q) ? `<div>(${fetchCO(q)})</div>` : ''}
+                                    <div style="font-weight: bold;">(${q.marks || s.marks || marksPerQ})</div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    // OR Row
                     blockHtml += `
-                        <tr>
-                            <td style="width: 45pt; text-align: center; font-weight: bold; border-bottom: none !important;">${currentNum}.</td>
-                            <td style="width: auto; border-bottom: none !important;">${q1.text || ''}</td>
-                            <td style="width: 80pt; text-align: center; border-left: 1pt solid black; border-bottom: none !important; font-size: 10pt;">
-                                ${fetchCO(q1) ? `<div>(${fetchCO(q1)})</div>` : ''}
-                                <div style="font-weight: bold;">(${q1.marks || s.marks || 0})</div>
-                            </td>
-                        </tr>
                         <tr class="or-row">
-                            <td style="width: 45pt;">&nbsp;</td>
-                            <td style="width: auto;">(OR)</td>
-                            <td style="width: 80pt; border-left: 1pt solid black;">&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td style="width: 45pt; text-align: center; font-weight: bold; border-top: none !important;">&nbsp;</td>
-                            <td style="width: auto; border-top: none !important;">${q2.text || ''}</td>
-                            <td style="width: 80pt; text-align: center; border-left: 1pt solid black; border-top: none !important; font-size: 10pt;">
-                                ${fetchCO(q2) ? `<div>(${fetchCO(q2)})</div>` : ''}
-                                <div style="font-weight: bold;">(${q2.marks || s.marks || 0})</div>
-                            </td>
+                            <td colspan="3" style="text-align: center; font-weight: bold; background: #fafafa; padding: 4pt;">(OR)</td>
                         </tr>
                     `;
-                    currentNum++;
+
+                    // Choice 2
+                    q2s.forEach((q: any, qi: number) => {
+                        blockHtml += `
+                            <tr>
+                                <td style="width: 45pt; text-align: center; font-weight: bold; border-top: none !important;">
+                                    ${qi === 0 ? n2 + '.' : ''}
+                                </td>
+                                <td style="width: auto; border-top: none !important; padding: 8pt;">
+                                    <div style="display: flex; gap: 8pt;">
+                                        ${q.sub_label ? `<div style="width: 25pt; font-weight: bold;">${q.sub_label}</div>` : ''}
+                                        <div style="flex: 1;">${q.text || ''}</div>
+                                    </div>
+                                </td>
+                                <td style="width: 80pt; text-align: center; border-left: 1pt solid black; border-top: none !important; font-size: 10pt; vertical-align: middle;">
+                                    ${fetchCO(q) ? `<div>(${fetchCO(q)})</div>` : ''}
+                                    <div style="font-weight: bold;">(${q.marks || s.marks || marksPerQ})</div>
+                                </td>
+                            </tr>
+                        `;
+                    });
                 } else {
-                    const q = (s.questions || [])[0] || {};
-                    blockHtml += `
-                        <tr>
-                            <td style="width: 45pt; text-align: center; font-weight: bold;">${currentNum++}.</td>
-                            <td style="width: auto;">
-                                <div style="margin-bottom: 4pt; font-size: 11pt;">${q.text || ''}</div>
-                                ${q.type === 'MCQ' ? `
-                                    <div style="text-align: right; font-weight: bold; margin-bottom: 2pt;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</div>
-                                ` : ''}
-                                ${q.options && q.options.length > 0 ? `
-                                    <table border="0" style="margin-top: 5pt; margin-left: 20pt; width: 95%; border-collapse: collapse;">
-                                        <tr>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(a) ${cleanOption(q.options[0])}</td>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(b) ${cleanOption(q.options[1])}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(c) ${cleanOption(q.options[2])}</td>
-                                            <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(d) ${cleanOption(q.options[3])}</td>
-                                        </tr>
-                                    </table>
-                                ` : ''}
-                            </td>
-                            <td style="width: 80pt; text-align: center; border-left: 1pt solid black; font-size: 10pt; vertical-align: middle;">
-                                ${fetchCO(q) ? `<div>(${fetchCO(q)})</div>` : ''}
-                                <div style="font-weight: bold;">(${q.marks || s.marks || 0})</div>
-                            </td>
-                        </tr>
-                    `;
+                    const qs = s.questions || [s];
+                    qs.forEach((q: any, qi: number) => {
+                        blockHtml += `
+                            <tr>
+                                <td style="width: 45pt; text-align: center; font-weight: bold; border-bottom: ${qi === qs.length - 1 ? '1pt solid black' : 'none'} !important;">
+                                    ${qi === 0 ? currentNum + '.' : ''}
+                                </td>
+                                <td style="width: auto; border-bottom: ${qi === qs.length - 1 ? '1pt solid black' : 'none'} !important; padding: 8pt;">
+                                    <div style="margin-bottom: 4pt; font-size: 11pt;">${q.text || ''}</div>
+                                    ${q.type === 'MCQ' ? `
+                                        <div style="text-align: right; font-weight: bold; margin-bottom: 2pt;">[&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]</div>
+                                    ` : ''}
+                                    ${q.options && q.options.length > 0 ? `
+                                        <table border="0" style="margin-top: 5pt; margin-left: 20pt; width: 95%; border-collapse: collapse;">
+                                            <tr>
+                                                <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(a) ${cleanOption(q.options[0])}</td>
+                                                <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(b) ${cleanOption(q.options[1])}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(c) ${cleanOption(q.options[2])}</td>
+                                                <td style="width: 50%; border: none !important; padding: 2pt; font-size: 10.5pt;">(d) ${cleanOption(q.options[3])}</td>
+                                            </tr>
+                                        </table>
+                                    ` : ''}
+                                </td>
+                                <td style="width: 80pt; text-align: center; border-left: 1pt solid black; border-bottom: ${qi === qs.length - 1 ? '1pt solid black' : 'none'} !important; font-size: 10pt; vertical-align: middle;">
+                                    ${fetchCO(q) ? `<div>(${fetchCO(q)})</div>` : ''}
+                                    <div style="font-weight: bold;">(${q.marks || s.marks || marksPerQ})</div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    currentNum++;
                 }
             });
             blockHtml += `</table>`;
@@ -420,9 +458,15 @@
         };
 
         html += buildBlock(config[0]?.title || 'PART A', setsA, 1, config[0]?.marks_per_q || 2);
-        html += buildBlock(config[1]?.title || 'PART B', setsB, countA + 1, config[1]?.marks_per_q || 16);
+        
+        let startB = setsA.length + 1;
+        html += buildBlock(config[1]?.title || 'PART B', setsB, startB, config[1]?.marks_per_q || 5);
+        
+        let startC = startB;
+        setsB.forEach((s: any) => startC += (s.type === 'OR_GROUP' ? 2 : 1));
+        
         if (setsC.length > 0) {
-            html += buildBlock(config[2]?.title || 'PART C', setsC, countA + countB + 1, config[2]?.marks_per_q || 16);
+            html += buildBlock(config[2]?.title || 'PART C', setsC, startC, config[2]?.marks_per_q || 16);
         }
 
         html += `
