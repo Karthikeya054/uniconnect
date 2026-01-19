@@ -197,41 +197,40 @@ export async function getDashboardStats(universityId?: string) {
     const whereClause = universityId ? `WHERE c.university_id = $1` : ``;
     const params = universityId ? [universityId] : [];
 
-    const statsRes = await db.query(
-        `SELECT 
-            COUNT(*) as total_campaigns,
-            SUM(sent_count) as total_sent,
-            SUM(open_count) as total_opened,
-            SUM(ack_count) as total_acked,
-            SUM(failed_count) as total_failed,
-            SUM(total_recipients) as total_recipients
-         FROM campaigns c ${whereClause}`,
-        params
-    );
-
-    const recentRes = await db.query(
-        `SELECT c.*, u.name as university_name, creator.name as creator_name, creator.email as creator_email
-         FROM campaigns c
-         JOIN universities u ON c.university_id = u.id
-         LEFT JOIN users creator ON c.created_by_user_id = creator.id
-         ${whereClause}
-         ORDER BY c.created_at DESC
-         LIMIT 5`,
-        params
-    );
-
-    // Fetch daily activity for the last 30 days
-    const dailyRes = await db.query(
-        `SELECT 
-            DATE(started_at) as date,
-            SUM(sent_count) as count
-         FROM campaigns c
-         ${universityId ? 'WHERE c.university_id = $1 AND c.started_at >= NOW() - INTERVAL \'30 days\'' : 'WHERE c.started_at >= NOW() - INTERVAL \'30 days\''}
-
-         GROUP BY DATE(started_at)
-         ORDER BY DATE(started_at) ASC`,
-        params
-    );
+    const [statsRes, recentRes, dailyRes] = await Promise.all([
+        db.query(
+            `SELECT 
+                COUNT(*) as total_campaigns,
+                SUM(sent_count) as total_sent,
+                SUM(open_count) as total_opened,
+                SUM(ack_count) as total_acked,
+                SUM(failed_count) as total_failed,
+                SUM(total_recipients) as total_recipients
+             FROM campaigns c ${whereClause}`,
+            params
+        ),
+        db.query(
+            `SELECT c.*, u.name as university_name, creator.name as creator_name, creator.email as creator_email
+             FROM campaigns c
+             JOIN universities u ON c.university_id = u.id
+             LEFT JOIN users creator ON c.created_by_user_id = creator.id
+             ${whereClause}
+             ORDER BY c.created_at DESC
+             LIMIT 5`,
+            params
+        ),
+        db.query(
+            `SELECT 
+                DATE(started_at) as date,
+                SUM(sent_count) as count
+             FROM campaigns c
+             ${universityId ? 'WHERE c.university_id = $1 AND c.started_at >= NOW() - INTERVAL \'30 days\'' : 'WHERE c.started_at >= NOW() - INTERVAL \'30 days\''}
+    
+             GROUP BY DATE(started_at)
+             ORDER BY DATE(started_at) ASC`,
+            params
+        )
+    ]);
 
     const s = statsRes.rows[0];
     return {

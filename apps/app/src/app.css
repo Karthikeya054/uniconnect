@@ -79,44 +79,44 @@
   }
 
   .animate-premium-fade {
-    animation: premium-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: premium-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-premium-slide {
-    animation: premium-slide-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: premium-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-premium-slide-left {
-    animation: premium-slide-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: premium-slide-left 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-premium-scale {
-    animation: premium-scale-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: premium-scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-premium-float {
     animation: premium-float 6s ease-in-out infinite;
   }
 
-  /* Staggered Delays */
+  /* Staggered Delays (Snappy 50ms intervals) */
   .stagger-1 {
-    animation-delay: 100ms;
+    animation-delay: 50ms;
   }
 
   .stagger-2 {
-    animation-delay: 200ms;
+    animation-delay: 100ms;
   }
 
   .stagger-3 {
-    animation-delay: 300ms;
+    animation-delay: 150ms;
   }
 
   .stagger-4 {
-    animation-delay: 400ms;
+    animation-delay: 200ms;
   }
 
   .stagger-5 {
-    animation-delay: 500ms;
+    animation-delay: 250ms;
   }
 }
 
