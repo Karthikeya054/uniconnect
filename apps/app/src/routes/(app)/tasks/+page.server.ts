@@ -16,8 +16,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     const [tasks, users, universities] = await Promise.all([
         getTasks({ university_id: universityId || undefined, status }),
-        getAllUsers(),
-        getAllUniversities()
+        getAllUsers(universityId || undefined),
+        getAllUniversities(universityId || undefined)
     ]);
 
     return {

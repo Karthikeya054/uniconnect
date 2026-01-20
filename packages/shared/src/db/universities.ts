@@ -11,7 +11,18 @@ export interface University {
     updated_at: Date;
 }
 
-export async function getAllUniversities() {
+export async function getAllUniversities(teamId?: string) {
+    if (teamId) {
+        const result = await db.query(`
+            SELECT DISTINCT u.*
+            FROM universities u
+            JOIN user_universities uu1 ON u.id = uu1.university_id
+            JOIN user_universities uu2 ON uu1.user_id = uu2.user_id
+            WHERE uu2.university_id = $1 AND u.is_team = false
+            ORDER BY u.name ASC
+        `, [teamId]);
+        return result.rows as University[];
+    }
     const result = await db.query(`SELECT * FROM universities ORDER BY name ASC`);
     return result.rows as University[];
 }
