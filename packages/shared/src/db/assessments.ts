@@ -53,7 +53,7 @@ export interface AssessmentQuestion {
     question_text: string;
     bloom_level: string;
     marks: number;
-    type?: 'NORMAL' | 'MCQ' | 'SHORT' | 'LONG';
+    type?: 'NORMAL' | 'MCQ' | 'SHORT' | 'LONG' | 'FILL_IN_BLANK';
     options?: string[]; // (a), (b), (c), (d)
     answer_key?: string;
     is_important?: boolean;

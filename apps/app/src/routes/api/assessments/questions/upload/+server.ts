@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createAssessmentQuestion, getCourseOutcomes } from '@uniconnect/shared';
+import { db, createAssessmentQuestion, getCourseOutcomes } from '@uniconnect/shared';
 import { createRequire } from 'module';
 import mammoth from 'mammoth';
 
@@ -15,6 +15,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const unitId = formData.get('unitId') as string;
         const subjectId = formData.get('subjectId') as string;
         const mode = (formData.get('mode') as string) || 'normal';
+        const sheetName = formData.get('sheetName') as string;
 
         if (!file || !unitId || !subjectId) {
             throw error(400, 'File, Unit ID, and Subject ID are required');
@@ -43,8 +44,87 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 .replace(/<\/p>/g, '\n')
                 .replace(/<br\s*\/?>/g, '\n')
                 .replace(/<\/?[^>]+(>|$)/g, " ");
+        } else if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+            const XLSX = require('xlsx');
+            const workbook = XLSX.read(buffer, { type: 'buffer' });
+            let importCount = 0;
+
+            const subjectUnits = await db.query('SELECT * FROM assessment_units WHERE subject_id = $1', [subjectId]);
+            const allUnits = subjectUnits.rows;
+
+            const subjectCos = await getCourseOutcomes(subjectId);
+            const coMap = new Map(subjectCos.map(co => [co.code.toUpperCase(), co.id]));
+
+            const sheetsToProcess = sheetName ? [sheetName] : workbook.SheetNames;
+
+            for (const sName of sheetsToProcess) {
+                const sheet = workbook.Sheets[sName];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                let qType: any = 'SHORT';
+
+                const sNameLow = sName.toLowerCase();
+                if (sNameLow.includes('mcq')) qType = 'MCQ';
+                else if (sNameLow.includes('long')) qType = 'LONG';
+                else if (sNameLow.includes('fill')) qType = 'FILL_IN_BLANK';
+                else if (sNameLow.includes('short')) qType = 'SHORT';
+
+                for (const row of rows as any[]) {
+                    const qText = row['Questions'] || row['Question'] || row['question_text'] || row['Question Description'];
+                    if (!qText) continue;
+
+                    // 1. Resolve Unit
+                    const modNum = parseInt(row['Module Number'] || row['Module'] || row['unit_number'] || row['Unit']) || 1;
+                    let unit = allUnits.find(u => u.unit_number === modNum);
+                    if (!unit) {
+                        const res = await db.query(
+                            'INSERT INTO assessment_units (subject_id, unit_number, name) VALUES ($1, $2, $3) RETURNING *',
+                            [subjectId, modNum, `Unit ${modNum}`]
+                        );
+                        unit = res.rows[0];
+                        allUnits.push(unit);
+                    }
+
+                    // 2. Resolve Topic
+                    const topicName = row['Topic name'] || row['Topic'] || row['topic_name'] || 'General';
+                    const subjectTopics = await db.query('SELECT * FROM assessment_topics WHERE unit_id = $1 AND name = $2', [unit.id, topicName]);
+                    let topic = subjectTopics.rows[0];
+                    if (!topic) {
+                        const res = await db.query(
+                            'INSERT INTO assessment_topics (unit_id, name) VALUES ($1, $2) RETURNING *',
+                            [unit.id, topicName]
+                        );
+                        topic = res.rows[0];
+                    }
+
+                    // 3. Resolve Bloom Level
+                    let bloom = (row['Difficulty level'] || row['Bloom Level'] || row['bloom_level'] || 'L1').toString().toUpperCase().trim();
+                    if (!['L1', 'L2', 'L3', 'L4', 'L5'].includes(bloom)) bloom = 'L1';
+
+                    // 4. Resolve Marks
+                    let marks = parseInt(row['Marks'] || row['marks'] || (qType === 'MCQ' ? 1 : (qType === 'LONG' ? 10 : 2))) || 2;
+
+                    // 5. Resolve CO
+                    const coCode = (row['CO'] || row['Course Outcome'] || row['co_code'] || '').toString().toUpperCase().trim();
+                    const coId = coMap.get(coCode) || null;
+
+                    // 6. Create Question
+                    await createAssessmentQuestion({
+                        unit_id: unit.id,
+                        topic_id: topic.id,
+                        question_text: qText,
+                        bloom_level: bloom,
+                        marks: marks,
+                        type: qType,
+                        co_id: coId || undefined,
+                        answer_key: row['Solution'] || row['Answer'] || row['answer_key'] || row['Correct Answer'] || '',
+                        options: qType === 'MCQ' ? [row['A'], row['B'], row['C'], row['D']].filter(Boolean) : undefined
+                    });
+                    importCount++;
+                }
+            }
+            return json({ status: 'success', count: importCount });
         } else {
-            throw error(400, 'Unsupported file format. Please upload PDF or DOCX.');
+            throw error(400, 'Unsupported file format. Please upload PDF, DOCX, or XLSX.');
         }
 
         // 1. IMPROVED NORMALIZATION: Preserve lines but collapse horizontal space

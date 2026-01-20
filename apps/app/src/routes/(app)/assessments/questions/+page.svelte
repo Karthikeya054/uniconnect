@@ -20,6 +20,7 @@
     let newAnswerKey = $state('');
     let selectedCOId = $state<string | null>(null);
     let newIsImportant = $state(false);
+    let newType = $state<'NORMAL' | 'MCQ' | 'SHORT' | 'LONG' | 'FILL_IN_BLANK'>('NORMAL');
 
     let bulkCount = $derived(bulkQuestionsText.match(/(?:^|\n|\r\n)\s*(?:[Qq](?:uestion)?\s*\d*[:\s.-]+|\d+[\s.:-]+)/gi)?.length || 0);
 
@@ -251,6 +252,7 @@
         newAnswerKey = q.answer_key || '';
         selectedCOId = q.co_id || null;
         newIsImportant = q.is_important || false;
+        newType = q.type || 'NORMAL';
     }
 
     function resetForm() {
@@ -261,6 +263,7 @@
         newAnswerKey = '';
         selectedCOId = null;
         newIsImportant = false;
+        newType = 'NORMAL';
     }
 
     async function handleBulkAdd() {
@@ -325,7 +328,8 @@
                 bloom_level: newBloomLevel,
                 marks: newMarks,
                 answer_key: newAnswerKey,
-                is_important: newIsImportant
+                is_important: newIsImportant,
+                type: newType
             }),
             headers: { 'Content-Type': 'application/json' }
         });
@@ -465,20 +469,20 @@
                 ></div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="space-y-2">
                     <div class="flex justify-between items-center ml-1">
-                        <label for="bloom-level" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Difficulty Level</label>
+                        <label for="bloom-level" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Difficulty</label>
                         <select 
                             class="text-[9px] font-black text-indigo-500 bg-indigo-50 rounded-lg px-2 py-1 outline-none border-none"
                             onchange={(e) => updateDifficultyLimit(parseInt(e.currentTarget.value))}
                         >
-                            <option value="">CHANGE LIMIT</option>
-                            <option value="1">L1 Only</option>
-                            <option value="2">Up to L2</option>
-                            <option value="3">Up to L3</option>
-                            <option value="4">Up to L4</option>
-                            <option value="5">Up to L5</option>
+                            <option value="">LIMIT</option>
+                            <option value="1">L1</option>
+                            <option value="2">L2</option>
+                            <option value="3">L3</option>
+                            <option value="4">L4</option>
+                            <option value="5">L5</option>
                         </select>
                     </div>
                     <select 
@@ -492,13 +496,27 @@
                     </select>
                 </div>
                 <div class="space-y-2">
-                    <label for="q-marks" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Assigned Marks</label>
+                    <label for="q-marks" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Marks</label>
                     <input 
                         id="q-marks"
                         type="number" 
                         bind:value={newMarks}
-                        class="w-full bg-gray-50 border-gray-100 rounded-2xl text-sm font-black focus:ring-2 focus:ring-indigo-500 p-3"
+                        class="w-full bg-gray-50 border-gray-100 rounded-2xl text-sm font-black focus:ring-2 focus:ring-indigo-500 p-4"
                     />
+                </div>
+                <div class="space-y-2">
+                    <label for="q-type" class="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Format</label>
+                    <select 
+                        id="q-type"
+                        bind:value={newType}
+                        class="w-full bg-gray-50 border-gray-100 rounded-2xl text-sm font-black focus:ring-2 focus:ring-indigo-500 p-4 appearance-none hover:bg-white transition-colors"
+                    >
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="MCQ">MCQ</option>
+                        <option value="SHORT">SHORT ANSWER</option>
+                        <option value="LONG">LONG ANSWER</option>
+                        <option value="FILL_IN_BLANK">FILL IN BLANK</option>
+                    </select>
                 </div>
             </div>
 
@@ -575,6 +593,11 @@
                                                     <span class="px-2 py-0.5 rounded-lg text-[9px] font-black bg-red-50 text-red-500 border border-red-100 uppercase tracking-tighter flex items-center gap-1">
                                                         <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                                                         NOT MAPPED
+                                                    </span>
+                                                {/if}
+                                                 {#if q.type && q.type !== 'NORMAL'}
+                                                    <span class="px-2 py-0.5 rounded-lg text-[9px] font-black bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-tighter">
+                                                        {q.type.replace(/_/g, ' ')}
                                                     </span>
                                                 {/if}
                                                 {#if q.is_important}
