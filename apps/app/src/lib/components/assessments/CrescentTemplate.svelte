@@ -892,9 +892,9 @@
                                         {q.marks}
                                     </div>
                                     {#if isEditable}
-                                        <div class="absolute left-full top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[90px]">
-                                            <!-- Hover Bridge: Invisible spacer to keep hover active -->
-                                            <div class="absolute -left-4 top-0 w-4 h-full"></div>
+                                        <div class="absolute left-[80%] top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                            <!-- Hover Bridge: Large hit area to keep hover active -->
+                                            <div class="absolute -left-12 -top-10 w-12 h-[calc(100%+80px)]"></div>
                                             <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                             <div class="flex flex-col gap-0.5">
                                                 <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1057,9 +1057,9 @@
                                             {q.marks}
                                         </div>
                                         {#if isEditable}
-                                            <div class="absolute left-full top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[90px]">
-                                                <!-- Hover Bridge: Invisible spacer to keep hover active -->
-                                                <div class="absolute -left-4 top-0 w-4 h-full"></div>
+                                            <div class="absolute left-[80%] top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                                <!-- Hover Bridge: Large hit area to keep hover active -->
+                                                <div class="absolute -left-12 -top-10 w-12 h-[calc(100%+80px)]"></div>
                                                 <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                                 <select 
                                                     value={q.marks.toString()} 
@@ -1139,9 +1139,9 @@
                                             {q.marks}
                                         </div>
                                         {#if isEditable}
-                                            <div class="absolute left-full top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[90px]">
-                                                <!-- Hover Bridge: Invisible spacer to keep hover active -->
-                                                <div class="absolute -left-4 top-0 w-4 h-full"></div>
+                                            <div class="absolute left-[80%] top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                                <!-- Hover Bridge: Large hit area to keep hover active -->
+                                                <div class="absolute -left-12 -top-10 w-12 h-[calc(100%+80px)]"></div>
                                                 <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                                 <select 
                                                     value={q.marks.toString()} 
@@ -1227,9 +1227,9 @@
                                             {q.marks}
                                         </div>
                                         {#if isEditable}
-                                            <div class="absolute left-full top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[90px]">
-                                                <!-- Hover Bridge: Invisible spacer to keep hover active -->
-                                                <div class="absolute -left-4 top-0 w-4 h-full"></div>
+                                            <div class="absolute left-[80%] top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                                <!-- Hover Bridge: Large hit area to keep hover active -->
+                                                <div class="absolute -left-12 -top-10 w-12 h-[calc(100%+80px)]"></div>
                                                 <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                                 <div class="flex flex-col gap-0.5">
                                                     <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1355,9 +1355,9 @@
                                         {q.marks}
                                     </div>
                                     {#if isEditable}
-                                        <div class="absolute left-full top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[90px]">
-                                            <!-- Hover Bridge: Invisible spacer to keep hover active -->
-                                            <div class="absolute -left-4 top-0 w-4 h-full"></div>
+                                        <div class="absolute left-[80%] top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                            <!-- Hover Bridge: Large hit area to keep hover active -->
+                                            <div class="absolute -left-12 -top-10 w-12 h-[calc(100%+80px)]"></div>
                                             <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                             <div class="flex flex-col gap-0.5">
                                                 <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1452,9 +1452,9 @@
                                         {q.marks}
                                     </div>
                                     {#if isEditable}
-                                        <div class="absolute left-full top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[90px]">
-                                            <!-- Hover Bridge: Invisible spacer to keep hover active -->
-                                            <div class="absolute -left-4 top-0 w-4 h-full"></div>
+                                        <div class="absolute left-[80%] top-1/2 -translate-y-1/2 ml-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                            <!-- Hover Bridge: Large hit area to keep hover active -->
+                                            <div class="absolute -left-12 -top-10 w-12 h-[calc(100%+80px)]"></div>
                                             <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                             <div class="flex flex-col gap-0.5">
                                                 <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
