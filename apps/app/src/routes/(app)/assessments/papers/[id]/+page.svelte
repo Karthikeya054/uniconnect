@@ -217,9 +217,7 @@
                     </style>
                 </head>
                 <body>
-                    <div class="paper-container">
-                        ${content}
-                    </div>
+                    ${content}
                     <script>
                         window.onload = () => {
                             setTimeout(() => { 

@@ -148,10 +148,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     if (qType === 'MIXED') {
                         filtered = filtered.filter(q => ['MCQ', 'FILL_IN_BLANK', 'SHORT', 'PARAGRAPH'].includes(q.type || '') || isShortOrMcq(q));
                     } else if (qType === 'NORMAL') {
-                        // NORMAL slots should allow anything NOT explicitly MCQ/FIB
-                        filtered = filtered.filter(q => !['MCQ', 'FILL_IN_BLANK'].includes(q.type || ''));
-                        // Only exclude blanks if marks are low (Aptitude often uses blanks for 5 marks)
+                        // NORMAL slots should allow anything NOT explicitly MCQ/FIB if marks are low.
+                        // For 5+ marks, we allow them because some subjects (like Aptitude) use them for high-mark slots.
                         if (targetMarks < 5) {
+                            filtered = filtered.filter(q => !['MCQ', 'FILL_IN_BLANK'].includes(q.type || ''));
                             filtered = filtered.filter(q => !isShortOrMcq(q));
                         }
                     } else {
@@ -159,8 +159,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                         filtered = filtered.filter(q => q.type === qType);
                     }
                 } else if (targetMarks >= 5) {
-                    // For descriptive Parts B/C, allow anything not MCQ
-                    filtered = filtered.filter(q => q.type !== 'MCQ');
+                    // For descriptive Parts B/C, allow anything not MCQ if marks are low (usually Part A)
+                    // But for high-mark slots, if they are still empty, we shouldn't be too restrictive
+                    // (The check above for qType === 'NORMAL' usually handles this, but this is a fallback)
+                    // Recommendation: allow MCQs if they have the target marks
                 }
 
                 if (bloomArr && bloomArr.length > 0 && !bloomArr.includes('ANY') && filtered.length > 0) {
@@ -205,7 +207,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             pool = filterPool(allSubjectQuestions, true);
             if (pool.length > 0) return finalize(pool);
 
-            // 4. DESPERATE CASE: Anywhere in Subject, Any Marks
+            // 4. DESPERATE CASE: Same Unit, Any Marks (even if mismatch)
+            pool = filterPool(allUnitQuestions, false);
+            if (pool.length > 0) return finalize(pool);
+
+            // 5. ULTIMATE FALLBACK: Anywhere in Subject, Any Marks
             pool = filterPool(allSubjectQuestions, false);
             if (pool.length > 0) return finalize(pool);
 
