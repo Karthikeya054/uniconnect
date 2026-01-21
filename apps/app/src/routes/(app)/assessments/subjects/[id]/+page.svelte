@@ -933,6 +933,7 @@
                                                         <td class="px-6 py-4">
                                                             <span class="px-2 py-1 bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 text-[8px] font-black rounded-lg border border-gray-100 dark:border-slate-700 uppercase group-hover:bg-white dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:border-indigo-100 dark:group-hover:border-indigo-800/50 transition-all">{q.marks}M</span>
                                                         </td>
+                                                         <td class="px-6 py-4">
                                                              <div class="flex flex-col gap-1.5">
                                                                 {#if q.image_url}
                                                                     <div class="mb-1">
@@ -948,6 +949,7 @@
                                                                     </div>
                                                                 {/if}
                                                             </div>
+                                                        </td>
                                                         <td class="px-6 py-4 text-center">
                                                             <span class="text-[9px] font-black text-gray-300 dark:text-slate-700 uppercase tracking-widest group-hover:text-indigo-400 transition-colors">{q.co_code || '-'}</span>
                                                         </td>
