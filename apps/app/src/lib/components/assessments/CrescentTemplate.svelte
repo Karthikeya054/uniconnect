@@ -186,7 +186,14 @@
         const unitId = currentQ?.unit_id || slot.unit_id;
 
         // Filter by marks first
-        let alternates = (questionPool || []).filter((q: any) => Number(q.marks || q.mark) === marks && q.id !== currentQ?.id);
+        // FOR PART A: Allow swapping between 1 and 2 marks (MCQ and Short Answer)
+        let alternates = (questionPool || []).filter((q: any) => {
+            const qMarks = Number(q.marks || q.mark);
+            if (part === 'A') {
+                return (qMarks === 1 || qMarks === 2) && q.id !== currentQ?.id;
+            }
+            return qMarks === marks && q.id !== currentQ?.id;
+        });
         
         // Group or sort by unit consistency if requested by context
         if (unitId) {
@@ -312,7 +319,7 @@
 
     function addQuestion(part: 'A' | 'B' | 'C') {
         const isPartA = part === 'A';
-        const marks = isPartA ? (Number(paperMeta.max_marks) === 100 ? 2 : 2) : (Number(paperMeta.max_marks) === 100 ? 16 : 5);
+        const marks = isPartA ? (paperStructure[0]?.marks_per_q || 2) : (Number(paperMeta.max_marks) === 100 ? 16 : 5);
         
         let newSlot;
         if (isPartA) {
@@ -829,7 +836,7 @@
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id) }}
                                         contenteditable="true"
-                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-2 min-w-[30px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
                                     {#if isEditable}
@@ -963,7 +970,7 @@
                                         <div 
                                             use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice1') }}
                                             contenteditable="true"
-                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
                                         >
                                         </div>
                                     </div>
@@ -1017,7 +1024,7 @@
                                         <div 
                                             use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice2') }}
                                             contenteditable="true"
-                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
                                         >
                                         </div>
                                     </div>
@@ -1077,7 +1084,7 @@
                                         <div 
                                             contenteditable="true"
                                             onblur={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
-                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px]' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none min-w-[20px]' : 'pointer-events-none text-black'}"
                                         >
                                             {q.marks}
                                         </div>
@@ -1172,7 +1179,7 @@
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice1') }}
                                         contenteditable="true"
-                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
                                     {#if isEditable}
@@ -1235,7 +1242,7 @@
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice2') }}
                                         contenteditable="true"
-                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
                                 </div>
