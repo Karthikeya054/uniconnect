@@ -450,6 +450,28 @@
         }
     }
 
+    function updateCO(slotId: string, questionId: string, coId: string, subPart?: 'choice1' | 'choice2') {
+        const arr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
+        let slot = arr.find((s: any) => s.id === slotId);
+        if (!slot) return;
+
+        let q: any = null;
+        if (slot.type === 'SINGLE' || !slot.type) {
+            const subArr = slot.questions || [slot];
+            q = subArr.find((item: any) => item.id === questionId);
+        } else if (slot.type === 'OR_GROUP') {
+            const choice = subPart === 'choice1' ? slot.choice1 : slot.choice2;
+            q = choice.questions.find((item: any) => item.id === questionId);
+        }
+
+        if (q) {
+            q.co_id = coId;
+            // Force reactivity
+            if (Array.isArray(currentSetData)) currentSetData = [...currentSetData];
+            else currentSetData.questions = [...currentSetData.questions];
+        }
+    }
+
     const isEditable = $derived(mode === 'edit');
 
     // Part-Based filtering: Dynamic Label Calculation
@@ -836,21 +858,29 @@
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id) }}
                                         contenteditable="true"
-                                        class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/10 border border-indigo-200/50 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100/30' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
                                     {#if isEditable}
-                                        <div class="absolute -right-14 top-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-0.5 z-20 print:hidden transition-all duration-200">
-                                            <div class="text-[6px] font-black text-gray-400 uppercase mb-0.5">Type</div>
+                                        <div class="mt-2 flex flex-col gap-1 w-full px-1 print:hidden">
+                                            <select 
+                                                value={q.co_id || ''} 
+                                                onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
+                                                class="text-[7px] font-black bg-white border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase"
+                                            >
+                                                <option value="">CO?</option>
+                                                {#each courseOutcomes as co}
+                                                    <option value={co.id}>{co.code}</option>
+                                                {/each}
+                                            </select>
                                             <select 
                                                 value={slot.qType || q.type || 'NORMAL'}
                                                 onchange={(e: any) => updatePartAType(slot.id, e.target.value)}
-                                                class="text-[8px] font-black bg-white border border-indigo-100 rounded p-1 outline-none shadow-xl hover:border-indigo-500 transition-colors"
+                                                class="text-[7px] font-black bg-white border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase"
                                             >
                                                 <option value="NORMAL">SHORT</option>
                                                 <option value="MCQ">MCQ</option>
                                                 <option value="FILL_IN_BLANK">FIB</option>
-                                                <option value="PARAGRAPH">PARA</option>
                                             </select>
                                         </div>
                                     {/if}
@@ -970,9 +1000,23 @@
                                         <div 
                                             use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice1') }}
                                             contenteditable="true"
-                                            class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/10 border border-indigo-200/50 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100/30' : 'pointer-events-none text-black'}"
                                         >
                                         </div>
+                                        {#if isEditable}
+                                            <div class="mt-2 flex flex-col gap-1 w-full px-1 print:hidden">
+                                                <select 
+                                                    value={q.co_id || ''} 
+                                                    onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice1')}
+                                                    class="text-[7px] font-black bg-white border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase"
+                                                >
+                                                    <option value="">CO?</option>
+                                                    {#each courseOutcomes as co}
+                                                        <option value={co.id}>{co.code}</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+                                        {/if}
                                     </div>
                                 </div>
                             {/each}
@@ -1024,9 +1068,23 @@
                                         <div 
                                             use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice2') }}
                                             contenteditable="true"
-                                            class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/10 border border-indigo-200/50 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100/30' : 'pointer-events-none text-black'}"
                                         >
                                         </div>
+                                        {#if isEditable}
+                                            <div class="mt-2 flex flex-col gap-1 w-full px-1 print:hidden">
+                                                <select 
+                                                    value={q.co_id || ''} 
+                                                    onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice2')}
+                                                    class="text-[7px] font-black bg-white border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase"
+                                                >
+                                                    <option value="">CO?</option>
+                                                    {#each courseOutcomes as co}
+                                                        <option value={co.id}>{co.code}</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+                                        {/if}
                                     </div>
                                 </div>
                             {/each}
@@ -1084,10 +1142,24 @@
                                         <div 
                                             contenteditable="true"
                                             onblur={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
-                                            class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none min-w-[20px]' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/10 border border-indigo-200/50 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100/30' : 'pointer-events-none text-black'}"
                                         >
                                             {q.marks}
                                         </div>
+                                        {#if isEditable}
+                                            <div class="mt-2 flex flex-col gap-1 w-full px-1 print:hidden">
+                                                <select 
+                                                    value={q.co_id || ''} 
+                                                    onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
+                                                    class="text-[7px] font-black bg-white border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase"
+                                                >
+                                                    <option value="">CO?</option>
+                                                    {#each courseOutcomes as co}
+                                                        <option value={co.id}>{co.code}</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+                                        {/if}
                                     </div>
                                 </div>
                             {/each}
@@ -1179,9 +1251,23 @@
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice1') }}
                                         contenteditable="true"
-                                        class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/10 border border-indigo-200/50 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100/30' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
+                                    {#if isEditable}
+                                        <div class="mt-2 flex flex-col gap-1 w-full px-1 print:hidden">
+                                            <select 
+                                                value={q.co_id || ''} 
+                                                onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice1')}
+                                                class="text-[7px] font-black bg-white border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase"
+                                            >
+                                                <option value="">CO?</option>
+                                                {#each courseOutcomes as co}
+                                                    <option value={co.id}>{co.code}</option>
+                                                {/each}
+                                            </select>
+                                        </div>
+                                    {/if}
                                     {#if isEditable}
                                         <button 
                                             onclick={() => openSwapSidebar(slot, 'C', 'q1')}
@@ -1242,9 +1328,23 @@
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice2') }}
                                         contenteditable="true"
-                                        class="text-[12px] font-black {isEditable ? 'hover:bg-indigo-50/50 border-b border-transparent hover:border-indigo-200 outline-none focus:bg-indigo-100/50 min-w-[20px]' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/10 border border-indigo-200/50 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100/30' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
+                                    {#if isEditable}
+                                        <div class="mt-2 flex flex-col gap-1 w-full px-1 print:hidden">
+                                            <select 
+                                                value={q.co_id || ''} 
+                                                onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice2')}
+                                                class="text-[7px] font-black bg-white border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase"
+                                            >
+                                                <option value="">CO?</option>
+                                                {#each courseOutcomes as co}
+                                                    <option value={co.id}>{co.code}</option>
+                                                {/each}
+                                            </select>
+                                        </div>
+                                    {/if}
                                 </div>
                             </div>
                         {/each}
