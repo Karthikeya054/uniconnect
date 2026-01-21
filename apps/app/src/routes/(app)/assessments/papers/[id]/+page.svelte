@@ -158,9 +158,19 @@
     }
 
     function downloadPDF() {
-        const content = document.getElementById('paper-content')?.innerHTML;
-        if (!content) return;
+        const el = document.getElementById('crescent-paper-actual');
+        if (!el) {
+            const content = document.getElementById('paper-content')?.innerHTML;
+            if (!content) return;
+            printPaper(content);
+            return;
+        }
 
+        // Use outerHTML to preserve container styles (padding, etc.)
+        printPaper(el.outerHTML);
+    }
+
+    function printPaper(htmlContent: string) {
         const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
             .map(el => el.outerHTML)
             .join('\n');
@@ -178,46 +188,48 @@
                     ${styles}
                     <style>
                         @media print {
-                            @page { size: A4; margin: 0mm; }
+                            @page { size: A4; margin: 0; }
                             html, body { 
                                 margin: 0 !important; 
                                 padding: 0 !important; 
-                                width: 210mm !important;
                                 background: white !important;
+                                width: 210mm !important;
                             }
                             body {
                                 display: flex !important;
                                 justify-content: center !important;
                             }
-                            .paper-container { 
+                            #crescent-paper-actual, .paper-container { 
                                 width: 210mm !important; 
-                                margin: 0 auto !important; 
-                                padding: 18mm !important; 
+                                margin: 0 !important; 
                                 border: none !important; 
                                 box-sizing: border-box !important;
+                                min-height: 297mm !important;
                                 background: white !important;
+                                box-shadow: none !important;
                             }
-                            .no-print, nav, header, sidebar, .print\\:hidden, .fixed { display: none !important; }
+                            .no-print, nav, header, sidebar, .print\\:hidden, .fixed, button { display: none !important; }
                         }
                         body { 
                             margin: 0; 
-                            background: #555; 
+                            background: #eee; 
                             display: flex;
                             justify-content: center;
                             padding: 20px;
                         }
-                        .paper-container { 
+                        #crescent-paper-actual, .paper-container { 
                             background: white; 
                             width: 210mm; 
                             min-height: 297mm;
-                            padding: 22mm; 
-                            box-shadow: 0 0 50px rgba(0,0,0,0.5); 
+                            box-shadow: 0 0 20px rgba(0,0,0,0.2); 
                             box-sizing: border-box;
                         }
                     </style>
                 </head>
                 <body>
-                    ${content}
+                    <div class="paper-container">
+                        ${htmlContent}
+                    </div>
                     <script>
                         window.onload = () => {
                             setTimeout(() => { 

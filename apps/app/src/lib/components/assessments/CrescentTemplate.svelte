@@ -390,7 +390,8 @@
 
     function getCOCode(coId: string | undefined) {
         if (!coId) return '';
-        return courseOutcomes.find((c: any) => c.id === coId)?.code || '';
+        const code = courseOutcomes.find((c: any) => c.id === coId)?.code;
+        return (code === '0' || !code) ? '' : code;
     }
 
     function updateText(e: Event, type: 'META' | 'QUESTION', key: string, slotId?: string, questionId?: string, subPart?: 'choice1' | 'choice2') {
@@ -500,7 +501,7 @@
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative">
     
     <div class="paper-container-scroll flex-1 overflow-auto p-4 sm:p-8 bg-gray-50 dark:bg-slate-950/50 relative">
-        <div class="paper-container relative mx-auto bg-white dark:bg-gray-100 text-black shadow-2xl transition-all duration-500 {mode === 'preview' ? 'scale-[0.5] origin-top' : ''}" style="width: 8.27in; min-height: 11.69in; padding: 0.75in;">
+        <div id="crescent-paper-actual" class="paper-container relative mx-auto bg-white dark:bg-gray-100 text-black shadow-2xl transition-all duration-500 {mode === 'preview' ? 'scale-[0.5] origin-top' : ''}" style="width: 8.27in; min-height: 11.69in; padding: 0.75in;">
     
     {#if isEditable}
         <!-- Sets Sidebar - Responsive Toggle -->
@@ -822,11 +823,13 @@
                                     {/if}
                                 </div>
                                 <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/mark relative">
-                                    <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                    {#if getCOCode(q.co_id)}
+                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id)})</span>
+                                    {/if}
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id) }}
                                         contenteditable="true"
-                                        class="text-[10px] font-black {isEditable ? 'bg-indigo-50/50 rounded px-2 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-2 min-w-[30px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
                                     {#if isEditable}
@@ -929,12 +932,20 @@
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                         <div class="w-full">
-                                            <div 
-                                                use:editable={{ value: q.text, onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'text', slot.id, q.id, 'choice1') }}
-                                                contenteditable="true" 
-                                                class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
-                                            ></div>
-                                        </div>
+                                                <div 
+                                                    use:editable={{ value: q.text, onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'text', slot.id, q.id, 'choice1') }}
+                                                    contenteditable="true" 
+                                                    class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
+                                                ></div>
+
+                                                {#if q.options && q.options.length > 0}
+                                                    <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
+                                                        {#each q.options as opt}
+                                                            <div class="text-[10px] font-medium leading-tight">{opt}</div>
+                                                        {/each}
+                                                    </div>
+                                                {/if}
+                                            </div>
                                         {#if isEditable}
                                             <button 
                                                 onclick={() => openSwapSidebar(slot, 'B', 'q1')}
@@ -946,11 +957,13 @@
                                         {/if}
                                     </div>
                                     <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1">
-                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                        {#if getCOCode(q.co_id)}
+                                            <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id)})</span>
+                                        {/if}
                                         <div 
                                             use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice1') }}
                                             contenteditable="true"
-                                            class="text-[10px] font-black {isEditable ? 'bg-indigo-50/50 rounded px-1 min-w-[20px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
                                         >
                                         </div>
                                     </div>
@@ -973,12 +986,20 @@
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
                                         <div class="w-full">
-                                            <div 
-                                                use:editable={{ value: q.text, onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'text', slot.id, q.id, 'choice2') }}
-                                                contenteditable="true" 
-                                                class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
-                                            ></div>
-                                        </div>
+                                                <div 
+                                                    use:editable={{ value: q.text, onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'text', slot.id, q.id, 'choice2') }}
+                                                    contenteditable="true" 
+                                                    class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
+                                                ></div>
+
+                                                {#if q.options && q.options.length > 0}
+                                                    <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
+                                                        {#each q.options as opt}
+                                                            <div class="text-[10px] font-medium leading-tight">{opt}</div>
+                                                        {/each}
+                                                    </div>
+                                                {/if}
+                                            </div>
                                         {#if isEditable}
                                             <button 
                                                 onclick={() => openSwapSidebar(slot, 'B', 'q2')}
@@ -990,11 +1011,13 @@
                                         {/if}
                                     </div>
                                     <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1">
-                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                        {#if getCOCode(q.co_id)}
+                                            <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id)})</span>
+                                        {/if}
                                         <div 
                                             use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice2') }}
                                             contenteditable="true"
-                                            class="text-[10px] font-black {isEditable ? 'bg-indigo-50/50 rounded px-1 min-w-[20px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
                                         >
                                         </div>
                                     </div>
@@ -1024,27 +1047,38 @@
                                         {slot.n1 + '.'}
                                     </div>
                                     <div class="flex-1 p-3 text-[11px] leading-relaxed group relative">
-                                            <div 
-                                                use:editable={{ value: q.text, onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'text', slot.id, q.id) }}
-                                                contenteditable="true" 
-                                                class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
-                                            ></div>
-                                        {#if isEditable}
-                                            <button 
-                                                onclick={() => openSwapSidebar(slot, 'B')}
-                                                class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest leading-none flex items-center gap-1"
-                                            >
-                                                <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                                SWAP
-                                            </button>
-                                        {/if}
-                                    </div>
+                                                <div 
+                                                    use:editable={{ value: q.text, onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'text', slot.id, q.id) }}
+                                                    contenteditable="true" 
+                                                    class="w-full block {isEditable ? 'outline-none focus:bg-gray-50' : 'pointer-events-none'}"
+                                                ></div>
+
+                                                {#if q.options && q.options.length > 0}
+                                                    <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
+                                                        {#each q.options as opt}
+                                                            <div class="text-[10px] font-medium leading-tight">{opt}</div>
+                                                        {/each}
+                                                    </div>
+                                                {/if}
+                                            </div>
+                                            {#if isEditable}
+                                                <button 
+                                                    onclick={() => openSwapSidebar(slot, 'B')}
+                                                    class="absolute -right-2 top-0 opacity-0 group-hover:opacity-100 bg-indigo-600 text-white px-2 py-1 rounded-md shadow-lg transition-all z-20 print:hidden text-[9px] font-black tracking-widest leading-none flex items-center gap-1"
+                                                >
+                                                    <svg class="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                    SWAP
+                                                </button>
+                                            {/if}
+                                        </div>
                                     <div class="w-20 border-l border-black p-2 text-center flex flex-col items-center justify-center gap-1 group/mark relative">
-                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                        {#if getCOCode(q.co_id)}
+                                            <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id)})</span>
+                                        {/if}
                                         <div 
                                             contenteditable="true"
                                             onblur={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
-                                            class="text-[10px] font-black {isEditable ? 'bg-indigo-50/50 rounded px-1' : 'pointer-events-none text-black'}"
+                                            class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px]' : 'pointer-events-none text-black'}"
                                         >
                                             {q.marks}
                                         </div>
@@ -1122,22 +1156,24 @@
                                             contenteditable="true" 
                                             class="w-full block {isEditable ? 'outline-none focus:bg-gray-50 dark:focus:bg-gray-800/50' : 'pointer-events-none'}"
                                         ></div>
+
+                                        {#if q.options && q.options.length > 0}
+                                            <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
+                                                {#each q.options as opt}
+                                                    <div class="text-[10px] font-medium leading-tight text-black">{opt}</div>
+                                                {/each}
+                                            </div>
+                                        {/if}
                                     </div>
-                                    
-                                    {#if q.options && q.options.length > 0}
-                                        <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
-                                            {#each q.options as opt}
-                                                <div class="text-[10px] font-medium leading-tight">{opt}</div>
-                                            {/each}
-                                        </div>
-                                    {/if}
                                 </div>
                                 <div class="w-20 border-l border-black dark:border-gray-800 p-2 text-center flex flex-col items-center justify-center gap-1 group/mark relative">
-                                    <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                    {#if getCOCode(q.co_id)}
+                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id)})</span>
+                                    {/if}
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice1') }}
                                         contenteditable="true"
-                                        class="text-[10px] font-black {isEditable ? 'bg-indigo-50/50 rounded px-1 min-w-[20px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
                                     {#if isEditable}
@@ -1174,6 +1210,14 @@
                                             contenteditable="true" 
                                             class="w-full block {isEditable ? 'outline-none focus:bg-gray-50 dark:focus:bg-gray-800/50' : 'pointer-events-none'} "
                                         ></div>
+
+                                        {#if q.options && q.options.length > 0}
+                                            <div class="grid grid-cols-2 gap-x-8 gap-y-1 mt-3 pl-8">
+                                                {#each q.options as opt}
+                                                    <div class="text-[10px] font-medium leading-tight text-black">{opt}</div>
+                                                {/each}
+                                            </div>
+                                        {/if}
                                     </div>
                                     {#if isEditable}
                                         <button 
@@ -1186,11 +1230,13 @@
                                     {/if}
                                 </div>
                                 <div class="w-20 border-l border-black dark:border-gray-800 p-2 text-center flex flex-col items-center justify-center gap-1 group/mark relative">
-                                    <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id) || ''})</span>
+                                    {#if getCOCode(q.co_id)}
+                                        <span class="text-[8px] font-black text-gray-400 uppercase">({getCOCode(q.co_id)})</span>
+                                    {/if}
                                     <div 
                                         use:editable={{ value: q.marks.toString(), onUpdate: (v) => updateText({target: {innerHTML: v}} as any, 'QUESTION', 'marks', slot.id, q.id, 'choice2') }}
                                         contenteditable="true"
-                                        class="text-[10px] font-black {isEditable ? 'bg-indigo-50/50 rounded px-1 min-w-[20px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
+                                        class="text-[12px] font-black {isEditable ? 'bg-indigo-50/70 border border-indigo-200 rounded px-1.5 min-w-[25px] outline-none focus:bg-indigo-100' : 'pointer-events-none text-black'}"
                                     >
                                     </div>
                                 </div>
