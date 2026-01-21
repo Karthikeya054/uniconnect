@@ -933,18 +933,21 @@
                                                         <td class="px-6 py-4">
                                                             <span class="px-2 py-1 bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 text-[8px] font-black rounded-lg border border-gray-100 dark:border-slate-700 uppercase group-hover:bg-white dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:border-indigo-100 dark:group-hover:border-indigo-800/50 transition-all">{q.marks}M</span>
                                                         </td>
-                                                         <td class="px-6 py-4">
-                                                            <div class="flex flex-col gap-1.5">
+                                                             <div class="flex flex-col gap-1.5">
+                                                                {#if q.image_url}
+                                                                    <div class="mb-1">
+                                                                        <img src={q.image_url} alt="Question Attachment" class="h-12 w-auto rounded-lg border border-gray-100 dark:border-slate-800 object-cover shadow-sm hover:scale-110 transition-transform cursor-zoom-in" />
+                                                                    </div>
+                                                                {/if}
                                                                 <div class="text-[10px] font-bold text-gray-600 dark:text-slate-400 leading-relaxed group-hover:text-gray-900 dark:group-hover:text-slate-200 transition-colors line-clamp-2">
                                                                     {@html q.question_text}
                                                                 </div>
                                                                 {#if q.type && q.type !== 'NORMAL'}
                                                                     <div class="flex gap-2">
-                                                                        <span class="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 text-[8px] font-black rounded uppercase border border-indigo-100/50 dark:border-indigo-800/50">{q.type}</span>
+                                                                        <span class="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 text-[8px] font-black rounded uppercase border border-indigo-100/50 dark:border-indigo-800/50">{q.type.replace(/_/g, ' ')}</span>
                                                                     </div>
                                                                 {/if}
                                                             </div>
-                                                        </td>
                                                         <td class="px-6 py-4 text-center">
                                                             <span class="text-[9px] font-black text-gray-300 dark:text-slate-700 uppercase tracking-widest group-hover:text-indigo-400 transition-colors">{q.co_code || '-'}</span>
                                                         </td>
@@ -1383,8 +1386,21 @@
                         <option value="SHORT" class="dark:bg-slate-800">Short</option>
                         <option value="LONG" class="dark:bg-slate-800">Long</option>
                         <option value="MCQ" class="dark:bg-slate-800">MCQ</option>
+                        <option value="FILL_IN_BLANK" class="dark:bg-slate-800">Fill in the Blank</option>
+                        <option value="PARAGRAPH" class="dark:bg-slate-800">Paragraph</option>
                     </select>
                 </div>
+            </div>
+
+            <div>
+                <label for="eq-image" class="block text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 text-indigo-400 dark:text-indigo-500">Image URL / Base64</label>
+                <input id="eq-image" type="text" bind:value={editingQuestion.image_url} placeholder="data:image/png;base64,..." class="w-full bg-gray-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20 text-gray-900 dark:text-white" />
+                {#if editingQuestion.image_url}
+                    <div class="mt-3">
+                        <img src={editingQuestion.image_url} alt="Preview" class="max-h-32 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm" />
+                        <button onclick={() => editingQuestion.image_url = null} class="text-[8px] font-black text-red-500 uppercase mt-2 hover:underline">Remove Image</button>
+                    </div>
+                {/if}
             </div>
 
             {#if editingQuestion.type === 'MCQ'}

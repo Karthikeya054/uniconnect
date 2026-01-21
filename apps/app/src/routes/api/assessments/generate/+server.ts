@@ -125,11 +125,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const globalUsageCount: Record<string, number> = {};
 
         // Helper to pick a single question with preference
-        function pickOne(marks: number, unitId: string, excludeInSet: Set<string>, qType?: string, bloom?: string, co_id?: string) {
-            let pool = (poolByUnitAndMarks[unitId]?.[marks] || [])
-                .filter(q => !excludeInSet.has(q.id));
-
-            // Heuristic to detect MCQs or Fill-in-the-blanks hidden in "NORMAL" type
+        function pickOne(targetMarks: number, unitId: string, excludeInSet: Set<string>, qType?: string, bloom?: string, co_id?: string) {
             const isShortOrMcq = (q: any) => {
                 const text = (q.question_text || '').toLowerCase();
                 const hasBlank = text.includes('___') || text.includes('____') || text.includes('.....');
@@ -138,78 +134,64 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 return hasBlank || hasOptionsPattern || hasOptionsField;
             };
 
-            // 1. FILTER BY TYPE (STRICT)
-            if (qType && qType !== 'ANY') {
-                pool = pool.filter(q => q.type === qType);
-
-                // If we specifically want NORMAL, further exclude heuristic MCQs
-                if (qType === 'NORMAL') {
-                    pool = pool.filter(q => !isShortOrMcq(q));
+            const filterPool = (pool: any[], strictMarks: boolean = false) => {
+                let filtered = pool.filter(q => !excludeInSet.has(q.id));
+                if (strictMarks) {
+                    filtered = filtered.filter(q => Number(q.marks) === Number(targetMarks));
                 }
-            } else if (marks >= 5) {
-                // DEFAULT SAFETY: Never pick MCQ or short questions for 5+ marks unless explicitly asked
-                pool = pool.filter(q => q.type !== 'MCQ' && !isShortOrMcq(q));
-            }
 
-            // 2. FILTER BY BLOOM LEVEL
-            if (bloom && bloom !== 'ANY' && pool.length > 0) {
-                const bloomFiltered = pool.filter(q => q.bloom_level === bloom);
-                if (bloomFiltered.length > 0) pool = bloomFiltered;
-            }
+                if (qType && qType !== 'ANY') {
+                    filtered = filtered.filter(q => q.type === qType);
+                    if (qType === 'NORMAL') filtered = filtered.filter(q => !isShortOrMcq(q));
+                } else if (targetMarks >= 5) {
+                    filtered = filtered.filter(q => q.type !== 'MCQ' && !isShortOrMcq(q));
+                }
 
-            // 3. FILTER BY CO_ID
-            if (co_id && pool.length > 0) {
-                const coFiltered = pool.filter(q => q.co_id === co_id);
-                if (coFiltered.length > 0) pool = coFiltered;
-            }
+                if (bloom && bloom !== 'ANY' && filtered.length > 0) {
+                    const bFiltered = filtered.filter(q => q.bloom_level === bloom);
+                    if (bFiltered.length > 0) filtered = bFiltered;
+                }
+                if (co_id && filtered.length > 0) {
+                    const cFiltered = filtered.filter(q => q.co_id === co_id);
+                    if (cFiltered.length > 0) filtered = cFiltered;
+                }
+                return filtered;
+            };
 
-            // Sort by usage count to avoid duplicates across sets if possible
-            pool = pool.sort((a, b) => (globalUsageCount[a.id] || 0) - (globalUsageCount[b.id] || 0) || Math.random() - 0.5);
-
-            if (pool.length > 0) {
-                const q = pool[0];
+            const finalize = (pool: any[]) => {
+                const sorted = pool.sort((a, b) => {
+                    const diffA = Math.abs(a.marks - targetMarks);
+                    const diffB = Math.abs(b.marks - targetMarks);
+                    if (diffA !== diffB) return diffA - diffB;
+                    return (globalUsageCount[a.id] || 0) - (globalUsageCount[b.id] || 0) || Math.random() - 0.5;
+                });
+                const q = sorted[0];
                 excludeInSet.add(q.id);
                 globalUsageCount[q.id] = (globalUsageCount[q.id] || 0) + 1;
-                return { id: q.id, text: q.question_text, marks: q.marks, bloom: q.bloom_level, co_id: q.co_id, unit_id: q.unit_id, type: q.type || 'NORMAL', options: q.options };
-            }
+                return {
+                    id: q.id, text: q.question_text, marks: q.marks, bloom: q.bloom_level,
+                    co_id: q.co_id, unit_id: q.unit_id, type: q.type || 'NORMAL',
+                    options: q.options, image_url: q.image_url
+                };
+            };
 
-            // Fallback: Pick different marks from this unit, but STILL respect the type if it's set.
-            let fallbackPool = [].concat(...Object.values(poolByUnitAndMarks[unitId] || {}) as any)
-                .filter((q: any) => !excludeInSet.has(q.id));
+            // 1. BEST CASE: Unit + Specific Marks
+            let pool = filterPool(poolByUnitAndMarks[unitId]?.[targetMarks] || [], true);
+            if (pool.length > 0) return finalize(pool);
 
-            if (qType && qType !== 'ANY') {
-                fallbackPool = fallbackPool.filter((q: any) => q.type === qType);
-                if (qType === 'NORMAL') {
-                    fallbackPool = fallbackPool.filter(q => !isShortOrMcq(q));
-                }
-            } else if (marks >= 5) {
-                // DEFAULT SAFETY for fallback
-                fallbackPool = fallbackPool.filter((q: any) => q.type !== 'MCQ' && !isShortOrMcq(q));
-            }
+            // 2. FUZZY CASE 1: Same Unit, Close Marks
+            const allUnitQuestions = [].concat(...Object.values(poolByUnitAndMarks[unitId] || {}) as any);
+            pool = filterPool(allUnitQuestions, false);
+            if (pool.length > 0) return finalize(pool);
 
-            // Even in fallback, try to respect bloom/co if possible
-            if (bloom && bloom !== 'ANY' && fallbackPool.length > 0) {
-                const bloomFiltered = fallbackPool.filter((q: any) => q.bloom_level === bloom);
-                if (bloomFiltered.length > 0) fallbackPool = bloomFiltered;
-            }
-            if (co_id && fallbackPool.length > 0) {
-                const coFiltered = fallbackPool.filter((q: any) => q.co_id === co_id);
-                if (coFiltered.length > 0) fallbackPool = coFiltered;
-            }
+            // 3. FALLBACK CASE: Anywhere in Subject, Preferred Marks
+            const allSubjectQuestions = allQuestions;
+            pool = filterPool(allSubjectQuestions, true);
+            if (pool.length > 0) return finalize(pool);
 
-            fallbackPool = fallbackPool.sort((a: any, b: any) => {
-                const diffA = Math.abs(a.marks - marks);
-                const diffB = Math.abs(b.marks - marks);
-                if (diffA !== diffB) return diffA - diffB;
-                return b.marks - a.marks || (globalUsageCount[a.id] || 0) - (globalUsageCount[b.id] || 0);
-            });
-
-            if (fallbackPool.length > 0) {
-                const q: any = fallbackPool[0];
-                excludeInSet.add(q.id);
-                globalUsageCount[q.id] = (globalUsageCount[q.id] || 0) + 1;
-                return { id: q.id, text: q.question_text, marks: q.marks, bloom: q.bloom_level, co_id: q.co_id, unit_id: q.unit_id, type: q.type || 'NORMAL', options: q.options };
-            }
+            // 4. DESPERATE CASE: Anywhere in Subject, Any Marks
+            pool = filterPool(allSubjectQuestions, false);
+            if (pool.length > 0) return finalize(pool);
 
             return null;
         }

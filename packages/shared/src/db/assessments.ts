@@ -53,9 +53,10 @@ export interface AssessmentQuestion {
     question_text: string;
     bloom_level: string;
     marks: number;
-    type?: 'NORMAL' | 'MCQ' | 'SHORT' | 'LONG' | 'FILL_IN_BLANK';
+    type?: 'NORMAL' | 'MCQ' | 'SHORT' | 'LONG' | 'FILL_IN_BLANK' | 'PARAGRAPH';
     options?: string[]; // (a), (b), (c), (d)
     answer_key?: string;
+    image_url?: string;
     is_important?: boolean;
     created_at?: Date;
     updated_at?: Date;
@@ -280,8 +281,8 @@ export async function getQuestionsByUnits(unitIds: string[]): Promise<Assessment
 
 export async function createAssessmentQuestion(data: Partial<AssessmentQuestion>): Promise<AssessmentQuestion> {
     const { rows } = await db.query(
-        'INSERT INTO assessment_questions (unit_id, topic_id, co_id, question_text, bloom_level, marks, type, options, answer_key, is_important) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-        [data.unit_id, data.topic_id, data.co_id, data.question_text, data.bloom_level, data.marks, data.type || 'NORMAL', data.options ? JSON.stringify(data.options) : null, data.answer_key, data.is_important || false]
+        'INSERT INTO assessment_questions (unit_id, topic_id, co_id, question_text, bloom_level, marks, type, options, answer_key, image_url, is_important) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+        [data.unit_id, data.topic_id, data.co_id, data.question_text, data.bloom_level, data.marks, data.type || 'NORMAL', data.options ? JSON.stringify(data.options) : null, data.answer_key, data.image_url, data.is_important || false]
     );
     return rows[0];
 }

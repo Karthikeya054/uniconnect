@@ -40,33 +40,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         const questionsToCreate: any[] = [];
 
-        /**
-         * Refined header matcher
-         * Pass 1: Exact matches
-         * Pass 2: Partial matches (excluding numbering columns)
-         */
         const findVal = (row: any, keywords: string[], isContent: boolean = false) => {
             const keys = Object.keys(row);
-
-            // Pass 1: Exact Match
             for (const kw of keywords) {
                 const found = keys.find(k => k.toLowerCase().trim() === kw.toLowerCase().trim());
                 if (found) return row[found];
             }
-
-            // Pass 2: Partial Match
             for (const kw of keywords) {
                 const found = keys.find(k => {
                     const lowK = k.toLowerCase();
                     const lowKw = kw.toLowerCase();
                     if (!lowK.includes(lowKw)) return false;
-
-                    // If we're looking for question content, avoid columns that sound like "No." or "Index"
-                    if (isContent) {
-                        if (lowK.includes('no.') || lowK.includes('number') || lowK.includes('index') || lowK.includes('sno') || lowK.includes('s.no')) {
-                            return false;
-                        }
-                    }
+                    if (isContent && (lowK.includes('no.') || lowK.includes('number') || lowK.includes('index'))) return false;
                     return true;
                 });
                 if (found) return row[found];
@@ -88,68 +73,51 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                         (sName.toLowerCase().includes('fill') ? 'FILL_IN_BLANK' : 'SHORT'));
 
                 for (const row of rows as any[]) {
-                    // Look for question text, avoiding numbering columns
                     const qText = findVal(row, ['Question Description', 'Question Text', 'Questions', 'Question'], true);
-
-                    // Increased minimum length to 5 to filter out stray numbers like "23", "22"
                     if (!qText || qText.toString().trim().length < 5) continue;
 
-                    // Intelligent Unit Resolution
                     const rawModNum = findVal(row, ['Module Number', 'Unit Number', 'Module #', 'Unit #']);
                     const rawModName = findVal(row, ['NAME OF THE MODULE', 'NAME OF THE UNIT', 'Module Name', 'Unit Name', 'Module', 'Unit']);
 
                     let unit = null;
                     if (rawModNum && !isNaN(parseInt(rawModNum))) {
-                        const n = parseInt(rawModNum);
-                        unit = allUnits.find(u => u.unit_number === n);
+                        unit = allUnits.find(u => u.unit_number === parseInt(rawModNum));
                     }
-
                     if (!unit && rawModName) {
-                        const searchName = rawModName.toString().trim().toLowerCase();
-                        unit = allUnits.find(u => {
-                            const uName = u.name?.toLowerCase() || '';
-                            return uName.includes(searchName) || searchName.includes(uName);
-                        });
+                        const search = rawModName.toString().trim().toLowerCase();
+                        unit = allUnits.find(u => (u.name || '').toLowerCase().includes(search) || search.includes((u.name || '').toLowerCase()));
                     }
 
                     if (!unit) {
                         unit = (unitId !== 'GLOBAL') ? allUnits.find(u => u.id === unitId) : allUnits[0];
                         if (!unit) {
                             const res = await db.query('INSERT INTO assessment_units (subject_id, unit_number, name) VALUES ($1, 1, \'Unit 1\') RETURNING *', [subjectId]);
-                            unit = res.rows[0];
-                            allUnits.push(unit);
+                            unit = res.rows[0]; allUnits.push(unit);
                         }
                     }
 
-                    // Topic Resolution
                     const tName = findVal(row, ['Topic name', 'Topic', 'topic_name'])?.toString().trim() || 'General';
                     let topic = allTopics.find(t => t.unit_id === unit.id && t.name.toLowerCase() === tName.toLowerCase());
                     if (!topic) {
                         const res = await db.query('INSERT INTO assessment_topics (unit_id, name) VALUES ($1, $2) RETURNING *', [unit.id, tName]);
-                        topic = res.rows[0];
-                        allTopics.push(topic);
+                        topic = res.rows[0]; allTopics.push(topic);
                     }
 
-                    // Metadata Extraction
                     const bloomRaw = (findVal(row, ['Difficulty level', 'Bloom Level', 'bloom_level', 'Difficulty']) || 'L1').toString().toUpperCase().trim();
-                    const bloom = ['L1', 'L2', 'L3', 'L4', 'L5'].includes(bloomRaw) ? bloomRaw : 'L1';
-
                     const marksRaw = findVal(row, ['Marks', 'marks', 'Points', 'Weightage']);
-                    const marks = parseInt(marksRaw) || (qType === 'MCQ' ? 1 : 2);
-
                     const coCode = (findVal(row, ['CO', 'Course Outcome', 'co_code']) || '').toString().toUpperCase().trim();
-                    const coId = coCode ? coMap.get(coCode) : null;
 
                     questionsToCreate.push({
                         unit_id: unit.id,
                         topic_id: topic.id,
                         question_text: qText.toString().trim(),
-                        bloom_level: bloom,
-                        marks: marks,
+                        bloom_level: ['L1', 'L2', 'L3', 'L4', 'L5'].includes(bloomRaw) ? bloomRaw : 'L1',
+                        marks: parseInt(marksRaw) || (qType === 'MCQ' ? 1 : 2),
                         type: qType,
-                        co_id: coId || null,
+                        co_id: coCode ? coMap.get(coCode) : null,
                         answer_key: (findVal(row, ['Solution', 'Answer', 'answer_key', 'Correct Answer']) || '').toString().trim(),
-                        options: qType === 'MCQ' ? [row['A'], row['B'], row['C'], row['D']].filter(Boolean).map(o => o.toString().trim()) : null
+                        options: qType === 'MCQ' ? [row['A'], row['B'], row['C'], row['D']].filter(Boolean).map(o => o.toString().trim()) : null,
+                        image_url: null // XLSX image support is limited in current library
                     });
                 }
             }
@@ -158,14 +126,30 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         else {
             if (fileName.endsWith('.pdf')) {
                 const pdf = require('pdf-parse');
-                const data = await pdf(buffer);
-                rawText = data.text;
+                const data = await pdf(buffer); rawText = data.text;
             } else if (fileName.endsWith('.docx')) {
                 const mammoth = require('mammoth');
-                const result = await mammoth.convertToHtml({ buffer }, {
-                    styleMap: ["p[style-name='Table Paragraph'] => p", "p[style-name='Heading 1'] => h1:fresh", "p[style-name='Heading 2'] => h2:fresh"]
-                });
+                const imageMap: Record<number, string> = {};
+                let imgCounter = 0;
+
+                const options = {
+                    styleMap: ["p[style-name='Table Paragraph'] => p", "p[style-name='Heading 1'] => h1:fresh", "p[style-name='Heading 2'] => h2:fresh"],
+                    convertImage: mammoth.images.inline((element: any) => {
+                        return element.read("base64").then((imageBuffer: any) => {
+                            const id = ++imgCounter;
+                            const dataUri = `data:${element.contentType};base64,${imageBuffer}`;
+                            imageMap[id] = dataUri;
+                            return { src: `[IMG_${id}]` };
+                        });
+                    })
+                };
+                const result = await mammoth.convertToHtml({ buffer }, options);
                 rawText = result.value.replace(/<tr>/g, '\n[ROW_START]\n').replace(/<\/tr>/g, '\n[ROW_END]\n').replace(/<td>/g, ' [COL] ').replace(/<\/td>/g, ' [/COL] ').replace(/<\/p>/g, '\n').replace(/<br\s*\/?>/g, '\n').replace(/<\/?[^>]+(>|$)/g, " ");
+
+                // Post-process to attach images to questions
+                // This is tricky because rawText is now a string. 
+                // We'll look for [IMG_X] and assign it to the next question in the loop.
+                (globalThis as any)._lastDocxImageMap = imageMap;
             } else {
                 throw error(400, 'Unsupported file format. Please upload PDF, DOCX, or XLSX.');
             }
@@ -192,7 +176,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             let currentType: any = mode === 'mcq' ? 'MCQ' : 'SHORT';
             let currentRoman = '';
             let currentDetectedUnitId = unitId === 'GLOBAL' && allUnits.length > 0 ? allUnits[0].id : unitId;
-
             const r2n: Record<string, number> = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5 };
 
             for (let i = 0; i < markers.length; i++) {
@@ -206,8 +189,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                         let unit = allUnits.find(u => u.unit_number === n);
                         if (!unit) {
                             const res = await db.query('INSERT INTO assessment_units (subject_id, unit_number, name) VALUES ($1, $2, $3) RETURNING *', [subjectId, n, `Unit ${n}`]);
-                            unit = res.rows[0];
-                            allUnits.push(unit);
+                            unit = res.rows[0]; allUnits.push(unit);
                         }
                         currentDetectedUnitId = unit.id;
                     }
@@ -238,32 +220,43 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     qText = scrub(qText);
                     options = options.map(scrub);
 
-                    if (qText.length > 3 || options.length > 0) {
+                    // Image detection for DOCX
+                    let imageUrl = null;
+                    const imgMatch = qText.match(/\[IMG_(\d+)\]/);
+                    if (imgMatch) {
+                        const imgId = parseInt(imgMatch[1]);
+                        imageUrl = ((globalThis as any)._lastDocxImageMap || {})[imgId];
+                        qText = qText.replace(/\[IMG_\d+\]/g, '').trim();
+                    }
+
+                    if (qText.length > 3 || options.length > 0 || imageUrl) {
                         questionsToCreate.push({
                             unit_id: currentDetectedUnitId === 'GLOBAL' ? allUnits[0].id : currentDetectedUnitId,
-                            question_text: qText || `Question ${marker.value}`,
+                            question_text: qText || (imageUrl ? 'Image-based Question' : `Question ${marker.value}`),
                             marks: options.length > 0 ? 1 : 2,
                             bloom_level: (bText.match(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*(L[1-5])/i)?.[1] || 'L1').toUpperCase(),
                             type: options.length > 0 ? 'MCQ' : currentType,
                             options: options.length > 0 ? options : null,
-                            hierarchicalId: currentRoman ? `${currentRoman}-${marker.value}` : marker.value
+                            hierarchicalId: currentRoman ? `${currentRoman}-${marker.value}` : marker.value,
+                            image_url: imageUrl
                         });
                     }
                 }
             }
+            delete (globalThis as any)._lastDocxImageMap;
         }
 
-        // 3. BULK INSERT FOR PERFORMANCE
+        // 3. BULK INSERT
         if (questionsToCreate.length > 0) {
             const chunkSize = 50;
             for (let i = 0; i < questionsToCreate.length; i += chunkSize) {
                 const chunk = questionsToCreate.slice(i, i + chunkSize);
-                const valueHolders = chunk.map((_, idx) => `($${idx * 10 + 1}, $${idx * 10 + 2}, $${idx * 10 + 3}, $${idx * 10 + 4}, $${idx * 10 + 5}, $${idx * 10 + 6}, $${idx * 10 + 7}, $${idx * 10 + 8}, $${idx * 10 + 9}, $${idx * 10 + 10})`).join(', ');
+                const valueHolders = chunk.map((_, idx) => `($${idx * 11 + 1}, $${idx * 11 + 2}, $${idx * 11 + 3}, $${idx * 11 + 4}, $${idx * 11 + 5}, $${idx * 11 + 6}, $${idx * 11 + 7}, $${idx * 11 + 8}, $${idx * 11 + 9}, $${idx * 11 + 10}, $${idx * 11 + 11})`).join(', ');
                 const params = chunk.flatMap(q => [
                     q.unit_id || null, q.topic_id || null, q.co_id || null, q.question_text, q.bloom_level || 'L1', q.marks || 2, q.type || 'SHORT',
-                    q.options ? JSON.stringify(q.options) : null, q.answer_key || '', false
+                    q.options ? JSON.stringify(q.options) : null, q.answer_key || '', q.image_url || null, false
                 ]);
-                await db.query(`INSERT INTO assessment_questions (unit_id, topic_id, co_id, question_text, bloom_level, marks, type, options, answer_key, is_important) VALUES ${valueHolders}`, params);
+                await db.query(`INSERT INTO assessment_questions (unit_id, topic_id, co_id, question_text, bloom_level, marks, type, options, answer_key, image_url, is_important) VALUES ${valueHolders}`, params);
                 importCount += chunk.length;
             }
         }
