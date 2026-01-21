@@ -139,9 +139,9 @@
 
     // DND Reliability: Stable local buffers
     // This prevents "not able to place" bugs caused by derived state thrashing
-    let dndItemsA = $state([]);
-    let dndItemsB = $state([]);
-    let dndItemsC = $state([]);
+    let dndItemsA = $state<any[]>([]);
+    let dndItemsB = $state<any[]>([]);
+    let dndItemsC = $state<any[]>([]);
     let isDragging = $state(false);
 
     // Sync buffers when data changes, UNLESS we are dragging
@@ -1060,7 +1060,6 @@
                                                         {/each}
                                                     </div>
                                                 {/if}
-                                            </div>
                                             {#if isEditable}
                                                 <button 
                                                     onclick={() => openSwapSidebar(slot, 'B')}
