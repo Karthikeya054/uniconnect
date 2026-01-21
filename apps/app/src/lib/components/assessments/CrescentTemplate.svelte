@@ -402,8 +402,14 @@
     }
 
     function updateText(e: Event, type: 'META' | 'QUESTION', key: string, slotId?: string, questionId?: string, subPart?: 'choice1' | 'choice2') {
-        const target = e.target as HTMLElement;
-        let value = type === 'QUESTION' ? target.innerHTML : target.innerText;
+        const target = e.target as any;
+        let value = '';
+        
+        if (target.tagName === 'SELECT' || target.tagName === 'INPUT') {
+            value = target.value;
+        } else {
+            value = type === 'QUESTION' ? target.innerHTML : target.innerText;
+        }
 
         if (type === 'QUESTION') value = value.trim();
         
@@ -426,14 +432,29 @@
                  q = choice.questions.find((item: any) => item.id === questionId);
             }
 
-            if (q && (q.text !== value || q.question_text !== value)) {
-                if (key === 'text') { q.text = value; q.question_text = value; }
-                else if (key === 'marks') { q.marks = Number(value); q.mark = Number(value); }
-                else if (key === 'type') { q.type = value; }
+            if (q) {
+                let changed = false;
+                if (key === 'text' && (q.text !== value || q.question_text !== value)) {
+                    q.text = value; 
+                    q.question_text = value;
+                    changed = true;
+                } else if (key === 'marks') {
+                    const nm = Number(value);
+                    if (q.marks !== nm) {
+                        q.marks = nm; 
+                        q.mark = nm;
+                        changed = true;
+                    }
+                } else if (key === 'type' && q.type !== value) {
+                    q.type = value;
+                    changed = true;
+                }
 
-                // Force reactivity on the bound prop
-                if (Array.isArray(currentSetData)) currentSetData = [...currentSetData];
-                else currentSetData.questions = [...currentSetData.questions];
+                if (changed) {
+                    // Force reactivity on the bound prop
+                    if (Array.isArray(currentSetData)) currentSetData = [...currentSetData];
+                    else currentSetData.questions = [...currentSetData.questions];
+                }
             }
         }
     }
@@ -868,35 +889,44 @@
                                     {#if isEditable}
                                         <div class="absolute -right-16 top-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white/95 backdrop-blur-sm border border-indigo-100 p-1.5 rounded-lg shadow-xl min-w-[60px]">
                                             <div class="text-[6px] font-black text-indigo-400 uppercase tracking-tighter mb-0.5">Edit Info</div>
-                                            <select 
-                                                value={q.marks.toString()} 
-                                                onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
-                                                class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                            >
-                                                <option value="">Marks?</option>
-                                                {#each [1, 2, 5, 8, 10, 16] as m}
-                                                    <option value={m}>{m} M</option>
-                                                {/each}
-                                            </select>
-                                            <select 
-                                                value={q.co_id || ''} 
-                                                onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
-                                                class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                            >
-                                                <option value="">CO?</option>
-                                                {#each courseOutcomes as co}
-                                                    <option value={co.id}>{co.code}</option>
-                                                {/each}
-                                            </select>
-                                            <select 
-                                                value={slot.qType || q.type || 'NORMAL'}
-                                                onchange={(e: any) => updatePartAType(slot.id, e.target.value)}
-                                                class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                            >
-                                                <option value="NORMAL">SHORT</option>
-                                                <option value="MCQ">MCQ</option>
-                                                <option value="FILL_IN_BLANK">FIB</option>
-                                            </select>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
+                                                <select 
+                                                    value={q.marks.toString()} 
+                                                    onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
+                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                >
+                                                    <option value="">Select</option>
+                                                    {#each [1, 2, 5, 8, 10, 16] as m}
+                                                        <option value={m}>{m} M</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Outcome</div>
+                                                <select 
+                                                    value={q.co_id || ''} 
+                                                    onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
+                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                >
+                                                    <option value="">Select</option>
+                                                    {#each courseOutcomes as co}
+                                                        <option value={co.id}>{co.code}</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Type</div>
+                                                <select 
+                                                    value={slot.qType || q.type || 'NORMAL'}
+                                                    onchange={(e: any) => updatePartAType(slot.id, e.target.value)}
+                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                >
+                                                    <option value="NORMAL">SHORT</option>
+                                                    <option value="MCQ">MCQ</option>
+                                                    <option value="FILL_IN_BLANK">FIB</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     {/if}
                                 </div>
@@ -1188,26 +1218,32 @@
                                         {#if isEditable}
                                             <div class="absolute -right-16 top-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white/95 backdrop-blur-sm border border-indigo-100 p-1.5 rounded-lg shadow-xl min-w-[60px]">
                                                 <div class="text-[6px] font-black text-indigo-400 uppercase tracking-tighter mb-0.5">Edit Info</div>
-                                                <select 
-                                                    value={q.marks.toString()} 
-                                                    onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
-                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                                >
-                                                    <option value="">Marks?</option>
-                                                    {#each [1, 2, 5, 8, 10, 16] as m}
-                                                        <option value={m}>{m} M</option>
-                                                    {/each}
-                                                </select>
-                                                <select 
-                                                    value={q.co_id || ''} 
-                                                    onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
-                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                                >
-                                                    <option value="">CO?</option>
-                                                    {#each courseOutcomes as co}
-                                                        <option value={co.id}>{co.code}</option>
-                                                    {/each}
-                                                </select>
+                                                <div class="flex flex-col gap-0.5">
+                                                    <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
+                                                    <select 
+                                                        value={q.marks.toString()} 
+                                                        onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
+                                                        class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                    >
+                                                        <option value="">Select</option>
+                                                        {#each [1, 2, 5, 8, 10, 16] as m}
+                                                            <option value={m}>{m} M</option>
+                                                        {/each}
+                                                    </select>
+                                                </div>
+                                                <div class="flex flex-col gap-0.5">
+                                                    <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Outcome</div>
+                                                    <select 
+                                                        value={q.co_id || ''} 
+                                                        onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
+                                                        class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                    >
+                                                        <option value="">Select</option>
+                                                        {#each courseOutcomes as co}
+                                                            <option value={co.id}>{co.code}</option>
+                                                        {/each}
+                                                    </select>
+                                                </div>
                                             </div>
                                         {/if}
                                     </div>
@@ -1308,26 +1344,32 @@
                                     {#if isEditable}
                                         <div class="absolute -right-16 top-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white/95 backdrop-blur-sm border border-indigo-100 p-1.5 rounded-lg shadow-xl min-w-[60px]">
                                             <div class="text-[6px] font-black text-indigo-400 uppercase tracking-tighter mb-0.5">Edit Info</div>
-                                            <select 
-                                                value={q.marks.toString()} 
-                                                onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice1')}
-                                                class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                            >
-                                                <option value="">Marks?</option>
-                                                {#each [1, 2, 5, 8, 10, 16] as m}
-                                                    <option value={m}>{m} M</option>
-                                                {/each}
-                                            </select>
-                                            <select 
-                                                value={q.co_id || ''} 
-                                                onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice1')}
-                                                class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                            >
-                                                <option value="">CO?</option>
-                                                {#each courseOutcomes as co}
-                                                    <option value={co.id}>{co.code}</option>
-                                                {/each}
-                                            </select>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
+                                                <select 
+                                                    value={q.marks.toString()} 
+                                                    onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice1')}
+                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                >
+                                                    <option value="">Select</option>
+                                                    {#each [1, 2, 5, 8, 10, 16] as m}
+                                                        <option value={m}>{m} M</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Outcome</div>
+                                                <select 
+                                                    value={q.co_id || ''} 
+                                                    onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice1')}
+                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                >
+                                                    <option value="">Select</option>
+                                                    {#each courseOutcomes as co}
+                                                        <option value={co.id}>{co.code}</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
                                         </div>
                                     {/if}
                                     {#if isEditable}
@@ -1397,26 +1439,32 @@
                                     {#if isEditable}
                                         <div class="absolute -right-16 top-0 opacity-0 group-hover/mark:opacity-100 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white/95 backdrop-blur-sm border border-indigo-100 p-1.5 rounded-lg shadow-xl min-w-[60px]">
                                             <div class="text-[6px] font-black text-indigo-400 uppercase tracking-tighter mb-0.5">Edit Info</div>
-                                            <select 
-                                                value={q.marks.toString()} 
-                                                onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice2')}
-                                                class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                            >
-                                                <option value="">Marks?</option>
-                                                {#each [1, 2, 5, 8, 10, 16] as m}
-                                                    <option value={m}>{m} M</option>
-                                                {/each}
-                                            </select>
-                                            <select 
-                                                value={q.co_id || ''} 
-                                                onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice2')}
-                                                class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
-                                            >
-                                                <option value="">CO?</option>
-                                                {#each courseOutcomes as co}
-                                                    <option value={co.id}>{co.code}</option>
-                                                {/each}
-                                            </select>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
+                                                <select 
+                                                    value={q.marks.toString()} 
+                                                    onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice2')}
+                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                >
+                                                    <option value="">Select</option>
+                                                    {#each [1, 2, 5, 8, 10, 16] as m}
+                                                        <option value={m}>{m} M</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
+                                            <div class="flex flex-col gap-0.5">
+                                                <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Outcome</div>
+                                                <select 
+                                                    value={q.co_id || ''} 
+                                                    onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice2')}
+                                                    class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
+                                                >
+                                                    <option value="">Select</option>
+                                                    {#each courseOutcomes as co}
+                                                        <option value={co.id}>{co.code}</option>
+                                                    {/each}
+                                                </select>
+                                            </div>
                                         </div>
                                     {/if}
                                 </div>
