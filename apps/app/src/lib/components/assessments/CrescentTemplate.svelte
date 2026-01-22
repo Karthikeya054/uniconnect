@@ -911,7 +911,7 @@
                                         {q.marks}
                                     </div>
                                     {#if activeMenuId === q.id && isEditable}
-                                        <div class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                        <div onclick={(e) => e.stopPropagation()} role="none" class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
                                             <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                             <div class="flex flex-col gap-0.5">
                                                 <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -920,7 +920,7 @@
                                                     onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
                                                     class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                 >
-                                                    <option value="">Outcome?</option>
+                                                    <option value="">Marks?</option>
                                                     {#each [1, 2, 5, 8, 10, 16] as m}
                                                         <option value={m}>{m} M</option>
                                                     {/each}
@@ -933,7 +933,7 @@
                                                     onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
                                                     class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                 >
-                                                    <option value="">Outcome?</option>
+                                                    <option value="">Marks?</option>
                                                     {#each courseOutcomes as co}
                                                         <option value={co.id}>{co.code}</option>
                                                     {/each}
@@ -1080,7 +1080,7 @@
                                             {q.marks}
                                         </div>
                                         {#if activeMenuId === q.id && isEditable}
-                                            <div class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                            <div onclick={(e) => e.stopPropagation()} role="none" class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
                                                 <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                                 <div class="flex flex-col gap-0.5">
                                                     <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1089,7 +1089,7 @@
                                                         onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice1')}
                                                         class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                     >
-                                                        <option value="">Outcome?</option>
+                                                        <option value="">Marks?</option>
                                                         {#each [1, 2, 5, 8, 10, 16] as m}
                                                             <option value={m}>{m} M</option>
                                                         {/each}
@@ -1102,7 +1102,7 @@
                                                         onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice1')}
                                                         class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                     >
-                                                        <option value="">Outcome?</option>
+                                                        <option value="">Marks?</option>
                                                         {#each courseOutcomes as co}
                                                             <option value={co.id}>{co.code}</option>
                                                         {/each}
@@ -1172,7 +1172,7 @@
                                             {q.marks}
                                         </div>
                                         {#if activeMenuId === q.id && isEditable}
-                                            <div class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                            <div onclick={(e) => e.stopPropagation()} role="none" class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
                                                 <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                                 <div class="flex flex-col gap-0.5">
                                                     <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1181,7 +1181,7 @@
                                                         onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice2')}
                                                         class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                     >
-                                                        <option value="">Outcome?</option>
+                                                        <option value="">Marks?</option>
                                                         {#each [1, 2, 5, 8, 10, 16] as m}
                                                             <option value={m}>{m} M</option>
                                                         {/each}
@@ -1194,7 +1194,7 @@
                                                         onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice2')}
                                                         class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                     >
-                                                        <option value="">Outcome?</option>
+                                                        <option value="">Marks?</option>
                                                         {#each courseOutcomes as co}
                                                             <option value={co.id}>{co.code}</option>
                                                         {/each}
@@ -1270,7 +1270,7 @@
                                             {q.marks}
                                         </div>
                                         {#if activeMenuId === q.id && isEditable}
-                                            <div class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                            <div onclick={(e) => e.stopPropagation()} role="none" class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
                                                 <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                                 <div class="flex flex-col gap-0.5">
                                                     <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1279,7 +1279,7 @@
                                                         onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id)}
                                                         class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                     >
-                                                        <option value="">Outcome?</option>
+                                                        <option value="">Marks?</option>
                                                         {#each [1, 2, 5, 8, 10, 16] as m}
                                                             <option value={m}>{m} M</option>
                                                         {/each}
@@ -1292,7 +1292,7 @@
                                                         onchange={(e: any) => updateCO(slot.id, q.id, e.target.value)}
                                                         class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                     >
-                                                        <option value="">Outcome?</option>
+                                                        <option value="">Marks?</option>
                                                         {#each courseOutcomes as co}
                                                             <option value={co.id}>{co.code}</option>
                                                         {/each}
@@ -1402,7 +1402,7 @@
                                         {q.marks}
                                     </div>
                                     {#if activeMenuId === q.id && isEditable}
-                                        <div class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                        <div onclick={(e) => e.stopPropagation()} role="none" class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
                                             <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                             <div class="flex flex-col gap-0.5">
                                                 <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1411,7 +1411,7 @@
                                                     onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice1')}
                                                     class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                 >
-                                                    <option value="">Outcome?</option>
+                                                    <option value="">Marks?</option>
                                                     {#each [1, 2, 5, 8, 10, 16] as m}
                                                         <option value={m}>{m} M</option>
                                                     {/each}
@@ -1424,7 +1424,7 @@
                                                     onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice1')}
                                                     class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                 >
-                                                    <option value="">Outcome?</option>
+                                                    <option value="">Marks?</option>
                                                     {#each courseOutcomes as co}
                                                         <option value={co.id}>{co.code}</option>
                                                     {/each}
@@ -1503,7 +1503,7 @@
                                         {q.marks}
                                     </div>
                                     {#if activeMenuId === q.id && isEditable}
-                                        <div class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
+                                        <div onclick={(e) => e.stopPropagation()} role="none" class="absolute left-1/2 -translate-x-1/2 top-full mt-1 flex flex-col gap-1 z-[100] print:hidden transition-all duration-200 bg-white shadow-2xl border border-indigo-200 p-2 rounded-lg min-w-[100px]">
                                             <div class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter mb-1 border-b border-indigo-50 pb-1">Edit Info</div>
                                             <div class="flex flex-col gap-0.5">
                                                 <div class="text-[5px] font-bold text-gray-400 uppercase ml-0.5">Marks</div>
@@ -1512,7 +1512,7 @@
                                                     onchange={(e: any) => updateText(e, 'QUESTION', 'marks', slot.id, q.id, 'choice2')}
                                                     class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                 >
-                                                    <option value="">Outcome?</option>
+                                                    <option value="">Marks?</option>
                                                     {#each [1, 2, 5, 8, 10, 16] as m}
                                                         <option value={m}>{m} M</option>
                                                     {/each}
@@ -1525,7 +1525,7 @@
                                                     onchange={(e: any) => updateCO(slot.id, q.id, e.target.value, 'choice2')}
                                                     class="text-[8px] font-bold bg-gray-50 border border-gray-100 rounded px-1 py-0.5 outline-none hover:border-indigo-300 transition-colors uppercase cursor-pointer"
                                                 >
-                                                    <option value="">Outcome?</option>
+                                                    <option value="">Marks?</option>
                                                     {#each courseOutcomes as co}
                                                         <option value={co.id}>{co.code}</option>
                                                     {/each}
