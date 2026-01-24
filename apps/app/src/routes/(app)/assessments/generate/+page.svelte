@@ -1146,9 +1146,7 @@
                                             </div>
                                         {/if}
                                     {/each}
-                                </div>
-                            </div>
-                        <div class="pt-8 border-t border-indigo-100 dark:border-slate-800 flex justify-center">
+                                    <div class="pt-8 border-t border-indigo-100 dark:border-slate-800 flex justify-center">
                             <button 
                                 onclick={addSection}
                                 class="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl active:scale-95 flex items-center gap-3"

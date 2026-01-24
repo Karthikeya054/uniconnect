@@ -12,7 +12,12 @@
     const availableSets = $state(['A', 'B', 'C', 'D']);
     
     // Template Selection
-    let selectedTemplate = $state(data?.paper?.sets_data?.metadata?.selected_template || 'crescent');
+    let selectedTemplate = $state('crescent');
+    $effect(() => {
+        if (data?.paper?.sets_data?.metadata?.selected_template) {
+            selectedTemplate = data.paper.sets_data.metadata.selected_template;
+        }
+    });
     
     // We deep clone paper data to allow local edits
     let editableSets = $state<any>(initializeSets());
