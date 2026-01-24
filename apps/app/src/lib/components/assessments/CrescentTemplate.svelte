@@ -22,18 +22,12 @@
     let swapContext = $state<any>(null);
     const isEditable = $derived(mode === 'edit');
 
-    let questionsA = $derived(safeFilter(currentSetData, 'A'));
-    let questionsB = $derived(safeFilter(currentSetData, 'B'));
-    let questionsC = $derived(safeFilter(currentSetData, 'C'));
-
-    function safeFilter(data: any, part: string) {
-        if (!data) return [];
-        const arr = (Array.isArray(data) ? data : (data?.questions || [])).filter(Boolean);
-        return arr.filter((s: any) => s.part === part);
-    }
+    // DO NOT iterate over derived filtered lists in Svelte 5 if you need to bind/mutate deeply.
+    // Instead, iterate over the main list and use #if for part filtering.
 
     function handleDndSync(part: string, items: any[]) {
-        const otherQuestions = (Array.isArray(currentSetData) ? currentSetData : currentSetData.questions).filter((q: any) => q.part !== part);
+        const arr = (Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter(Boolean);
+        const otherQuestions = arr.filter((q: any) => q.part !== part);
         const result = [...otherQuestions, ...items.map(i => ({...i, part}))];
         if (Array.isArray(currentSetData)) currentSetData = result;
         else currentSetData.questions = result;
@@ -97,15 +91,22 @@
         isSwapSidebarOpen = false;
     }
 
-    const calcTotal = (qs: any[]) => (qs || []).reduce((s, slot) => {
-        if (!slot) return s;
-        const marks = Number(slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0)));
-        return s + (slot.type === 'OR_GROUP' ? marks * 2 : marks);
-    }, 0);
+    const calcTotal = (part: string) => {
+        const arr = (Array.isArray(currentSetData) ? currentSetData : (currentSetData.questions || [])).filter(Boolean);
+        const qs = arr.filter((q: any) => q && q.part === part);
+        return qs.reduce((s, slot) => {
+            const marks = Number(slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0)));
+            return s + (slot.type === 'OR_GROUP' ? marks * 2 : marks);
+        }, 0);
+    };
 
-    let totalMarksA = $derived(calcTotal(questionsA));
-    let totalMarksB = $derived(calcTotal(questionsB));
-    let totalMarksC = $derived(calcTotal(questionsC));
+    let totalMarksA = $derived(calcTotal('A'));
+    let totalMarksB = $derived(calcTotal('B'));
+    let totalMarksC = $derived(calcTotal('C'));
+    
+    const partAQuestions = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'A'));
+    const partBQuestions = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'B'));
+    const partCQuestions = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'C'));
 </script>
 
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative bg-gray-100 dark:bg-slate-900/50">
@@ -178,40 +179,48 @@
             <div class="space-y-4">
                 <!-- PART A -->
                 <div class="border-t-2 border-b-2 border-black py-1 text-center font-bold uppercase tracking-widest text-[10pt]">
-                    PART A ({questionsA.length} X {questionsA[0]?.marks || 2} = {totalMarksA} MARKS)
+                    PART A ({partAQuestions.length} X {partAQuestions[0]?.marks || 2} = {totalMarksA} MARKS)
                 </div>
-                <div class="w-full" use:dndzone={{ items: questionsA, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', e.detail.items)} onfinalize={(e) => handleDndSync('A', e.detail.items)}>
-                    {#each questionsA as q, i (q.id)}
-                        <div animate:flip={{duration: 200}} class="border-b border-black last:border-b-0 min-h-[30px] flex group relative">
-                            <div class="px-2 py-1 border-r border-black w-10 text-center font-bold">{i+1}.</div>
-                            <div class="flex-1 px-4 py-1 relative">
-                                <AssessmentRowActions 
-                                    {isEditable}
-                                    onSwap={() => openSwapSidebar(q, 'A')}
-                                    onDelete={() => removeQuestion(q)}
-                                />
-                                <AssessmentEditable 
-                                    bind:value={q.text} 
-                                    onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', q.id, q.id)}
-                                    multiline={true} 
-                                />
-                                <AssessmentMcqOptions options={q.options} />
+                <div class="w-full" use:dndzone={{ items: partAQuestions, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', (e.detail as any).items)} onfinalize={(e) => handleDndSync('A', (e.detail as any).items)}>
+                    {#each (currentSetData.questions || []) as q, i (q.id)}
+                        {#if q && q.part === 'A'}
+                            <div class="border-b border-black last:border-b-0 min-h-[30px] flex group relative">
+                                <div class="px-2 py-1 border-r border-black w-10 text-center font-bold">{(partAQuestions.findIndex(x => x.id === q.id) + 1)}.</div>
+                                <div class="flex-1 px-4 py-1 relative">
+                                    <AssessmentRowActions 
+                                        {isEditable}
+                                        onSwap={() => openSwapSidebar(q, 'A')}
+                                        onDelete={() => removeQuestion(q)}
+                                    />
+                                    <AssessmentEditable 
+                                        value={q.text} 
+                                        onUpdate={(v: string) => {
+                                            q.text = v;
+                                            q.question_text = v;
+                                            updateText(v, 'QUESTION', 'text', q.id, q.id);
+                                        }}
+                                        multiline={true} 
+                                    />
+                                    <AssessmentMcqOptions options={q.options} />
+                                </div>
+                                <div class="w-16 border-l border-black text-center py-1 font-bold">({q.marks || 2})</div>
                             </div>
-                            <div class="w-16 border-l border-black text-center py-1 font-bold">({q.marks || 2})</div>
-                        </div>
+                        {/if}
                     {/each}
                 </div>
 
                 <!-- PART B -->
                 <div class="border-t-2 border-b-2 border-black py-1 text-center font-bold uppercase tracking-widest text-[10pt] mt-8">
-                    PART B ({questionsB.length} X {questionsB[0]?.marks || 16} = {totalMarksB} MARKS)
+                    PART B ({partBQuestions.length} X {partBQuestions[0]?.marks || 16} = {totalMarksB} MARKS)
                 </div>
-                <div class="w-full" use:dndzone={{ items: questionsB, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', e.detail.items)} onfinalize={(e) => handleDndSync('B', e.detail.items)}>
-                    {#each questionsB as slot, i (slot.id)}
-                        <div animate:flip={{duration: 200}} class="border-b-2 border-black mb-4">
+                <div class="w-full" use:dndzone={{ items: partBQuestions, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', (e.detail as any).items)} onfinalize={(e) => handleDndSync('B', (e.detail as any).items)}>
+                    {#each (currentSetData.questions || []) as slot, i (slot.id)}
+                        {#if slot && slot.part === 'B'}
+                        {@const slotIdx = partBQuestions.findIndex(x => x.id === slot.id)}
+                        <div class="border-b-2 border-black mb-4">
                              <!-- Choice 1 -->
                              <div class="flex border-b border-black group relative">
-                                <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{questionsA.length + i + 1}.a</div>
+                                <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{partAQuestions.length + slotIdx + 1}.a</div>
                                 <div class="flex-1 px-4 py-2 relative">
                                     <AssessmentRowActions 
                                         {isEditable}
@@ -227,8 +236,12 @@
                                                     {/if}
                                                     <div class="flex-1">
                                                         <AssessmentEditable 
-                                                            bind:value={q.text}
-                                                            onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, q.id)}
+                                                            value={q.text}
+                                                            onUpdate={(v: string) => {
+                                                                q.text = v;
+                                                                q.question_text = v;
+                                                                updateText(v, 'QUESTION', 'text', slot.id, q.id);
+                                                            }}
                                                             multiline={true}
                                                             class="text-[10pt]"
                                                         />
@@ -261,8 +274,12 @@
                                                     {/if}
                                                     <div class="flex-1">
                                                         <AssessmentEditable 
-                                                            bind:value={q.text}
-                                                            onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, q.id)}
+                                                            value={q.text}
+                                                            onUpdate={(v: string) => {
+                                                                q.text = v;
+                                                                q.question_text = v;
+                                                                updateText(v, 'QUESTION', 'text', slot.id, q.id);
+                                                            }}
                                                             multiline={true}
                                                             class="text-[10pt]"
                                                         />
@@ -276,19 +293,22 @@
                                 <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[9pt]">({slot.choice2?.questions?.[0]?.marks || slot.marks || 16})</div>
                              </div>
                         </div>
+                        {/if}
                     {/each}
                 </div>
 
                 <!-- PART C -->
-                {#if questionsC.length > 0}
+                {#if partCQuestions.length > 0}
                 <div class="border-t-2 border-b-2 border-black py-1 text-center font-bold uppercase tracking-widest text-[10pt] mt-8">
-                    PART C ({questionsC.length} X {questionsC[0]?.marks || 16} = {totalMarksC} MARKS)
+                    PART C ({partCQuestions.length} X {partCQuestions[0]?.marks || 16} = {totalMarksC} MARKS)
                 </div>
-                <div class="w-full" use:dndzone={{ items: questionsC, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('C', e.detail.items)} onfinalize={(e) => handleDndSync('C', e.detail.items)}>
-                    {#each questionsC as slot, i (slot.id)}
-                        <div animate:flip={{duration: 200}} class="border-b-2 border-black last:border-b-0 mb-4">
+                <div class="w-full" use:dndzone={{ items: partCQuestions, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('C', (e.detail as any).items)} onfinalize={(e) => handleDndSync('C', (e.detail as any).items)}>
+                    {#each (currentSetData.questions || []) as slot, i (slot.id)}
+                        {#if slot && slot.part === 'C'}
+                        {@const slotIdx = partCQuestions.findIndex(x => x.id === slot.id)}
+                        <div class="border-b-2 border-black last:border-b-0 mb-4">
                              <div class="flex border-b border-black group relative">
-                                <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{questionsA.length + questionsB.length + i + 1}.a</div>
+                                <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{partAQuestions.length + partBQuestions.length + slotIdx + 1}.a</div>
                                 <div class="flex-1 px-4 py-2 relative">
                                     <AssessmentRowActions 
                                         {isEditable}
@@ -304,8 +324,12 @@
                                                     {/if}
                                                     <div class="flex-1">
                                                         <AssessmentEditable 
-                                                            bind:value={q.text}
-                                                            onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, q.id)}
+                                                            value={q.text}
+                                                            onUpdate={(v: string) => {
+                                                                q.text = v;
+                                                                q.question_text = v;
+                                                                updateText(v, 'QUESTION', 'text', slot.id, q.id);
+                                                            }}
                                                             multiline={true}
                                                             class="text-[10pt]"
                                                         />
@@ -336,8 +360,12 @@
                                                     {/if}
                                                     <div class="flex-1">
                                                         <AssessmentEditable 
-                                                            bind:value={q.text}
-                                                            onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, q.id)}
+                                                            value={q.text}
+                                                            onUpdate={(v: string) => {
+                                                                q.text = v;
+                                                                q.question_text = v;
+                                                                updateText(v, 'QUESTION', 'text', slot.id, q.id);
+                                                            }}
                                                             multiline={true}
                                                             class="text-[10pt]"
                                                         />
@@ -351,6 +379,7 @@
                                 <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[9pt]">({slot.choice2?.questions?.[0]?.marks || slot.marks || 8})</div>
                              </div>
                         </div>
+                        {/if}
                     {/each}
                 </div>
                 {/if}

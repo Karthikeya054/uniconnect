@@ -14,7 +14,8 @@
         class: className = ""
     } = $props();
 
-    const q = $derived(slot.questions?.[0] || slot);
+    // Do NOT use $derived(slot.questions[0]) because Svelte 5 prohibits binding to derived properties.
+    // Instead, we access slot.questions[0] directly in the template and use callbacks for updates.
 </script>
 
 <div class="flex divide-x-[1.5pt] divide-black min-h-[40px] {className}">
@@ -28,10 +29,15 @@
             onDelete={onRemove}
         />
         <AssessmentEditable 
-            bind:value={q.text}
-            onUpdate={(v) => onUpdateText(v, q.id)}
+            value={slot.questions[0].text}
+            onUpdate={(v: string) => {
+                // Mutate state directly through reference (allowed in Svelte 5)
+                slot.questions[0].text = v;
+                slot.questions[0].question_text = v;
+                if (onUpdateText) onUpdateText(v, slot.questions[0].id);
+            }}
             multiline={true}
         />
-        <AssessmentMcqOptions options={q.options} />
+        <AssessmentMcqOptions options={slot.questions[0].options} />
     </div>
 </div>

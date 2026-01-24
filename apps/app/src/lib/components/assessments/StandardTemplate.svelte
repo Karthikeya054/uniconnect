@@ -20,18 +20,12 @@
     let swapContext = $state<any>(null);
     const isEditable = $derived(mode === 'edit');
 
-    let questionsA = $derived(safeFilter(currentSetData, 'A'));
-    let questionsB = $derived(safeFilter(currentSetData, 'B'));
-    let questionsC = $derived(safeFilter(currentSetData, 'C'));
-
-    function safeFilter(data: any, part: string) {
-        if (!data) return [];
-        const arr = (Array.isArray(data) ? data : (data?.questions || [])).filter(Boolean);
-        return arr.filter((s: any) => s.part === part);
-    }
+    // DO NOT use derived filtered lists for iterations in Svelte 5 if deep binding/mutation is needed.
+    // Instead, iterate over the main list and use #if for filtering.
 
     function handleDndSync(part: string, items: any[]) {
-        const otherQuestions = (Array.isArray(currentSetData) ? currentSetData : currentSetData.questions).filter((q: any) => q.part !== part);
+        const arr = (Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter(Boolean);
+        const otherQuestions = arr.filter((q: any) => q.part !== part);
         const result = [...otherQuestions, ...items.map(i => ({...i, part}))];
         if (Array.isArray(currentSetData)) currentSetData = result;
         else currentSetData.questions = result;
@@ -95,15 +89,22 @@
         isSwapSidebarOpen = false;
     }
 
-    const calcTotal = (qs: any[]) => (qs || []).reduce((s, slot) => {
-        if (!slot) return s;
-        const marks = Number(slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0)));
-        return s + (slot.type === 'OR_GROUP' ? marks * 2 : marks);
-    }, 0);
+    const calcTotal = (part: string) => {
+        const arr = (Array.isArray(currentSetData) ? currentSetData : (currentSetData.questions || [])).filter(Boolean);
+        const qs = arr.filter((q: any) => q && q.part === part);
+        return qs.reduce((s, slot) => {
+            const marks = Number(slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0)));
+            return s + (slot.type === 'OR_GROUP' ? marks * 2 : marks);
+        }, 0);
+    };
 
-    let totalMarksA = $derived(calcTotal(questionsA));
-    let totalMarksB = $derived(calcTotal(questionsB));
-    let totalMarksC = $derived(calcTotal(questionsC));
+    let totalMarksA = $derived(calcTotal('A'));
+    let totalMarksB = $derived(calcTotal('B'));
+    let totalMarksC = $derived(calcTotal('C'));
+
+    const questionsA = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'A'));
+    const questionsB = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'B'));
+    const questionsC = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'C'));
 </script>
 
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative bg-gray-100 dark:bg-slate-900/50">
@@ -127,11 +128,13 @@
                 {#if questionsA.length > 0}
                 <div>
                     <div class="text-center font-bold border-b-2 border-black mb-4 py-1 uppercase italic tracking-widest bg-gray-50">PART A ({questionsA.length} x {questionsA[0]?.marks || 2} = {totalMarksA} Marks)</div>
-                    <div use:dndzone={{ items: questionsA, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', e.detail.items)} onfinalize={(e) => handleDndSync('A', e.detail.items)}>
-                        {#each questionsA as q, i (q.id)}
-                            <div animate:flip={{duration: 200}} class="border-b border-black last:border-b-0">
-                                <AssessmentSlotSingle slot={q} qNumber={i+1} {isEditable} snoWidth={35} onSwap={() => openSwapSidebar(q, 'A')} onRemove={() => removeQuestion(q)} onUpdateText={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} />
-                            </div>
+                    <div use:dndzone={{ items: questionsA, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', (e.detail as any).items)} onfinalize={(e) => handleDndSync('A', (e.detail as any).items)}>
+                        {#each (currentSetData.questions || []) as q, i (q.id)}
+                            {#if q && q.part === 'A'}
+                                <div class="border-b border-black last:border-b-0">
+                                    <AssessmentSlotSingle slot={q} qNumber={questionsA.findIndex(x => x.id === q.id)+1} {isEditable} snoWidth={35} onSwap={() => openSwapSidebar(q, 'A')} onRemove={() => removeQuestion(q)} onUpdateText={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} />
+                                </div>
+                            {/if}
                         {/each}
                     </div>
                 </div>
@@ -140,15 +143,18 @@
                 {#if questionsB.length > 0}
                 <div>
                     <div class="text-center font-bold border-b-2 border-black mb-4 py-1 uppercase italic tracking-widest bg-gray-50">PART B ({questionsB.length} x {questionsB[0]?.marks || 5} = {totalMarksB} Marks)</div>
-                    <div use:dndzone={{ items: questionsB, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', e.detail.items)} onfinalize={(e) => handleDndSync('B', e.detail.items)}>
-                        {#each questionsB as q, i (q.id)}
-                            <div animate:flip={{duration: 200}} class="border-2 border-black mb-6 shadow-sm">
-                                <AssessmentSlotOrGroup slot={q} qNumber={questionsA.length + (i*2) + 1} {isEditable} snoWidth={35}
-                                    onSwap1={() => openSwapSidebar(q, 'B', 'q1')} onSwap2={() => openSwapSidebar(q, 'B', 'q2')}
-                                    onRemove={() => removeQuestion(q)}
-                                    onUpdateText1={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)}
-                                    onUpdateText2={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} />
-                            </div>
+                    <div use:dndzone={{ items: questionsB, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', (e.detail as any).items)} onfinalize={(e) => handleDndSync('B', (e.detail as any).items)}>
+                        {#each (currentSetData.questions || []) as q, i (q.id)}
+                            {#if q && q.part === 'B'}
+                                {@const bIdx = questionsB.findIndex(x => x.id === q.id)}
+                                <div class="border-2 border-black mb-6 shadow-sm">
+                                    <AssessmentSlotOrGroup slot={q} qNumber={questionsA.length + (bIdx * 2) + 1} {isEditable} snoWidth={35}
+                                        onSwap1={() => openSwapSidebar(q, 'B', 'q1')} onSwap2={() => openSwapSidebar(q, 'B', 'q2')}
+                                        onRemove={() => removeQuestion(q)}
+                                        onUpdateText1={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)}
+                                        onUpdateText2={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} />
+                                </div>
+                            {/if}
                         {/each}
                     </div>
                 </div>
@@ -157,15 +163,18 @@
                 {#if questionsC.length > 0}
                 <div>
                     <div class="text-center font-bold border-b-2 border-black mb-4 py-1 uppercase italic tracking-widest bg-gray-50">PART C ({questionsC.length} x {questionsC[0]?.marks || 16} = {totalMarksC} Marks)</div>
-                    <div use:dndzone={{ items: questionsC, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('C', e.detail.items)} onfinalize={(e) => handleDndSync('C', e.detail.items)}>
-                        {#each questionsC as q, i (q.id)}
-                            <div animate:flip={{duration: 200}} class="border-2 border-black mb-6 shadow-sm">
-                                <AssessmentSlotOrGroup slot={q} qNumber={questionsA.length + (questionsB.length*2) + (i*2) + 1} {isEditable} snoWidth={35}
-                                    onSwap1={() => openSwapSidebar(q, 'C', 'q1')} onSwap2={() => openSwapSidebar(q, 'C', 'q2')}
-                                    onRemove={() => removeQuestion(q)}
-                                    onUpdateText1={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)}
-                                    onUpdateText2={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} />
-                            </div>
+                    <div use:dndzone={{ items: questionsC, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('C', (e.detail as any).items)} onfinalize={(e) => handleDndSync('C', (e.detail as any).items)}>
+                        {#each (currentSetData.questions || []) as q, i (q.id)}
+                            {#if q && q.part === 'C'}
+                                {@const cIdx = questionsC.findIndex(x => x.id === q.id)}
+                                <div class="border-2 border-black mb-6 shadow-sm">
+                                    <AssessmentSlotOrGroup slot={q} qNumber={questionsA.length + (questionsB.length * 2) + (cIdx * 2) + 1} {isEditable} snoWidth={35}
+                                        onSwap1={() => openSwapSidebar(q, 'C', 'q1')} onSwap2={() => openSwapSidebar(q, 'C', 'q2')}
+                                        onRemove={() => removeQuestion(q)}
+                                        onUpdateText1={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)}
+                                        onUpdateText2={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} />
+                                </div>
+                            {/if}
                         {/each}
                     </div>
                 </div>

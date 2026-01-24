@@ -28,6 +28,7 @@
 
     const isEditable = $derived(mode === 'edit');
     
+    // We iterate over this derived list for UI logic
     const sectionKeys = $derived.by(() => {
         const keys = new Set<string>();
         if (!currentSetData) return [];
@@ -181,37 +182,41 @@
 
                 <div class="flex flex-col border-t-[1.5pt] border-black">
                 {#each sectionKeys as section, sIdx}
-                    {@const cfg = getSectionConfig(section)}
-                    <div class="w-full text-center border-b border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm {sIdx > 0 ? 'border-t-[1.5pt]' : ''}">
-                        <AssessmentEditable bind:value={cfg.title} onUpdate={(v: string) => updateSectionTitle(section, v)} class="w-full" />
-                    </div>
-                    <div class="w-full flex items-center justify-between border-b border-black px-1 py-1 font-bold italic text-xs min-h-[22px] bg-white">
-                         <div class="flex-1">
-                            <AssessmentEditable bind:value={cfg.instructions} onUpdate={(v: string) => updateInstructions(section, v)} class="w-full" />
-                         </div>
-                         <div class="tabular-nums no-print text-right pl-4">
-                             <AssessmentEditable value={getInstructionsMarks(section)} onUpdate={(v: string) => { if(cfg) cfg.instructions_marks = v; }} class="text-right" />
-                         </div>
-                    </div>
-                    <div class="w-full flex flex-col min-h-[50px]" use:dndzone={{ items: (currentSetData.questions || []).filter((q: any) => q.part === section), flipDurationMs: 200 }} onconsider={(e) => handleDndSync(section, e.detail.items)} onfinalize={(e) => handleDndSync(section, e.detail.items)}>
-                        {#each (currentSetData.questions || []).filter((q: any) => q.part === section) as q (q.id)}
-                            <div animate:flip={{ duration: 200 }} class="w-full border-b border-black last:border-b-0 hover:bg-indigo-50/10 transition-colors">
-                                {#if q.type === 'OR_GROUP'}
-                                    <AssessmentSlotOrGroup slot={q} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
-                                        onSwap1={() => openSwapSidebar(q, section, 'q1')}
-                                        onSwap2={() => openSwapSidebar(q, section, 'q2')}
-                                        onRemove={() => removeQuestion(q)}
-                                        onUpdateText1={(v: string, qid: string) => updateTextValue(v, 'QUESTION', 'text', q.id, qid, 'choice1')}
-                                        onUpdateText2={(v: string, qid: string) => updateTextValue(v, 'QUESTION', 'text', q.id, qid, 'choice2')}
-                                    />
-                                {:else}
-                                    <AssessmentSlotSingle slot={q} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
-                                        onSwap={() => openSwapSidebar(q, section)}
-                                        onRemove={() => removeQuestion(q)}
-                                        onUpdateText={(v: string, qid: string) => updateTextValue(v, 'QUESTION', 'text', q.id, qid)}
-                                    />
-                                {/if}
-                            </div>
+                    {@const cfgIndex = paperStructure.findIndex(s => s.part === section)}
+                    {#if cfgIndex !== -1}
+                        <div class="w-full text-center border-b border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm {sIdx > 0 ? 'border-t-[1.5pt]' : ''}">
+                            <AssessmentEditable bind:value={paperStructure[cfgIndex].title} onUpdate={(v: string) => updateSectionTitle(section, v)} class="w-full" />
+                        </div>
+                        <div class="w-full flex items-center justify-between border-b border-black px-1 py-1 font-bold italic text-xs min-h-[22px] bg-white">
+                             <div class="flex-1">
+                                <AssessmentEditable bind:value={paperStructure[cfgIndex].instructions} onUpdate={(v: string) => updateInstructions(section, v)} class="w-full" />
+                             </div>
+                             <div class="tabular-nums no-print text-right pl-4">
+                                 <AssessmentEditable value={getInstructionsMarks(section)} onUpdate={(v: string) => { paperStructure[cfgIndex].instructions_marks = v; }} class="text-right" />
+                             </div>
+                        </div>
+                    {/if}
+                    <div class="w-full flex flex-col min-h-[50px]" use:dndzone={{ items: (currentSetData.questions || []).filter((q: any) => q && q.part === section), flipDurationMs: 200 }} onconsider={(e) => handleDndSync(section, (e.detail as any).items)} onfinalize={(e) => handleDndSync(section, (e.detail as any).items)}>
+                        {#each (currentSetData.questions || []) as q (q.id)}
+                            {#if q && q.part === section}
+                                <div class="w-full border-b border-black last:border-b-0 hover:bg-indigo-50/10 transition-colors">
+                                    {#if q.type === 'OR_GROUP'}
+                                        <AssessmentSlotOrGroup slot={q} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
+                                            onSwap1={() => openSwapSidebar(q, section, 'q1')}
+                                            onSwap2={() => openSwapSidebar(q, section, 'q2')}
+                                            onRemove={() => removeQuestion(q)}
+                                            onUpdateText1={(v: string, qid: string) => updateTextValue(v, 'QUESTION', 'text', q.id, qid, 'choice1')}
+                                            onUpdateText2={(v: string, qid: string) => updateTextValue(v, 'QUESTION', 'text', q.id, qid, 'choice2')}
+                                        />
+                                    {:else}
+                                        <AssessmentSlotSingle slot={q} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
+                                            onSwap={() => openSwapSidebar(q, section)}
+                                            onRemove={() => removeQuestion(q)}
+                                            onUpdateText={(v: string, qid: string) => updateTextValue(v, 'QUESTION', 'text', q.id, qid)}
+                                        />
+                                    {/if}
+                                </div>
+                            {/if}
                         {/each}
                     </div>
                 {/each}

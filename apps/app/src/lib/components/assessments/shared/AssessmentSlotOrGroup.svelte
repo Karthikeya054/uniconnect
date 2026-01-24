@@ -16,8 +16,7 @@
         class: className = ""
     } = $props();
 
-    const q1 = $derived(slot.choice1?.questions?.[0]);
-    const q2 = $derived(slot.choice2?.questions?.[0]);
+    // Use direct access to avoid binding to derivation crash
 </script>
 
 <div class="flex flex-col border-black {className}">
@@ -32,13 +31,17 @@
                 onSwap={onSwap1}
                 onDelete={onRemove}
             />
-            {#if q1}
+            {#if slot.choice1?.questions?.[0]}
                 <AssessmentEditable 
-                    bind:value={q1.text}
-                    onUpdate={(v: string) => onUpdateText1(v, q1.id)}
+                    value={slot.choice1.questions[0].text}
+                    onUpdate={(v: string) => {
+                        slot.choice1.questions[0].text = v;
+                        slot.choice1.questions[0].question_text = v;
+                        if (onUpdateText1) onUpdateText1(v, slot.choice1.questions[0].id);
+                    }}
                     multiline={true}
                 />
-                <AssessmentMcqOptions options={q1.options} />
+                <AssessmentMcqOptions options={slot.choice1.questions[0].options} />
             {/if}
         </div>
     </div>
@@ -60,13 +63,17 @@
                 onSwap={onSwap2}
                 onDelete={onRemove}
             />
-            {#if q2}
+            {#if slot.choice2?.questions?.[0]}
                 <AssessmentEditable 
-                    bind:value={q2.text}
-                    onUpdate={(v: string) => onUpdateText2(v, q2.id)}
+                    value={slot.choice2.questions[0].text}
+                    onUpdate={(v: string) => {
+                        slot.choice2.questions[0].text = v;
+                        slot.choice2.questions[0].question_text = v;
+                        if (onUpdateText2) onUpdateText2(v, slot.choice2.questions[0].id);
+                    }}
                     multiline={true}
                 />
-                <AssessmentMcqOptions options={q2.options} />
+                <AssessmentMcqOptions options={slot.choice2.questions[0].options} />
             {/if}
         </div>
     </div>
