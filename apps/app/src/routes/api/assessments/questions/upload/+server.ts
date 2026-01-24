@@ -299,21 +299,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     const start = marker.index + marker.fullMatch.length;
                     const end = (i + 1 < markers.length) ? markers[i + 1].index : text.length;
                     let bText = text.substring(start, end).trim();
-
-                    let qText = bText;
+                    let qText = '';
                     let solutionText = '';
                     let options: string[] = [];
-                    let meta = marker.metadata || {};
+                    let meta = (marker as any).metadata || {};
 
-                    // Specialized parsing for META_PIPE following lines
+                    // Universal parsing for "Question:" and "Solution/Answer:" prefixes
+                    const sMatch = bText.match(/(?:Solution|Answer|Soln|Ans)\s*:\s*([\s\S]*)/i);
+                    if (sMatch) {
+                        qText = bText.substring(0, sMatch.index).replace(/Question:\s*/i, '').trim();
+                        solutionText = sMatch[1].trim();
+                    } else {
+                        qText = bText.replace(/Question:\s*/i, '').trim();
+                        solutionText = '';
+                    }
+
+                    // Specialized parsing for META_PIPE to update unit/co/bloom
                     if (marker.type === 'META_PIPE') {
-                        // Extract "Question: ..." and "Solution: ..."
-                        const qMatch = bText.match(/Question:\s*([\s\S]*?)(?=Solution:|$)/i);
-                        const sMatch = bText.match(/Solution:\s*([\s\S]*)/i);
-
-                        if (qMatch) qText = qMatch[1].trim();
-                        if (sMatch) solutionText = sMatch[1].trim();
-
                         // Override defaults with meta
                         if (meta.module) {
                             const n = parseInt(meta.module);
@@ -391,7 +393,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     // Extract first image for the main image_url column
                     let imageUrl = null;
                     const mainImgMatch = qText.match(/\[IMG_(\d+)\]/);
-                    if (mainImgMatch) imageUrl = lastDocxImageMap[parseInt(mainImgMatch[1])];
+                    if (mainImgMatch) {
+                        const imgId = mainImgMatch[1];
+                        imageUrl = lastDocxImageMap[parseInt(imgId)];
+                        // Remove ONLY the first instance of this marker from qText to prevent double rendering
+                        qText = qText.replace(`[IMG_${imgId}]`, '').trim();
+                    }
 
                     qText = processImages(qText);
                     solutionText = processImages(solutionText);
