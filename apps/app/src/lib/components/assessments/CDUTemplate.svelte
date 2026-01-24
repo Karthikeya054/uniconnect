@@ -30,7 +30,9 @@
     
     const sectionKeys = $derived.by(() => {
         const keys = new Set<string>();
-        (currentSetData.questions || []).forEach((q: any) => keys.add(q.part || 'A'));
+        if (!currentSetData) return [];
+        const qs = (Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter(Boolean);
+        qs.forEach((q: any) => keys.add(q.part || 'A'));
         return Array.from(keys).sort();
     });
 
@@ -83,7 +85,7 @@
     function getInstructionsMarks(section: string) {
         const cfg = getSectionConfig(section);
         if (cfg?.instructions_marks && cfg.instructions_marks !== 'auto') return cfg.instructions_marks;
-        const qs = (currentSetData.questions || []).filter((q: any) => q.part === section);
+        const qs = (Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter((q: any) => q && q.part === section);
         if (qs.length === 0) return '[ 0 x 0 = 0 ]';
         const q0 = qs[0];
         const m = q0.type === 'OR_GROUP' ? (q0.choice1?.questions?.[0]?.marks || 0) : (q0.questions?.[0]?.marks || 0);

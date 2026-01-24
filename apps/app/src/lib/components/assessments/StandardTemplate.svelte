@@ -25,6 +25,7 @@
     let questionsC = $derived(safeFilter(currentSetData, 'C'));
 
     function safeFilter(data: any, part: string) {
+        if (!data) return [];
         const arr = (Array.isArray(data) ? data : (data?.questions || [])).filter(Boolean);
         return arr.filter((s: any) => s.part === part);
     }
@@ -94,7 +95,8 @@
         isSwapSidebarOpen = false;
     }
 
-    const calcTotal = (qs: any[]) => qs.reduce((s, slot) => {
+    const calcTotal = (qs: any[]) => (qs || []).reduce((s, slot) => {
+        if (!slot) return s;
         const marks = Number(slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0)));
         return s + (slot.type === 'OR_GROUP' ? marks * 2 : marks);
     }, 0);

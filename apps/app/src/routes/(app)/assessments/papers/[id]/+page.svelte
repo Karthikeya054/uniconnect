@@ -44,28 +44,40 @@
         const initial: any = {};
         availableSets.forEach(s => {
             const val = rawSetsData[s] || rawSetsData[s.toLowerCase()];
-            const setObj = val ? JSON.parse(JSON.stringify(val)) : { questions: [] };
+            
+            // Normalize: Ensure val is an object with a questions array
+            let setObj: any;
+            if (Array.isArray(val)) {
+                setObj = { questions: JSON.parse(JSON.stringify(val)) };
+            } else if (val && typeof val === 'object') {
+                setObj = JSON.parse(JSON.stringify(val));
+                if (!setObj.questions) setObj.questions = [];
+            } else {
+                setObj = { questions: [] };
+            }
             
             // CRITICAL: Ensure every slot and question has a stable ID at the source
-            // This prevents updateText from failing when questions are raw/un-ID'd
-            if (setObj.questions) {
-                setObj.questions = setObj.questions.map((q: any, idx: number) => {
-                    if (!q.id) q.id = `q-source-${s}-${idx}`;
-                    if (q.questions) {
+            // This prevents dndzone from crashing if IDs are missing
+            if (setObj.questions && Array.isArray(setObj.questions)) {
+                setObj.questions = setObj.questions.filter(Boolean).map((q: any, idx: number) => {
+                    const qId = q.id || `q-${s}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
+                    q.id = qId;
+                    
+                    if (q.questions && Array.isArray(q.questions)) {
                         q.questions = q.questions.map((subQ: any, subIdx: number) => {
-                            if (!subQ.id) subQ.id = `sub-q-${s}-${idx}-${subIdx}`;
+                            if (!subQ.id) subQ.id = `${qId}-sub-${subIdx}`;
                             return subQ;
                         });
                     }
                     if (q.choice1?.questions) {
                         q.choice1.questions = q.choice1.questions.map((subQ: any, subIdx: number) => {
-                            if (!subQ.id) subQ.id = `c1-${s}-${idx}-${subIdx}`;
+                            if (!subQ.id) subQ.id = `${qId}-c1-${subIdx}`;
                             return subQ;
                         });
                     }
                     if (q.choice2?.questions) {
                         q.choice2.questions = q.choice2.questions.map((subQ: any, subIdx: number) => {
-                            if (!subQ.id) subQ.id = `c2-${s}-${idx}-${subIdx}`;
+                            if (!subQ.id) subQ.id = `${qId}-c2-${subIdx}`;
                             return subQ;
                         });
                     }
