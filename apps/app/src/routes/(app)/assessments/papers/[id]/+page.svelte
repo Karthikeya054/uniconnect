@@ -92,13 +92,19 @@
 
     function initializeMeta() {
         const paper = data?.paper;
-        if (!paper) return {
+        
+        const defaultMeta = {
             paper_date: '', exam_time: '', duration_minutes: '180', max_marks: '100',
             course_code: 'CS-XXXX', subject_name: 'Question Paper',
             exam_title: 'SEMESTER END EXAMINATIONS - NOV/DEC 2025',
             programme: 'B.Tech - COMPUTER SCIENCE AND ENGINEERING',
-            semester: '1', instructions: 'ANSWER ALL QUESTIONS'
+            semester: '1', instructions: 'ANSWER ALL QUESTIONS',
+            univ_line_1: 'CHAITANYA', univ_line_2: '(DEEMED TO BE UNIVERSITY)',
+            colWidths: { sno: 40 },
+            template_config: null
         };
+
+        if (!paper) return defaultMeta;
 
         let rawSetsData = paper.sets_data || paper.sets || paper.json_data || {};
         if (typeof rawSetsData === 'string') {
@@ -106,6 +112,26 @@
         }
 
         const meta = rawSetsData.metadata || rawSetsData.editor_metadata || paper.meta || {};
+        
+        // Resolve structure early
+        let structure = meta.template_config;
+        if (!structure) {
+            const marks = Number(meta.max_marks || paper.max_marks || 100);
+            const is100 = marks === 100;
+            const isMCQ = meta.part_a_type === 'MCQ';
+            if (is100) {
+                structure = [
+                    { title: 'PART A', marks_per_q: isMCQ ? 1 : 2, count: isMCQ ? 20 : 10, answered_count: isMCQ ? 20 : 10 },
+                    { title: 'PART B', marks_per_q: 16, count: 5, answered_count: 5 }
+                ];
+            } else {
+                structure = [
+                    { title: 'PART A', marks_per_q: isMCQ ? 1 : 2, count: isMCQ ? 10 : 5, answered_count: isMCQ ? 10 : 5 },
+                    { title: 'PART B', marks_per_q: 5, count: 8, answered_count: 8 }
+                ];
+            }
+        }
+
         return {
             paper_date: meta.paper_date || paper.paper_date?.split('T')[0] || new Date().toISOString().split('T')[0],
             exam_time: meta.exam_time || '',
@@ -119,7 +145,8 @@
             instructions: meta.instructions || paper.instructions || 'ANSWER ALL QUESTIONS',
             univ_line_1: meta.univ_line_1 || 'CHAITANYA',
             univ_line_2: meta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)',
-            colWidths: meta.colWidths || { sno: 40 }
+            colWidths: meta.colWidths || { sno: 40 },
+            template_config: structure
         };
     }
 
@@ -132,31 +159,8 @@
         return () => window.removeEventListener('changeSet', handler);
     });
 
-    // Helper to find paper structure from metadata or defaults
-    let paperStructure = $derived.by(() => {
-        const rawSetsData = data?.paper?.sets_data || {};
-        const meta = rawSetsData.metadata || {};
-        
-        // Priority 1: Use the structure saved during generation
-        if (meta.template_config) return meta.template_config;
-
-        // Priority 2: Standard resolution logic
-        const marks = Number(paperMeta.max_marks);
-        const is100 = marks === 100;
-        const isMCQ = meta.part_a_type === 'MCQ';
-
-        if (is100) {
-            return [
-                { title: 'PART A', marks_per_q: isMCQ ? 1 : 2, count: isMCQ ? 20 : 10, answered_count: isMCQ ? 20 : 10 },
-                { title: 'PART B', marks_per_q: 16, count: 5, answered_count: 5 }
-            ];
-        } else {
-            return [
-                { title: 'PART A', marks_per_q: isMCQ ? 1 : 2, count: isMCQ ? 10 : 5, answered_count: isMCQ ? 10 : 5 },
-                { title: 'PART B', marks_per_q: 5, count: 8, answered_count: 8 }
-            ];
-        }
-    });
+    // Helper to find paper structure from metadata
+    let paperStructure = $derived(paperMeta.template_config || []);
 
     let isSaving = $state(false);
 
@@ -633,7 +637,7 @@
                     <CDUTemplate 
                         bind:paperMeta={paperMeta}
                         bind:currentSetData={editableSets[activeSet]}
-                        bind:paperStructure={paperStructure}
+                        bind:paperStructure={paperMeta.template_config}
                         activeSet={activeSet}
                         courseOutcomes={data.courseOutcomes}
                         questionPool={data.questionPool}
