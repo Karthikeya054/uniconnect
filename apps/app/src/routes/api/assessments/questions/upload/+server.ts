@@ -68,13 +68,37 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             for (const sName of sheetsToProcess) {
                 const sheet = workbook.Sheets[sName];
                 const rows = XLSX.utils.sheet_to_json(sheet);
-                let qType: any = sName.toLowerCase().includes('mcq') ? 'MCQ' :
-                    (sName.toLowerCase().includes('long') ? 'LONG' :
-                        (sName.toLowerCase().includes('fill') ? 'FILL_IN_BLANK' : 'SHORT'));
+                const lowName = sName.toLowerCase();
+                let qType: any = 'SHORT';
+                if (lowName.includes('mcq')) qType = 'MCQ';
+                else if (lowName.includes('very long')) qType = 'VERY_LONG';
+                else if (lowName.includes('very short')) qType = 'VERY_SHORT';
+                else if (lowName.includes('long')) qType = 'LONG';
+                else if (lowName.includes('fill')) qType = 'FILL_IN_BLANK';
+                else if (lowName.includes('paragraph')) qType = 'PARAGRAPH';
 
                 for (const row of rows as any[]) {
-                    const qText = findVal(row, ['Question Description', 'Question Text', 'Questions', 'Question'], true);
-                    if (!qText || qText.toString().trim().length < 5) continue;
+                    const qTextFull = findVal(row, ['Question Description', 'Question Text', 'Questions', 'Question'], true)?.toString().trim();
+                    if (!qTextFull || qTextFull.length < 5) continue;
+
+                    let qText = qTextFull;
+                    let options: string[] = [row['A'], row['B'], row['C'], row['D']].filter(Boolean).map(o => o.toString().trim());
+
+                    // Aggressive in-text option extraction for XLSX if columns are empty or not enough options
+                    if (qTextFull && qTextFull.length > 5) {
+                        const optRegex = /(?:\s|^|\()([A-Da-d])[\.\)]\s+/g;
+                        const matches = [...qTextFull.matchAll(optRegex)];
+                        if (matches.length >= 2 && options.length < 2) {
+                            qText = qTextFull.substring(0, matches[0].index).trim();
+                            options = [];
+                            for (let k = 0; k < matches.length; k++) {
+                                const s = matches[k].index + matches[k][0].length;
+                                const e = matches[k + 1] ? matches[k + 1].index : qTextFull.length;
+                                options.push(`${matches[k][1]}. ${qTextFull.substring(s, e).trim()}`);
+                            }
+                            if (qType !== 'MCQ') qType = 'MCQ';
+                        }
+                    }
 
                     const rawModNum = findVal(row, ['Module Number', 'Unit Number', 'Module #', 'Unit #']);
                     const rawModName = findVal(row, ['NAME OF THE MODULE', 'NAME OF THE UNIT', 'Module Name', 'Unit Name', 'Module', 'Unit']);
@@ -116,13 +140,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     questionsToCreate.push({
                         unit_id: unit.id,
                         topic_id: topic.id,
+                        co_id: coCode ? coMap.get(coCode) : null,
                         question_text: qText.toString().trim(),
                         bloom_level: bloomLevel,
                         marks: marks,
                         type: qType,
-                        co_id: coCode ? coMap.get(coCode) : null,
                         answer_key: (findVal(row, ['Solution', 'Answer', 'answer_key', 'Correct Answer']) || '').toString().trim(),
-                        options: qType === 'MCQ' ? [row['A'], row['B'], row['C'], row['D']].filter(Boolean).map(o => o.toString().trim()) : null,
+                        options: options && options.length > 0 ? options : null,
                         image_url: null // XLSX image support is limited in current library
                     });
                 }
@@ -219,7 +243,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
                     // Improved Option Detection (Supports embedded options)
                     const normalizedText = bText.replace(/\s+/g, ' ');
-                    const optRegex = /(?:\s|^|\()([A-Da-d])[\.\)]\s*/g;
+                    const optRegex = /(?:\s|^|\()([A-Da-d])[\.\)]\s+/g;
                     const matches = [...normalizedText.matchAll(optRegex)];
 
                     if (matches.length >= 2) {
@@ -230,7 +254,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                             const e = matches[k + 1] ? matches[k + 1].index : normalizedText.length;
                             const optionText = normalizedText.substring(s, e).trim();
                             if (optionText.length > 0) {
-                                options.push(`${matches[k][1].trim()}. ${optionText}`);
+                                options.push(`${matches[k][1].toUpperCase()}. ${optionText}`);
                             }
                         }
                     }
@@ -257,7 +281,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
                     if (qText.length > 3 || options.length > 0 || imageUrl) {
                         questionsToCreate.push({
-                            unit_id: currentDetectedUnitId === 'GLOBAL' ? allUnits[0].id : currentDetectedUnitId,
+                            unit_id: currentDetectedUnitId === 'GLOBAL' ? (allUnits[0]?.id || null) : currentDetectedUnitId,
                             question_text: qText || (imageUrl ? 'Image-based Question' : `Question ${marker.value}`),
                             marks: marksFromText,
                             bloom_level: bloomLevelText,

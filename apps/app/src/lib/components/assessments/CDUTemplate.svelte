@@ -293,9 +293,9 @@
 
                 <!-- Main Grid Content -->
                 <div class="flex flex-col border-t-[1.5pt] border-black">
-                {#each sectionKeys as section}
+                {#each sectionKeys as section, sIdx}
                     <!-- Section Header Row -->
-                    <div class="w-full text-center border-b border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm cursor-text hover:bg-slate-50" use:editable={{ value: getSectionConfig(section)?.title?.replace('PART', 'SECTION') || `SECTION - ${section}`, onUpdate: (v) => updateSectionTitle(section, v) }}>
+                    <div class="w-full text-center border-b border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm cursor-text hover:bg-slate-50 {sIdx > 0 ? 'border-t-[1.5pt]' : ''}" use:editable={{ value: getSectionConfig(section)?.title?.replace('PART', 'SECTION') || `SECTION - ${section}`, onUpdate: (v) => updateSectionTitle(section, v) }}>
                         {getSectionConfig(section)?.title?.replace('PART', 'SECTION') || `SECTION - ${section}`}
                     </div>
 
@@ -464,11 +464,12 @@
     .paper-header { display: block !important; }
     .print-force-red {
         color: #dc2626 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     :global(.print-force-red) {
         color: #dc2626 !important;
         -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 </style>

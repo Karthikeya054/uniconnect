@@ -277,6 +277,7 @@
     }
 
     let editingQuestion = $state<any>(null);
+    let isSavingQuestion = $state(false);
     let activeEditor = $state<'question' | 'answer' | null>(null);
     let qEditorEl = $state<HTMLDivElement | null>(null);
     let aEditorEl = $state<HTMLDivElement | null>(null);
@@ -318,16 +319,21 @@
     }
 
     async function saveQuestion() {
-        if (!editingQuestion) return;
+        if (!editingQuestion || isSavingQuestion) return;
         
-        const res = await fetch('/api/assessments/questions', {
-            method: 'PATCH',
-            body: JSON.stringify(editingQuestion),
-            headers: { 'Content-Type': 'application/json' }
-        });
-        if (res.ok) {
-            editingQuestion = null;
-            invalidateAll();
+        isSavingQuestion = true;
+        try {
+            const res = await fetch('/api/assessments/questions', {
+                method: 'PATCH',
+                body: JSON.stringify(editingQuestion),
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (res.ok) {
+                editingQuestion = null;
+                await invalidateAll();
+            }
+        } finally {
+            isSavingQuestion = false;
         }
     }
 
@@ -1385,8 +1391,10 @@
                     <label for="eq-category" class="block text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 text-indigo-400 dark:text-indigo-500">Category</label>
                     <select id="eq-category" bind:value={editingQuestion.type} class="w-full bg-gray-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700 rounded-xl text-[10px] font-bold py-3 px-4 focus:ring-2 focus:ring-indigo-500/20 text-gray-900 dark:text-white">
                         <option value="NORMAL" class="dark:bg-slate-800">Normal</option>
+                        <option value="VERY_SHORT" class="dark:bg-slate-800">Very Short</option>
                         <option value="SHORT" class="dark:bg-slate-800">Short</option>
                         <option value="LONG" class="dark:bg-slate-800">Long</option>
+                        <option value="VERY_LONG" class="dark:bg-slate-800">Very Long</option>
                         <option value="MCQ" class="dark:bg-slate-800">MCQ</option>
                         <option value="FILL_IN_BLANK" class="dark:bg-slate-800">Fill in the Blank</option>
                         <option value="PARAGRAPH" class="dark:bg-slate-800">Paragraph</option>
@@ -1478,8 +1486,16 @@
             >CANCEL</button>
             <button 
                 onclick={saveQuestion}
-                class="flex-[2] py-4 bg-indigo-600 text-white text-[10px] font-black rounded-2xl hover:bg-indigo-700 transition-all uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-indigo-950/40"
-            >SAVE CHANGES</button>
+                disabled={isSavingQuestion}
+                class="flex-[2] py-4 bg-indigo-600 text-white text-[10px] font-black rounded-2xl hover:bg-indigo-700 transition-all uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-indigo-950/40 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+                {#if isSavingQuestion}
+                    <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    SAVING...
+                {:else}
+                    SAVE CHANGES
+                {/if}
+            </button>
         </div>
     </div>
 </div>
