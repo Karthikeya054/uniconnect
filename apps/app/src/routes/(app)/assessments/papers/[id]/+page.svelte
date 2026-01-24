@@ -11,15 +11,13 @@
     let activeSet = $state('A');
     const availableSets = $state(['A', 'B', 'C', 'D']);
     
-    // Template Selection
-    let selectedTemplate = $state('crescent');
-    $effect(() => {
+    // Absolute Template Enforcement
+    // The university name is the ultimate source of truth
+    let selectedTemplate = $derived.by(() => {
         const uniName = data?.paper?.university_name?.toLowerCase() || '';
-        if (uniName.includes('chaitanya')) {
-            selectedTemplate = 'cdu';
-        } else if (data?.paper?.sets_data?.metadata?.selected_template) {
-            selectedTemplate = data.paper.sets_data.metadata.selected_template;
-        }
+        if (uniName.includes('chaitanya')) return 'cdu';
+        if (uniName.includes('crescent')) return 'crescent';
+        return data?.paper?.sets_data?.metadata?.selected_template || 'crescent';
     });
     
     // We deep clone paper data to allow local edits
@@ -95,10 +93,12 @@
             max_marks: String(meta.max_marks || paper.max_marks || 100),
             course_code: meta.course_code || paper.subject_code || 'CS-XXXX',
             subject_name: meta.subject_name || paper.subject_name || 'Question Paper',
-            exam_title: meta.exam_title || paper.exam_title || 'SEMESTER END EXAMINATIONS - NOV/DEC 2025',
-            programme: meta.programme || paper.branch_name || 'B.Tech - COMPUTER SCIENCE AND ENGINEERING',
+            exam_title: meta.exam_title || paper.exam_title || 'I INTERNAL EXAMINATIONS - NOV 2024',
+            programme: meta.programme || paper.branch_name || 'B.Tech(CSE) - I SEMESTER',
             semester: String(meta.semester || paper.semester || 1),
-            instructions: meta.instructions || paper.instructions || 'ANSWER ALL QUESTIONS'
+            instructions: meta.instructions || paper.instructions || 'ANSWER ALL QUESTIONS',
+            univ_line_1: meta.univ_line_1 || 'CHAITANYA',
+            univ_line_2: meta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)'
         };
     }
 
@@ -597,11 +597,12 @@
         {#if editableSets[activeSet]}
             <!-- Paper Preview -->
             <div class="lg:col-span-3 space-y-6">
-                <!-- Template Switcher -->
+                <!-- Template Info -->
                 <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm print:hidden">
                     <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Paper Format:</span>
-                    <div class="px-6 py-2 rounded-xl text-[10px] font-black bg-indigo-600 text-white uppercase tracking-widest">
-                        Standard ({selectedTemplate === 'cdu' ? 'Chaitanya' : 'Crescent'})
+                    <div class="px-6 py-2 rounded-xl text-[10px] font-black bg-indigo-600 text-white uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A9 9 0 112.182 17.82L3 21l3.18-.818A8.966 8.966 0 0012 21a9 9 0 008.94-6.94l1.1-3.32z"/></svg>
+                        University Standard ({selectedTemplate === 'cdu' ? 'Chaitanya CDU' : 'Crescent IST'})
                     </div>
                 </div>
 

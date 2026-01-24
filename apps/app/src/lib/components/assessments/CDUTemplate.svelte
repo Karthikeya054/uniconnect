@@ -247,32 +247,25 @@
             
             <!-- Header Section -->
             <header class="text-center space-y-1 mb-4 relative z-10 font-bold">
-                <div class="text-sm font-bold mb-1">Set - {activeSet}</div>
-                <div class="text-xl font-black uppercase tracking-widest hover:bg-slate-50 transition-colors" use:editable={{ value: 'CHAITANYA', onUpdate: () => {} }}>CHAITANYA</div>
-                <div class="text-lg font-bold uppercase tracking-tight hover:bg-slate-50 transition-colors" use:editable={{ value: '(DEEMED TO BE UNIVERSITY)', onUpdate: () => {} }}>(DEEMED TO BE UNIVERSITY)</div>
-                <div class="text-md font-bold uppercase transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.exam_title, onUpdate: (v) => updateTextValue(v, 'META', 'exam_title') }}>{paperMeta.exam_title || 'I INTERNAL EXAMINATIONS'}</div>
-                <div class="text-md font-bold uppercase text-red-600 print:text-black transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.programme, onUpdate: (v) => updateTextValue(v, 'META', 'programme') }}>{paperMeta.programme || 'B.Tech(CSE) - I SEMESTER'}</div>
-                <div class="text-md font-black uppercase text-red-600 print:text-black transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.subject_name || 'SUBJECT NAME', onUpdate: (v) => updateTextValue(v, 'META', 'subject_name') }}>{paperMeta.subject_name || 'SUBJECT NAME'}</div>
+                <div class="text-[10px] font-bold mb-1">Set - {activeSet}</div>
+                <div class="text-[17pt] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors" use:editable={{ value: paperMeta.univ_line_1 || 'CHAITANYA', onUpdate: (v) => updateTextValue(v, 'META', 'univ_line_1') }}>{paperMeta.univ_line_1 || 'CHAITANYA'}</div>
+                <div class="text-[11pt] font-bold uppercase tracking-tight hover:bg-slate-50 transition-colors" use:editable={{ value: paperMeta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)', onUpdate: (v) => updateTextValue(v, 'META', 'univ_line_2') }}>{paperMeta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)'}</div>
+                <div class="text-[11pt] font-bold uppercase transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.exam_title || 'I INTERNAL EXAMINATIONS - NOV 2024', onUpdate: (v) => updateTextValue(v, 'META', 'exam_title') }}>{paperMeta.exam_title || 'I INTERNAL EXAMINATIONS - NOV 2024'}</div>
+                <div class="text-[11pt] font-bold uppercase text-red-600 print:text-black transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.programme || 'B.Tech(CSE) - I SEMESTER', onUpdate: (v) => updateTextValue(v, 'META', 'programme') }}>{paperMeta.programme || 'B.Tech(CSE) - I SEMESTER'}</div>
+                <div class="text-[11pt] font-black uppercase text-red-600 print:text-black transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.subject_name || 'SUBJECT NAME', onUpdate: (v) => updateTextValue(v, 'META', 'subject_name') }}>{paperMeta.subject_name || 'SUBJECT NAME'}</div>
                 
-                <div class="mt-4">
-                    <!-- Top horizontal line -->
-                    <div class="border-t-[1.5pt] border-black mt-2"></div>
-                    
-                    <div class="flex justify-between items-center py-2 px-1 border-t border-black">
+                <div class="mt-2 border-y-[1.2pt] border-black">
+                    <div class="flex justify-between items-center py-0.5 px-0.5 font-bold text-[10.5pt]">
                         <div class="flex gap-1 items-center">
                             <span>Time:</span>
-                            <span class="px-1 transition-colors hover:bg-slate-50" use:editable={{ value: String((Number(paperMeta.duration_minutes)/60).toFixed(1)), onUpdate: (v) => updateTextValue(String(Number(v)*60), 'META', 'duration_minutes') }}>{(Number(paperMeta.duration_minutes)/60).toFixed(1)}</span>
+                            <span class="px-0.5 transition-colors hover:bg-slate-50" use:editable={{ value: String((Number(paperMeta.duration_minutes)/60).toFixed(1)), onUpdate: (v) => updateTextValue(String(Number(v)*60), 'META', 'duration_minutes') }}>{(Number(paperMeta.duration_minutes)/60).toFixed(1)}</span>
                             <span>Hrs.]</span>
                         </div>
                         <div class="flex gap-1 items-center">
                             <span>[Max. Marks:</span>
-                            <span class="px-1 transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.max_marks, onUpdate: (v) => updateTextValue(v, 'META', 'max_marks') }}>{paperMeta.max_marks}</span>
+                            <span class="px-0.5 transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.max_marks, onUpdate: (v) => updateTextValue(v, 'META', 'max_marks') }}>{paperMeta.max_marks}</span>
                         </div>
                     </div>
-                    
-                    <!-- Bottom horizontal lines for boxed effect -->
-                    <div class="border-t border-black"></div>
-                    <div class="border-t border-black mt-[1.5pt]"></div>
                 </div>
             </header>
 
@@ -319,8 +312,8 @@
                                             <div class="min-w-[30px] text-right font-bold text-xs pt-1">[{q.choice1?.questions?.[0]?.marks || 4}]</div>
                                         </div>
 
-                                        <!-- OR separator -->
-                                        <div class="text-center font-black uppercase text-[10px] tracking-[0.5em] py-1">OR</div>
+                                         <!-- OR separator -->
+                                         <div class="text-center font-black uppercase text-[11px] tracking-[0.5em] py-1 border-y border-black mb-2">OR</div>
 
                                         <!-- Choice 2 -->
                                         <div class="group relative flex gap-4 hover:bg-slate-50 transition-colors">
@@ -340,7 +333,7 @@
                                     </div>
                                     <div class="border-b border-black/10 my-2"></div>
                                 {:else}
-                                    <div class="group relative flex gap-4 min-h-[40px] hover:bg-slate-50 transition-colors border-b border-black/10 py-2 last:border-0 items-start">
+                                    <div class="group relative flex gap-4 min-h-[40px] hover:bg-slate-50 transition-colors border-b border-black py-2 last:border-0 items-start">
                                         {#if isEditable}
                                             <div class="absolute -left-10 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
                                                 <button onclick={() => openSwapSidebar(q, part)} title="Swap Question" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow hover:bg-indigo-700 animate-in fade-in"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>

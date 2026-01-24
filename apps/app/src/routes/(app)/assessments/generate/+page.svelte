@@ -550,14 +550,14 @@
         }
     });
 
-    // Auto-detect template for Chaitanya
+    // Absolute Template Enforcement for Chaitanya
+    const isChaitanya = $derived(activeUniversity?.name?.toLowerCase().includes('chaitanya'));
+    
     $effect(() => {
-        if (activeUniversity?.name?.toLowerCase().includes('chaitanya')) {
+        if (isChaitanya) {
             selectedTemplate = 'cdu';
-            if (activeUniversity?.name?.toLowerCase().includes('chaitanya')) {
-              maxMarks = 20;
-              examDuration = 90;
-            }
+            maxMarks = 20; // Default requested for CDU
+            examDuration = 90;
         } else {
             selectedTemplate = 'crescent';
         }
@@ -1235,16 +1235,22 @@
                     <div class="flex-1 w-full overflow-y-auto overflow-x-hidden max-h-[650px] bg-slate-100/30 dark:bg-slate-900/50 rounded-[2rem] p-6 border border-indigo-100/20 custom-scrollbar">
                         <div class="scale-100 origin-top w-full mx-auto shadow-2xl">
                             <div class="mb-4 flex gap-2 justify-center">
-                                <button 
-                                    onclick={() => selectedTemplate = 'crescent'}
-                                    class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
-                                    {selectedTemplate === 'crescent' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 hover:text-white'}"
-                                >Standard</button>
-                                <button 
-                                    onclick={() => selectedTemplate = 'cdu'}
-                                    class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
-                                    {selectedTemplate === 'cdu' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 hover:text-white'}"
-                                >Chaitanya</button>
+                                {#if isChaitanya}
+                                    <div class="px-6 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">
+                                        University Format: Chaitanya (CDU)
+                                    </div>
+                                {:else}
+                                    <button 
+                                        onclick={() => selectedTemplate = 'crescent'}
+                                        class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
+                                        {selectedTemplate === 'crescent' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 hover:text-white'}"
+                                    >Standard (Crescent)</button>
+                                    <button 
+                                        onclick={() => selectedTemplate = 'cdu'}
+                                        class="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
+                                        {selectedTemplate === 'cdu' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-500 hover:text-white'}"
+                                    >Chaitanya (CDU)</button>
+                                {/if}
                             </div>
 
                             {#if selectedTemplate === 'cdu'}
