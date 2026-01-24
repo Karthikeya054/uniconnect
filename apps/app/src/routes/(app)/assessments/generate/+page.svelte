@@ -371,7 +371,7 @@
                 instructions: paperInstructions,
                 generation_mode: generationMode,
                 part_a_type: partAType,
-                selected_template: selectedTemplate,
+                selected_template: activeUniversity?.name?.toLowerCase().includes('chaitanya') ? 'cdu' : selectedTemplate,
                 template_config: generationMode === 'Modifiable' ? paperStructure : null,
                 sets_config: setsConfig
             }),

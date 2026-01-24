@@ -14,7 +14,10 @@
     // Template Selection
     let selectedTemplate = $state('crescent');
     $effect(() => {
-        if (data?.paper?.sets_data?.metadata?.selected_template) {
+        const uniName = data?.paper?.university_name?.toLowerCase() || '';
+        if (uniName.includes('chaitanya')) {
+            selectedTemplate = 'cdu';
+        } else if (data?.paper?.sets_data?.metadata?.selected_template) {
             selectedTemplate = data.paper.sets_data.metadata.selected_template;
         }
     });
