@@ -371,7 +371,7 @@
                 instructions: paperInstructions,
                 generation_mode: generationMode,
                 part_a_type: partAType,
-                selected_template: activeUniversity?.name?.toLowerCase().includes('chaitanya') ? 'cdu' : selectedTemplate,
+                selected_template: activeUniversity?.name?.toLowerCase()?.includes('chaitanya') ? 'cdu' : selectedTemplate,
                 template_config: generationMode === 'Modifiable' ? paperStructure : null,
                 sets_config: setsConfig
             }),
@@ -506,8 +506,8 @@
     function nextStep() { 
         if (currentStep === 1 && (!selectedUniversityId || !selectedBatchId)) return;
         if (currentStep === 2 && (!selectedBranchId || !selectedSemester)) return;
-        if (currentStep === 3 && (selectedUnitIds.length === 0)) {
-            return alert('Select at least one unit');
+        if (currentStep === 3 && (!selectedSubjectId || selectedUnitIds.length === 0)) {
+            return alert('Select a Subject and at least one unit');
         }
         if (currentStep === 3) {
             initializeStructure(); // Only initializes if empty
@@ -552,11 +552,11 @@
 
     // Absolute Template Enforcement for Chaitanya
     const isChaitanya = $derived(
-        activeUniversity?.name?.toLowerCase().includes('chaitanya') || 
+        activeUniversity?.name?.toLowerCase()?.includes('chaitanya') || 
         selectedUniversityId === '8e5403f9-505a-44d4-add4-aae3efaa9248' ||
         (typeof window !== 'undefined' && window.location.search.toLowerCase().includes('8e5403f9'))
     );
-    const isCrescent = $derived(activeUniversity?.name?.toLowerCase().includes('crescent'));
+    const isCrescent = $derived(activeUniversity?.name?.toLowerCase()?.includes('crescent'));
     
     $effect(() => {
         if (isChaitanya) {
@@ -568,7 +568,7 @@
             maxMarks = 50;
             examDuration = 90;
         } else {
-            selectedTemplate = 'crescent'; // Final fallback template
+            selectedTemplate = 'standard'; // Final fallback template
         }
     });
 
