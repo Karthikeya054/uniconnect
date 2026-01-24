@@ -142,7 +142,7 @@
                     <div class="text-center font-bold border-b-2 border-black mb-4 py-1 uppercase italic tracking-widest">PART B ({questionsB.length} x {questionsB[0]?.marks || 5} = {totalMarksB} Marks)</div>
                     <div use:dndzone={{ items: questionsB, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', e.detail.items)} onfinalize={(e) => handleDndSync('B', e.detail.items)}>
                         {#each questionsB as q, i (q.id)}
-                            <div animate:flip={{duration: 200}} class="border-2 border-black mb-6">
+                            <div animate:flip={{duration: 200}} class="border-b border-black last:border-b-0">
                                 <AssessmentSlotOrGroup slot={q} qNumber={questionsA.length + (i*2) + 1} {isEditable} snoWidth={35}
                                     onSwap1={() => openSwapSidebar(q, 'B', 'q1')} onSwap2={() => openSwapSidebar(q, 'B', 'q2')}
                                     onRemove={() => removeQuestion(q)}
@@ -159,7 +159,7 @@
                     <div class="text-center font-bold border-b-2 border-black mb-4 py-1 uppercase italic tracking-widest">PART C ({questionsC.length} x {questionsC[0]?.marks || 16} = {totalMarksC} Marks)</div>
                     <div use:dndzone={{ items: questionsC, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('C', e.detail.items)} onfinalize={(e) => handleDndSync('C', e.detail.items)}>
                         {#each questionsC as q, i (q.id)}
-                            <div animate:flip={{duration: 200}} class="border-2 border-black mb-6">
+                            <div animate:flip={{duration: 200}} class="border-b border-black last:border-b-0">
                                 <AssessmentSlotOrGroup slot={q} qNumber={questionsA.length + (questionsB.length*2) + (i*2) + 1} {isEditable} snoWidth={35}
                                     onSwap1={() => openSwapSidebar(q, 'C', 'q1')} onSwap2={() => openSwapSidebar(q, 'C', 'q2')}
                                     onRemove={() => removeQuestion(q)}
@@ -176,12 +176,21 @@
 
     <!-- Swap Sidebar -->
     {#if isSwapSidebarOpen && isEditable}
-         <div transition:slide={{ axis: 'x' }} class="w-96 bg-white border-l shadow-2xl p-6 overflow-y-auto no-print">
-            <h3 class="font-black mb-4">SWAP QUESTION</h3>
+         <div transition:slide={{ axis: 'x' }} class="w-96 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 shadow-2xl p-6 overflow-y-auto no-print z-[100]">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="font-black text-gray-900 dark:text-white uppercase tracking-tight">SWAP QUESTION</h3>
+                <button onclick={() => isSwapSidebarOpen = false} class="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
             {#each swapContext?.alternates || [] as q}
-                <button onclick={() => selectAlternate(q)} class="w-full text-left p-4 mb-2 bg-gray-50 rounded hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all">
-                    <div class="text-xs font-bold mb-1">{q.marks}M</div>
-                    <div class="text-xs line-clamp-3">{@html q.question_text}</div>
+                <button onclick={() => selectAlternate(q)} class="w-full text-left p-4 mb-3 bg-gray-50 dark:bg-slate-800/50 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 transition-all group">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400">{q.marks}M</span>
+                        <span class="text-[9px] font-black text-gray-400 uppercase">{q.type || 'SHORT'}</span>
+                    </div>
+                    <div class="text-xs font-medium text-gray-700 dark:text-slate-300 leading-relaxed line-clamp-3">{@html q.question_text}</div>
                 </button>
             {/each}
          </div>
