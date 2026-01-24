@@ -216,6 +216,8 @@
                                 padding: 0 !important; 
                                 background: white !important;
                                 width: 210mm !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
                             }
                             body {
                                 display: flex !important;

@@ -259,34 +259,40 @@
 
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative bg-gray-50 dark:bg-slate-950/50">
     <div class="flex-1 overflow-auto p-4 sm:p-8 relative">
-        <div id="crescent-paper-actual" class="mx-auto bg-white min-h-[297mm] p-[5mm] shadow-2xl print:shadow-none print:p-0 transition-all duration-500 font-serif text-black relative border-[1.5pt] border-black" style="width: 210mm; box-sizing: border-box;">
-            
-            <!-- University Header (Using div to avoid global print:hide on <header>) -->
-            <div class="paper-header text-center font-bold mb-4">
-                <div class="text-[10px] mb-1">Set - {activeSet}</div>
-                <div class="text-[17pt] font-black uppercase tracking-widest cursor-text hover:bg-slate-50 transition-colors" use:editable={{ value: paperMeta.univ_line_1 || 'CHAITANYA', onUpdate: (v) => updateTextValue(v, 'META', 'univ_line_1') }}>{paperMeta.univ_line_1 || 'CHAITANYA'}</div>
-                <div class="text-[11pt] font-bold uppercase tracking-tight cursor-text hover:bg-slate-50 transition-colors" use:editable={{ value: paperMeta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)', onUpdate: (v) => updateTextValue(v, 'META', 'univ_line_2') }}>{paperMeta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)'}</div>
-                <div class="text-[11pt] font-bold uppercase cursor-text transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.exam_title || 'I INTERNAL EXAMINATIONS - NOV 2024', onUpdate: (v) => updateTextValue(v, 'META', 'exam_title') }}>{paperMeta.exam_title || 'I INTERNAL EXAMINATIONS - NOV 2024'}</div>
-                <div class="text-[11pt] font-bold uppercase text-red-600 print:text-black cursor-text transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.programme || 'B.Tech(CSE) - I SEMESTER', onUpdate: (v) => updateTextValue(v, 'META', 'programme') }}>{paperMeta.programme || 'B.Tech(CSE) - I SEMESTER'}</div>
-                <div class="text-[11pt] font-black uppercase text-red-600 print:text-black cursor-text transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.subject_name || 'SUBJECT NAME', onUpdate: (v) => updateTextValue(v, 'META', 'subject_name') }}>{paperMeta.subject_name || 'SUBJECT NAME'}</div>
+        <div id="crescent-paper-actual" class="mx-auto bg-white min-h-[297mm] p-[5mm] shadow-2xl print:shadow-none print:p-0 transition-all duration-500 font-serif text-black relative" style="width: 210mm; box-sizing: border-box;">
+            <!-- Complete Outer Box Container (Covers Header + Questions) -->
+            <div class="cdu-full-box border-[1.5pt] border-black -mx-[5mm] print:mx-0 flex flex-col bg-white">
                 
-                <div class="mt-2 border-y-[1.2pt] border-black">
-                    <div class="flex justify-between items-center py-0.5 px-0.5 font-bold text-[10.5pt]">
-                        <div class="flex gap-1 items-center">
-                            <span>Time:</span>
-                            <span class="px-2 cursor-text transition-colors hover:bg-slate-50 border-b border-dotted border-gray-300" use:editable={{ value: String((Number(paperMeta.duration_minutes)/60).toFixed(1)), onUpdate: (v) => updateTextValue(String(Number(v)*60), 'META', 'duration_minutes') }}>{(Number(paperMeta.duration_minutes)/60).toFixed(1)}</span>
-                            <span>Hrs.]</span>
-                        </div>
-                        <div class="flex gap-1 items-center">
-                            <span>[Max. Marks:</span>
-                            <span class="px-2 cursor-text transition-colors hover:bg-slate-50 border-b border-dotted border-gray-300" use:editable={{ value: paperMeta.max_marks || '20', onUpdate: (v) => updateTextValue(v, 'META', 'max_marks') }}>{paperMeta.max_marks || '20'}</span>
+                <!-- University Header -->
+                <div class="paper-header text-center font-bold pb-4 pt-2">
+                    <div class="text-[10px] mb-1">Set - {activeSet}</div>
+                    <div class="text-[17pt] font-black uppercase tracking-widest cursor-text hover:bg-slate-50 transition-colors" use:editable={{ value: paperMeta.univ_line_1 || 'CHAITANYA', onUpdate: (v) => updateTextValue(v, 'META', 'univ_line_1') }}>{paperMeta.univ_line_1 || 'CHAITANYA'}</div>
+                    <div class="text-[11pt] font-bold uppercase tracking-tight cursor-text hover:bg-slate-50 transition-colors" use:editable={{ value: paperMeta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)', onUpdate: (v) => updateTextValue(v, 'META', 'univ_line_2') }}>{paperMeta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)'}</div>
+                    <div class="text-[11pt] font-bold uppercase cursor-text transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.exam_title || 'I INTERNAL EXAMINATIONS - NOV 2024', onUpdate: (v) => updateTextValue(v, 'META', 'exam_title') }}>{paperMeta.exam_title || 'I INTERNAL EXAMINATIONS - NOV 2024'}</div>
+                    
+                    <!-- Red Branded Section -->
+                    <div class="py-1">
+                        <div class="text-[11pt] font-bold uppercase text-[#dc2626] print-force-red cursor-text transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.programme || 'B.Tech(CSE) - I SEMESTER', onUpdate: (v) => updateTextValue(v, 'META', 'programme') }}>{paperMeta.programme || 'B.Tech(CSE) - I SEMESTER'}</div>
+                        <div class="text-[11pt] font-black uppercase text-[#dc2626] print-force-red cursor-text transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.subject_name || 'SUBJECT NAME', onUpdate: (v) => updateTextValue(v, 'META', 'subject_name') }}>{paperMeta.subject_name || 'SUBJECT NAME'}</div>
+                    </div>
+                    
+                    <div class="mt-2 border-y-[1.2pt] border-black">
+                        <div class="flex justify-between items-center py-0.5 px-2 font-bold text-[10.5pt]">
+                            <div class="flex gap-1 items-center">
+                                <span>Time:</span>
+                                <span class="px-2 border-b border-dotted border-gray-300" use:editable={{ value: String((Number(paperMeta.duration_minutes)/60).toFixed(1)), onUpdate: (v) => updateTextValue(String(Number(v)*60), 'META', 'duration_minutes') }}>{(Number(paperMeta.duration_minutes)/60).toFixed(1)}</span>
+                                <span>Hrs.]</span>
+                            </div>
+                            <div class="flex gap-1 items-center">
+                                <span>[Max. Marks:</span>
+                                <span class="px-2 border-b border-dotted border-gray-300" use:editable={{ value: paperMeta.max_marks || '20', onUpdate: (v) => updateTextValue(v, 'META', 'max_marks') }}>{paperMeta.max_marks || '20'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Main Interactive Content (Div-Grid based) -->
-            <div class="flex flex-col border-t-[1.5pt] border-x-[1.5pt] border-b-[1.5pt] border-black -mx-[5mm] print:mx-0">
+                <!-- Main Grid Content -->
+                <div class="flex flex-col border-t-[1.5pt] border-black">
                 {#each sectionKeys as section}
                     <!-- Section Header Row -->
                     <div class="w-full text-center border-b border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm cursor-text hover:bg-slate-50" use:editable={{ value: getSectionConfig(section)?.title?.replace('PART', 'SECTION') || `SECTION - ${section}`, onUpdate: (v) => updateSectionTitle(section, v) }}>
@@ -409,6 +415,7 @@
             </div>
         </div>
     </div>
+</div>
 
     <!-- Swap Sidebar -->
     {#if isSwapSidebarOpen && isEditable}
@@ -455,4 +462,13 @@
     .cursor-text { cursor: text; }
     #crescent-paper-actual { overflow: visible !important; }
     .paper-header { display: block !important; }
+    .print-force-red {
+        color: #dc2626 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    :global(.print-force-red) {
+        color: #dc2626 !important;
+        -webkit-print-color-adjust: exact !important;
+    }
 </style>
