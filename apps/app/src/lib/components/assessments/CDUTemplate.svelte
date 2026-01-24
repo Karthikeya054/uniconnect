@@ -195,7 +195,7 @@
                         {#each (currentSetData.questions || []).filter((q: any) => q.part === section) as q (q.id)}
                             <div animate:flip={{ duration: 200 }} class="w-full border-b border-black last:border-b-0 hover:bg-indigo-50/10 transition-colors">
                                 {#if q.type === 'OR_GROUP'}
-                                    <AssessmentSlotOrGroup {slot={q}} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
+                                    <AssessmentSlotOrGroup slot={q} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
                                         onSwap1={() => openSwapSidebar(q, section, 'q1')}
                                         onSwap2={() => openSwapSidebar(q, section, 'q2')}
                                         onRemove={() => removeQuestion(q)}
@@ -203,7 +203,7 @@
                                         onUpdateText2={(v, qid) => updateTextValue(v, 'QUESTION', 'text', q.id, qid, 'choice2')}
                                     />
                                 {:else}
-                                    <AssessmentSlotSingle {slot={q}} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
+                                    <AssessmentSlotSingle slot={q} qNumber={getQuestionNumber(q.id)} {isEditable} {snoWidth}
                                         onSwap={() => openSwapSidebar(q, section)}
                                         onRemove={() => removeQuestion(q)}
                                         onUpdateText={(v, qid) => updateTextValue(v, 'QUESTION', 'text', q.id, qid)}
