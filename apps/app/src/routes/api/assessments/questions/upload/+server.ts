@@ -200,7 +200,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     })
                 };
                 const result = await mammoth.convertToHtml({ buffer }, options);
-                rawText = result.value.replace(/<tr>/g, '\n[ROW_START]\n').replace(/<\/tr>/g, '\n[ROW_END]\n').replace(/<td>/g, ' [COL] ').replace(/<\/td>/g, ' [/COL] ').replace(/<\/p>/g, '\n').replace(/<br\s*\/?>/g, '\n').replace(/<\/?[^>]+(>|$)/g, " ");
+                rawText = result.value
+                    .replace(/<img[^>]+src="(\[IMG_\d+\])"[^>]*>/gi, ' $1 ') // Preserve image marker
+                    .replace(/<tr>/g, '\n[ROW_START]\n')
+                    .replace(/<\/tr>/g, '\n[ROW_END]\n')
+                    .replace(/<td>/g, ' [COL] ')
+                    .replace(/<\/td>/g, ' [/COL] ')
+                    .replace(/<\/p>/g, '\n')
+                    .replace(/<br\s*\/?>/g, '\n')
+                    .replace(/<\/?[^>]+(>|$)/g, " "); // Strip other tags
 
                 // Post-process to attach images to questions
                 (globalThis as any)._lastDocxImageMap = imageMap;
@@ -218,8 +226,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const optionMarkerRegex = /(?:^|\s|[\.!\?,]|\))(\([a-d]\)|[a-dA-D][\.\)])(?:\s|$)/gi;
             const unitMarkerRegex = /(?:^|\n)(?:Unit|Module|Chapter)[\s-]*(V|IV|III|II|I|1|2|3|4|5|One|Two|Three|Four|Five)[:\s]*/gi;
             const metaPipeRegex = /(?:^|\n)Q(\d+)\s*\|\s*M(\d+)\s*\|\s*(L[1-5])\s*\|\s*([^|]+)\|\s*(CO[1-9])\s*\|\s*([^|]+)\|\s*([^|\n]+)/gi;
+            const headerRegex = /(?:^|\n)(FILL IN THE BLANKS|SHORT QUESTIONS|LONG QUESTIONS|VERY SHORT|MCQ QUESTIONS|PROGRAMMING|PRACTICALS)(?:[:\s]|$)/gi;
 
             let match;
+            while ((match = headerRegex.exec(text)) !== null) markers.push({ index: match.index, type: 'HEADER', value: match[1].toUpperCase(), fullMatch: match[0] });
             while ((match = metaPipeRegex.exec(text)) !== null) {
                 markers.push({
                     index: match.index,
@@ -260,6 +270,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     else if (context.includes('PARAGRAPH')) currentType = 'PARAGRAPH';
                     else if (context.includes('LONG')) currentType = 'LONG';
                     else currentType = 'SHORT';
+                    continue;
+                }
+                if (marker.type === 'HEADER') {
+                    const h = marker.value;
+                    if (h.includes('FILL')) currentType = 'FILL_IN_BLANK';
+                    else if (h.includes('MCQ')) currentType = 'MCQ';
+                    else if (h.includes('VERY SHORT')) currentType = 'VERY_SHORT';
+                    else if (h.includes('LONG')) currentType = 'LONG';
+                    else if (h.includes('SHORT')) currentType = 'SHORT';
                     continue;
                 }
                 if (marker.type === 'ROMAN') { currentRoman = marker.value; continue; }
@@ -347,9 +366,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     const mMatch = bText.match(/\((?:Marks?|Pts?|Points?):\s*(\d+)\)/i) || bText.match(/\b(\d+)\s*Marks?\b/i) || bText.match(/\((\d+)\)$/);
                     const marksFromText = mMatch ? parseInt(mMatch[1]) : (options.length > 0 ? 1 : 2);
 
-                    const scrub = (t: string) => t.replace(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*L[1-5]/gi, '').replace(/Topic:\s*[^\n\r\t,]+/gi, '').replace(/\bCO[1-9]\b/gi, '').replace(/Course\s*Outcome:\s*CO[1-9]/gi, '').replace(/\((\d+)\)$/, '').replace(/\b\d+\s*Marks?\b/gi, '').trim();
-                    qText = scrub(qText);
-                    options = options.map(scrub);
+                    const cleanText = (t: string) => t.replace(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*L[1-5]/gi, '').replace(/Topic:\s*[^\n\r\t,]+/gi, '').replace(/\bCO[1-9]\b/gi, '').replace(/Course\s*Outcome:\s*CO[1-9]/gi, '').replace(/\((\d+)\)$/, '').replace(/\b\d+\s*Marks?\b/gi, '').trim();
 
                     // Find Topic ID if present
                     let topicId = null;
@@ -362,14 +379,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                         topicId = topic.id;
                     }
 
-                    // Image detection for DOCX
+                    // Image detection and conversion back to HTML
+                    const lastDocxImageMap = (globalThis as any)._lastDocxImageMap || {};
+                    const processImages = (t: string) => {
+                        return t.replace(/\[IMG_(\d+)\]/g, (match, id) => {
+                            const dUri = lastDocxImageMap[parseInt(id)];
+                            return dUri ? `<img src="${dUri}" class="max-w-full rounded-xl my-2 inline-block h-auto" style="max-height: 300px;" />` : match;
+                        });
+                    };
+
+                    // Extract first image for the main image_url column
                     let imageUrl = null;
-                    const imgMatch = qText.match(/\[IMG_(\d+)\]/);
-                    if (imgMatch) {
-                        const imgId = parseInt(imgMatch[1]);
-                        imageUrl = ((globalThis as any)._lastDocxImageMap || {})[imgId];
-                        qText = qText.replace(/\[IMG_\d+\]/g, '').trim();
-                    }
+                    const mainImgMatch = qText.match(/\[IMG_(\d+)\]/);
+                    if (mainImgMatch) imageUrl = lastDocxImageMap[parseInt(mainImgMatch[1])];
+
+                    qText = processImages(qText);
+                    solutionText = processImages(solutionText);
+
+                    qText = cleanText(qText);
+                    solutionText = cleanText(solutionText);
+                    options = options.map(cleanText);
+
+                    let finalType = options.length > 0 ? 'MCQ' : currentType;
+                    if (qText.includes('___') || qText.toLowerCase().includes('fill in')) finalType = 'FILL_IN_BLANK';
 
                     if (qText.length > 3 || options.length > 0 || imageUrl) {
                         questionsToCreate.push({
@@ -379,7 +411,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                             question_text: qText || (imageUrl ? 'Image-based Question' : `Question ${marker.value}`),
                             marks: marksFromText,
                             bloom_level: bloomLevelText,
-                            type: options.length > 0 ? 'MCQ' : currentType,
+                            type: finalType,
                             options: options.length > 0 ? options : null,
                             hierarchicalId: currentRoman ? `${currentRoman}-${marker.value}` : marker.value,
                             image_url: imageUrl,
