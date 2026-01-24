@@ -147,6 +147,7 @@
                         metadata: {
                             ...paperMeta,
                             selected_template: selectedTemplate,
+                            template_config: paperStructure,
                             max_marks: Number(paperMeta.max_marks),
                             duration_minutes: Number(paperMeta.duration_minutes)
                         }
@@ -596,27 +597,16 @@
                 <!-- Template Switcher -->
                 <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm print:hidden">
                     <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Paper Format:</span>
-                    <button 
-                        onclick={() => selectedTemplate = 'crescent'}
-                        class="px-6 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest
-                        {selectedTemplate === 'crescent' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}"
-                    >
-                        Standard
-                    </button>
-                    <button 
-                        onclick={() => selectedTemplate = 'cdu'}
-                        class="px-6 py-2 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest
-                        {selectedTemplate === 'cdu' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}"
-                    >
-                        Chaitanya (CDU)
-                    </button>
+                    <div class="px-6 py-2 rounded-xl text-[10px] font-black bg-indigo-600 text-white uppercase tracking-widest">
+                        Standard ({selectedTemplate === 'cdu' ? 'Chaitanya' : 'Crescent'})
+                    </div>
                 </div>
 
                 {#if selectedTemplate === 'cdu'}
                     <CDUTemplate 
                         bind:paperMeta={paperMeta}
                         bind:currentSetData={editableSets[activeSet]}
-                        {paperStructure}
+                        bind:paperStructure={paperStructure}
                         activeSet={activeSet}
                         courseOutcomes={data.courseOutcomes}
                         questionPool={data.questionPool}

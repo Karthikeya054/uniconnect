@@ -100,6 +100,22 @@
         }
     });
 
+
+    // Helper to get section configuration from paperStructure
+    function getSectionConfig(partChar: string) {
+        return paperStructure.find((s: any) => s.part === partChar);
+    }
+
+    function updateSectionTitle(partChar: string, newTitle: string) {
+        const section = getSectionConfig(partChar);
+        if (section) section.title = newTitle;
+    }
+
+    function updateInstructions(partChar: string, newText: string) {
+        const section = getSectionConfig(partChar);
+        if (section) section.instructions = newText;
+    }
+
     // Unified resolver for questions array
     // Uses the permanent IDs injected by the effect above
     let safeQuestions = $derived.by(() => {
@@ -815,19 +831,29 @@
                 contenteditable="true"
                 class="text-[11px] font-black uppercase text-gray-900 tracking-[0.2em] border-b-2 border-gray-900 inline-block pb-0.5 {isEditable ? 'outline-none focus:bg-indigo-50/50' : 'pointer-events-none'}"
                 style="color: black !important;"
-            >
-            </div>
+            ></div>
         </div>
     </div>
 
     <!-- Part A -->
     <div class="mt-8 section-part-a">
         <div 
-            contenteditable="true"
-            class="w-full text-center font-black text-xs uppercase mb-4 border border-black p-1 {isEditable ? '' : 'pointer-events-none'}"
+            use:editable={{ value: getSectionConfig('A')?.title || 'PART A', onUpdate: (v) => updateSectionTitle('A', v) }}
+            class="w-full text-center font-black text-xs uppercase mb-4 border border-black dark:border-gray-800 p-1 {isEditable ? 'hover:bg-slate-50' : 'pointer-events-none'}"
         >
-            {paperStructure[0]?.title || 'PART A'} 
+            {getSectionConfig('A')?.title || 'PART A'} 
             ({partACount} X {paperStructure[0]?.marks_per_q || 2} = {totalMarksA} MARKS)
+        </div>
+        
+        <div class="border-2 border-black dark:border-gray-800 mb-2">
+            <div class="text-center p-1 border-b-[1.5pt] border-black flex justify-between px-2 italic font-bold text-[10px]">
+                <div 
+                    use:editable={{ value: getSectionConfig('A')?.instructions || 'ANSWER ALL QUESTIONS', onUpdate: (v) => updateInstructions('A', v) }}
+                    class="flex-1 text-left {isEditable ? 'hover:bg-slate-50' : 'pointer-events-none'}"
+                >
+                    {getSectionConfig('A')?.instructions || 'ANSWER ALL QUESTIONS'}
+                </div>
+            </div>
         </div>
         <div 
             class="w-full border border-black dark:border-gray-800 divide-y divide-black dark:divide-gray-800"
@@ -996,10 +1022,10 @@
     <!-- Part B -->
     <div class="mt-12 section-page-break section-part-b">
         <div 
-            contenteditable="true"
-            class="w-full text-center font-black text-xs uppercase mb-4 border border-black dark:border-gray-800 p-1 {isEditable ? '' : 'pointer-events-none'}"
+            use:editable={{ value: getSectionConfig('B')?.title || 'PART B', onUpdate: (v) => updateSectionTitle('B', v) }}
+            class="w-full text-center font-black text-xs uppercase mb-4 border border-black dark:border-gray-800 p-1 {isEditable ? 'hover:bg-slate-50' : 'pointer-events-none'}"
         >
-            {paperStructure[1]?.title || 'PART B'} 
+            {getSectionConfig('B')?.title || 'PART B'} 
             ({partBCount} X {paperStructure[1]?.marks_per_q || 5} = {totalMarksB} MARKS)
         </div>
         <div 
@@ -1326,14 +1352,11 @@
     {#if is100m}
         <div class="mt-12 section-page-break section-part-c">
              <div 
-                contenteditable="true"
-                class="w-full text-center font-black text-xs uppercase mb-4 border border-black dark:border-gray-800 p-1 {isEditable ? '' : 'pointer-events-none'}"
+                use:editable={{ value: getSectionConfig('C')?.title || 'PART C', onUpdate: (v) => updateSectionTitle('C', v) }}
+                class="w-full text-center font-black text-xs uppercase mb-4 border border-black dark:border-gray-800 p-1 {isEditable ? 'hover:bg-slate-50' : 'pointer-events-none'}"
             >
-                {#if paperStructure[2]}
-                    {paperStructure[2].title} ({partCCount} X {paperStructure[2].marks_per_q} = {totalMarksC} MARKS)
-                {:else}
-                    PART C ({partCCount} X 16 = {totalMarksC} MARKS)
-                {/if}
+                {getSectionConfig('C')?.title || 'PART C'} 
+                ({partCCount} X {paperStructure[2]?.marks_per_q || 16} = {totalMarksC} MARKS)
             </div>
         <div 
             class="space-y-6"

@@ -4,7 +4,7 @@
     let { 
         paperMeta = $bindable({}), 
         currentSetData = $bindable({ questions: [] }), 
-        paperStructure = [],
+        paperStructure = $bindable([]),
         courseOutcomes = [],
         questionPool = [],
         mode = 'view',
@@ -58,6 +58,21 @@
 
     const isEditable = $derived(mode === 'edit');
     const safeQuestions: any[] = $derived(currentSetData.questions || []);
+
+    // Helper to get section configuration from paperStructure
+    function getSectionConfig(partChar: string) {
+        return paperStructure.find((s: any) => s.part === partChar);
+    }
+
+    function updateSectionTitle(partChar: string, newTitle: string) {
+        const section = getSectionConfig(partChar);
+        if (section) section.title = newTitle;
+    }
+
+    function updateInstructions(partChar: string, newText: string) {
+        const section = getSectionConfig(partChar);
+        if (section) section.instructions = newText;
+    }
 
     // Filter questions by part (CDU uses Sections A, B, C...)
     const sections = $derived.by(() => {
@@ -233,22 +248,31 @@
             <!-- Header Section -->
             <header class="text-center space-y-1 mb-4 relative z-10 font-bold">
                 <div class="text-sm font-bold mb-1">Set - {activeSet}</div>
-                <div class="text-xl font-black uppercase tracking-widest">CHAITANYA</div>
-                <div class="text-lg font-bold uppercase tracking-tight">(DEEMED TO BE UNIVERSITY)</div>
-                <div class="text-md font-bold uppercase" use:editable={{ value: paperMeta.exam_title, onUpdate: (v) => updateTextValue(v, 'META', 'exam_title') }}>{paperMeta.exam_title || 'I INTERNAL EXAMINATIONS'}</div>
-                <div class="text-md font-bold uppercase text-red-600 print:text-black" use:editable={{ value: paperMeta.programme, onUpdate: (v) => updateTextValue(v, 'META', 'programme') }}>{paperMeta.programme || 'B.Tech(CSE) - I SEMESTER'}</div>
-                <div class="text-md font-black uppercase text-red-600 print:text-black" use:editable={{ value: paperMeta.subject_name || 'SUBJECT NAME', onUpdate: (v) => updateTextValue(v, 'META', 'subject_name') }}>{paperMeta.subject_name || 'SUBJECT NAME'}</div>
+                <div class="text-xl font-black uppercase tracking-widest hover:bg-slate-50 transition-colors" use:editable={{ value: 'CHAITANYA', onUpdate: () => {} }}>CHAITANYA</div>
+                <div class="text-lg font-bold uppercase tracking-tight hover:bg-slate-50 transition-colors" use:editable={{ value: '(DEEMED TO BE UNIVERSITY)', onUpdate: () => {} }}>(DEEMED TO BE UNIVERSITY)</div>
+                <div class="text-md font-bold uppercase transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.exam_title, onUpdate: (v) => updateTextValue(v, 'META', 'exam_title') }}>{paperMeta.exam_title || 'I INTERNAL EXAMINATIONS'}</div>
+                <div class="text-md font-bold uppercase text-red-600 print:text-black transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.programme, onUpdate: (v) => updateTextValue(v, 'META', 'programme') }}>{paperMeta.programme || 'B.Tech(CSE) - I SEMESTER'}</div>
+                <div class="text-md font-black uppercase text-red-600 print:text-black transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.subject_name || 'SUBJECT NAME', onUpdate: (v) => updateTextValue(v, 'META', 'subject_name') }}>{paperMeta.subject_name || 'SUBJECT NAME'}</div>
                 
-                <div class="flex justify-between items-center mt-4 border-y border-black py-1 px-1">
-                    <div class="flex gap-1 items-center">
-                        <span>Time:</span>
-                        <span class="px-1" use:editable={{ value: String((Number(paperMeta.duration_minutes)/60).toFixed(1)), onUpdate: (v) => updateTextValue(String(Number(v)*60), 'META', 'duration_minutes') }}>{(Number(paperMeta.duration_minutes)/60).toFixed(1)}</span>
-                        <span>Hrs.]</span>
+                <div class="mt-4">
+                    <!-- Top horizontal line -->
+                    <div class="border-t-[1.5pt] border-black mt-2"></div>
+                    
+                    <div class="flex justify-between items-center py-2 px-1 border-t border-black">
+                        <div class="flex gap-1 items-center">
+                            <span>Time:</span>
+                            <span class="px-1 transition-colors hover:bg-slate-50" use:editable={{ value: String((Number(paperMeta.duration_minutes)/60).toFixed(1)), onUpdate: (v) => updateTextValue(String(Number(v)*60), 'META', 'duration_minutes') }}>{(Number(paperMeta.duration_minutes)/60).toFixed(1)}</span>
+                            <span>Hrs.]</span>
+                        </div>
+                        <div class="flex gap-1 items-center">
+                            <span>[Max. Marks:</span>
+                            <span class="px-1 transition-colors hover:bg-slate-50" use:editable={{ value: paperMeta.max_marks, onUpdate: (v) => updateTextValue(v, 'META', 'max_marks') }}>{paperMeta.max_marks}</span>
+                        </div>
                     </div>
-                    <div class="flex gap-1 items-center">
-                        <span>[Max. Marks:</span>
-                        <span class="px-1" use:editable={{ value: paperMeta.max_marks, onUpdate: (v) => updateTextValue(v, 'META', 'max_marks') }}>{paperMeta.max_marks}</span>
-                    </div>
+                    
+                    <!-- Bottom horizontal lines for boxed effect -->
+                    <div class="border-t border-black"></div>
+                    <div class="border-t border-black mt-[1.5pt]"></div>
                 </div>
             </header>
 
@@ -257,21 +281,22 @@
                 {#each sections as [part, questions], sIdx}
                     <section class="space-y-2">
                         <!-- Section Divider -->
-                        <div class="text-center border-y border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm">
-                            Section - {part}
+                        <div class="text-center border-y border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm transition-colors hover:bg-slate-50" use:editable={{ value: getSectionConfig(part)?.title || `Section - ${part}`, onUpdate: (v) => updateSectionTitle(part, v) }}>
+                            {getSectionConfig(part)?.title || `Section - ${part}`}
                         </div>
                         
-                        <!-- Instructions (Only for A and B defaults, but configurable) -->
-                        <div class="flex justify-between items-center px-1 italic font-bold border-b border-black text-xs">
-                          {#if part === 'A'}
-                            <span>Answer any six Questions.</span>
-                            <span>6 x 2 = 12</span>
-                          {:else if part === 'B'}
-                            <span>Answer the following Questions.</span>
-                            <span>2 x 4 = 8</span>
-                          {:else}
-                            <span>Answer the following questions.</span>
-                          {/if}
+                        <!-- Instructions -->
+                        <div class="flex justify-between items-center px-1 italic font-bold border-b border-black text-xs min-h-[1.5rem]">
+                            <div class="flex-1 transition-colors hover:bg-slate-50" use:editable={{ value: getSectionConfig(part)?.instructions || (part === 'A' ? 'Answer any six Questions.' : 'Answer the following Questions.'), onUpdate: (v) => updateInstructions(part, v) }}>
+                                {getSectionConfig(part)?.instructions || (part === 'A' ? 'Answer any six Questions.' : 'Answer the following Questions.')}
+                            </div>
+                            <div class="no-print">
+                              {#if part === 'A'}
+                                <span class="pl-4">6 x 2 = 12</span>
+                              {:else if part === 'B'}
+                                <span class="pl-4">2 x 4 = 8</span>
+                              {/if}
+                            </div>
                         </div>
 
                         <div class="space-y-1">
