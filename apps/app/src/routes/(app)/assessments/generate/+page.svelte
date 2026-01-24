@@ -1092,18 +1092,19 @@
                                                             <div class="grid grid-cols-2 gap-4">
                                                                 <div class="space-y-2">
                                                                     <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</div>
-                                                                    <select 
-                                                                        bind:value={choice.qType}
-                                                                        class="w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-2 text-[10px] font-black text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                                                                    >
-                                                                        <option value="ANY" class="dark:bg-slate-800">Any</option>
-                                                                        <option value="NORMAL" class="dark:bg-slate-800">Normal</option>
-                                                                        <option value="SHORT" class="dark:bg-slate-800">Short</option>
-                                                                        <option value="LONG" class="dark:bg-slate-800">Long</option>
-                                                                        <option value="MCQ" class="dark:bg-slate-800">MCQ</option>
-                                                                        <option value="FILL_IN_BLANK" class="dark:bg-slate-800">Fill in Blanks</option>
-                                                                        <option value="PARAGRAPH" class="dark:bg-slate-800">Paragraph</option>
-                                                                    </select>
+                                                                     <select 
+                                                                         bind:value={choice.qType}
+                                                                         class="w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-lg p-1.5 text-[9px] font-black text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                                                                     >
+                                                                         <option value="NORMAL" class="dark:bg-slate-800">Normal</option>
+                                                                         <option value="VERY_SHORT" class="dark:bg-slate-800">Very Short</option>
+                                                                         <option value="SHORT" class="dark:bg-slate-800">Short</option>
+                                                                         <option value="LONG" class="dark:bg-slate-800">Long</option>
+                                                                         <option value="VERY_LONG" class="dark:bg-slate-800">Very Long</option>
+                                                                         <option value="MCQ" class="dark:bg-slate-800">MCQ</option>
+                                                                         <option value="FILL_IN_BLANK" class="dark:bg-slate-800">Fill in Blanks</option>
+                                                                         <option value="PARAGRAPH" class="dark:bg-slate-800">Paragraph</option>
+                                                                     </select>
                                                                 </div>
                                                                 <div class="space-y-2">
                                                                     <div class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Bloom's Level</div>
@@ -1335,9 +1336,28 @@
                             </div>
 
                             <div class="space-y-4">
+                                <h4 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Quick Profile</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                     {#each [
+                                         { name: 'Easy', levels: ['L1', 'L2'] },
+                                         { name: 'Medium', levels: ['L2', 'L3'] },
+                                         { name: 'Hard', levels: ['L3', 'L4'] },
+                                         { name: 'Mixed', levels: ['L1', 'L2', 'L3'] }
+                                     ] as profile}
+                                         <button 
+                                             onclick={() => setsConfig[setName] = [...profile.levels]}
+                                             class="px-3 py-2 rounded-xl border border-gray-100 dark:border-slate-800 text-[9px] font-black uppercase text-gray-500 hover:border-indigo-500 hover:text-indigo-600 transition-all text-center"
+                                         >
+                                             {profile.name}
+                                         </button>
+                                     {/each}
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
                                 <h4 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Difficulty Levels</h4>
                                 <div class="flex flex-col gap-2">
-                                    {#each ['L1', 'L2', 'L3', 'L4', 'L5'] as level}
+                                    {#each (activeSubject?.difficulty_levels || ['L1', 'L2', 'L3', 'L4', 'L5']) as level}
                                         <button 
                                             onclick={() => {
                                                 if (setsConfig[setName].includes(level)) {

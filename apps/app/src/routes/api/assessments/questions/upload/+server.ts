@@ -165,7 +165,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const answerKeyRegex = /\bANSWER\s*KEY\b/gi;
             const romanMarkerRegex = /(?:^|\s)(VIII|VII|VI|III|II|IV|IX|I|V|X)[\.\)]\s+/gi;
             const numericMarkerRegex = /(?:^|\s)(\d+|[I-X]+-\d+)[\.\)]\s+/gi;
-            const optionMarkerRegex = /(?:^|\s|[\.!\?,]|\))(\([a-d]\)|[a-d][\.\)])(?:\s|$)/gi;
+            const optionMarkerRegex = /(?:^|\s|[\.!\?,]|\))(\([a-d]\)|[a-dA-D][\.\)])(?:\s|$)/gi;
             const unitMarkerRegex = /(?:^|\n)(?:Unit|Module|Chapter)[\s-]*(V|IV|III|II|I|1|2|3|4|5|One|Two|Three|Four|Five)[:\s]*/gi;
 
             let match;
@@ -185,7 +185,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             for (let i = 0; i < markers.length; i++) {
                 const marker = markers[i];
                 if (marker.type === 'ANS_KEY') break;
-                if (marker.type === 'PART') { currentType = 'SHORT'; continue; }
+                if (marker.type === 'PART') {
+                    const context = text.substring(marker.index, marker.index + 50).toUpperCase();
+                    if (context.includes('MCQ')) currentType = 'MCQ';
+                    else if (context.includes('VERY SHORT')) currentType = 'VERY_SHORT';
+                    else if (context.includes('FILL')) currentType = 'FILL_IN_BLANK';
+                    else if (context.includes('PARAGRAPH')) currentType = 'PARAGRAPH';
+                    else if (context.includes('LONG')) currentType = 'LONG';
+                    else currentType = 'SHORT';
+                    continue;
+                }
                 if (marker.type === 'ROMAN') { currentRoman = marker.value; continue; }
                 if (marker.type === 'UNIT') {
                     const n = r2n[marker.value.toUpperCase()] || parseInt(marker.value) || 0;
@@ -207,16 +216,22 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
                     let qText = bText;
                     let options: string[] = [];
-                    let m; optionMarkerRegex.lastIndex = 0;
-                    const oMatches = [];
-                    while ((m = optionMarkerRegex.exec(bText)) !== null) oMatches.push({ index: m.index, match: m[0], marker: m[1].trim() });
 
-                    if (oMatches.length > 0) {
-                        qText = bText.substring(0, oMatches[0].index).trim();
-                        for (let j = 0; j < oMatches.length; j++) {
-                            const s = oMatches[j].index + oMatches[j].match.length;
-                            const e = oMatches[j + 1] ? oMatches[j + 1].index : bText.length;
-                            options.push(`${oMatches[j].marker} ${bText.substring(s, e).trim()}`);
+                    // Improved Option Detection (Supports embedded options)
+                    const normalizedText = bText.replace(/\s+/g, ' ');
+                    const optRegex = /(?:\s|^|\()([A-Da-d])[\.\)]\s*/g;
+                    const matches = [...normalizedText.matchAll(optRegex)];
+
+                    if (matches.length >= 2) {
+                        // We found multiple option-like markers.
+                        qText = normalizedText.substring(0, matches[0].index).trim();
+                        for (let k = 0; k < matches.length; k++) {
+                            const s = matches[k].index + matches[k][0].length;
+                            const e = matches[k + 1] ? matches[k + 1].index : normalizedText.length;
+                            const optionText = normalizedText.substring(s, e).trim();
+                            if (optionText.length > 0) {
+                                options.push(`${matches[k][1].trim()}. ${optionText}`);
+                            }
                         }
                     }
 

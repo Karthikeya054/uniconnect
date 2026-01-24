@@ -146,7 +146,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
                 if (qType && qType !== 'ANY') {
                     if (qType === 'MIXED') {
-                        filtered = filtered.filter(q => ['MCQ', 'FILL_IN_BLANK', 'SHORT', 'PARAGRAPH'].includes(q.type || '') || isShortOrMcq(q));
+                        filtered = filtered.filter(q => ['MCQ', 'FILL_IN_BLANK', 'VERY_SHORT', 'SHORT', 'LONG', 'VERY_LONG', 'PARAGRAPH'].includes(q.type || '') || isShortOrMcq(q));
                     } else if (qType === 'NORMAL') {
                         // NORMAL slots should allow anything NOT explicitly MCQ/FIB if marks are low.
                         // For 5+ marks, we allow them because some subjects (like Aptitude) use them for high-mark slots.
