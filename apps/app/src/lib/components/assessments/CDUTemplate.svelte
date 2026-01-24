@@ -148,6 +148,21 @@
         else currentSetData.questions = [...filtered];
     }
 
+    function moveQuestion(slot: any, direction: 'up' | 'down') {
+        let targetArr = Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || []);
+        const index = targetArr.findIndex((s: any) => s.id === slot.id);
+        if (index === -1) return;
+
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= targetArr.length) return;
+
+        const newArr = [...targetArr];
+        [newArr[index], newArr[newIndex]] = [newArr[newIndex], newArr[index]];
+
+        if (Array.isArray(currentSetData)) currentSetData = newArr;
+        else currentSetData.questions = newArr;
+    }
+
     function openSwapSidebar(slot: any, part: string, subPart?: 'q1' | 'q2') {
         if (!slot) return;
         const arr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
@@ -279,7 +294,7 @@
                             <!-- Section Row -->
                             <tr>
                                 <td colspan="3" class="text-center border-b border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm cursor-text hover:bg-slate-50" use:editable={{ value: getSectionConfig(part)?.title || `Section - ${part}`, onUpdate: (v) => updateSectionTitle(part, v) }}>
-                                    {getSectionConfig(part)?.title || `Section - ${part}`}
+                                    {getSectionConfig(part)?.title?.replace('PART', 'SECTION') || `SECTION - ${part}`}
                                 </td>
                             </tr>
                             
@@ -290,13 +305,9 @@
                                         <div class="flex-1 cursor-text transition-colors hover:bg-slate-50" use:editable={{ value: getSectionConfig(part)?.instructions || (part === 'A' ? 'Answer any six Questions.' : 'Answer the following Questions.'), onUpdate: (v) => updateInstructions(part, v) }}>
                                             {getSectionConfig(part)?.instructions || (part === 'A' ? 'Answer any six Questions.' : 'Answer the following Questions.')}
                                         </div>
-                                        <div class="no-print tabular-nums">
-                                        {#if part === 'A'}
-                                            <span class="pl-4">6 x 2 = 12</span>
-                                        {:else if part === 'B'}
-                                            <span class="pl-4">2 x 4 = 8</span>
-                                        {/if}
-                                        </div>
+                                    <div class="no-print tabular-nums cursor-text hover:bg-slate-50 px-1 rounded transition-colors" use:editable={{ value: getSectionConfig(part)?.instructions_marks || (part === 'A' ? '6 x 2 = 12' : '2 x 4 = 8'), onUpdate: (v) => { const cfg = getSectionConfig(part); if(cfg) cfg.instructions_marks = v; } }}>
+                                      {getSectionConfig(part)?.instructions_marks || (part === 'A' ? '6 x 2 = 12' : '2 x 4 = 8')}
+                                    </div>
                                     </div>
                                 </td>
                             </tr>
@@ -306,74 +317,83 @@
                                 {#if q.type === 'OR_GROUP'}
                                     <!-- Choice 1 Row -->
                                     <tr class="group relative hover:bg-slate-50/50">
-                                    <td class="w-[30pt] border-r-[1.5pt] border-black font-bold text-center align-top py-2 text-sm tabular-nums">
+                                    <td class="w-[22pt] border-r-[1.5pt] border-black font-bold text-center align-top py-2 text-sm tabular-nums">
                                         {getQuestionNumber(sIdx, qIdx, 'OR_A')}.
                                     </td>
                                     <td class="px-2 py-2 text-sm leading-relaxed align-top relative">
                                         {#if isEditable}
-                                            <div class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-                                                <button onclick={() => openSwapSidebar(q, part, 'q1')} title="Swap Question" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow hover:bg-indigo-700"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                                            <div class="absolute -left-12 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
+                                                <button onclick={() => openSwapSidebar(q, part, 'q1')} title="Swap Question" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow hover:bg-indigo-700 transition-all active:scale-95"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                                                <button onclick={() => moveQuestion(q, 'up')} title="Move Up" class="w-7 h-7 bg-slate-800 text-white rounded-lg flex items-center justify-center shadow hover:bg-black transition-all active:scale-95"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" /></svg></button>
+                                                <button onclick={() => moveQuestion(q, 'down')} title="Move Down" class="w-7 h-7 bg-slate-800 text-white rounded-lg flex items-center justify-center shadow hover:bg-black transition-all active:scale-95"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg></button>
                                             </div>
                                         {/if}
                                         <div class="outline-none cursor-text min-h-[1.5em] focus:bg-indigo-50/50 rounded" use:editable={{ value: q.choice1?.questions?.[0]?.text || '', onUpdate: (v) => updateTextValue(v, 'QUESTION', 'text', q.id, q.choice1?.questions?.[0]?.id, 'choice1') }}>
                                             {@html q.choice1?.questions?.[0]?.text || ''}
                                         </div>
                                     </td>
-                                    <td class="w-[40pt] border-l-[1.5pt] border-black text-center align-top py-2 font-bold text-sm tabular-nums">
-                                        [{q.choice1?.questions?.[0]?.marks || 4}]
+                                    <td class="w-[32pt] border-l-[1.5pt] border-black text-center align-top py-2 font-bold text-sm tabular-nums">
+                                        <div class="cursor-text hover:bg-slate-50 px-1 rounded transition-colors" use:editable={{ value: q.choice1?.questions?.[0]?.marks || '4', onUpdate: (v) => { q.choice1.questions[0].marks = v; q.choice1.questions[0].mark = v; } }}>
+                                            [{q.choice1?.questions?.[0]?.marks || 4}]
+                                        </div>
                                     </td>
                                     </tr>
 
                                     <!-- OR Row -->
                                     <tr>
-                                        <td class="w-[30pt] border-r-[1.5pt] border-black"></td>
+                                        <td class="w-[22pt] border-r-[1.5pt] border-black"></td>
                                         <td class="text-center font-black uppercase text-[11px] tracking-[0.5em] py-1 border-y-[1.5pt] border-black">OR</td>
-                                        <td class="w-[40pt] border-l-[1.5pt] border-black"></td>
+                                        <td class="w-[32pt] border-l-[1.5pt] border-black"></td>
                                     </tr>
 
                                     <!-- Choice 2 Row -->
                                     <tr class="group relative hover:bg-slate-50/50 border-b border-black">
-                                    <td class="w-[30pt] border-r-[1.5pt] border-black font-bold text-center align-top py-2 text-sm tabular-nums">
+                                    <td class="w-[22pt] border-r-[1.5pt] border-black font-bold text-center align-top py-2 text-sm tabular-nums">
                                         {getQuestionNumber(sIdx, qIdx, 'OR_B')}.
                                     </td>
                                     <td class="px-2 py-2 text-sm leading-relaxed align-top relative">
                                         {#if isEditable}
-                                            <div class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-                                                <button onclick={() => openSwapSidebar(q, part, 'q2')} title="Swap Question" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow hover:bg-indigo-700"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                                            <div class="absolute -left-12 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
+                                                <button onclick={() => openSwapSidebar(q, part, 'q2')} title="Swap Question" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow hover:bg-indigo-700 transition-all active:scale-95"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
                                             </div>
                                         {/if}
                                         <div class="outline-none cursor-text min-h-[1.5em] focus:bg-indigo-50/50 rounded" use:editable={{ value: q.choice2?.questions?.[0]?.text || '', onUpdate: (v) => updateTextValue(v, 'QUESTION', 'text', q.id, q.choice2?.questions?.[0]?.id, 'choice2') }}>
                                             {@html q.choice2?.questions?.[0]?.text || ''}
                                         </div>
                                     </td>
-                                    <td class="w-[40pt] border-l-[1.5pt] border-black text-center align-top py-2 font-bold text-sm tabular-nums">
-                                        [{q.choice2?.questions?.[0]?.marks || 4}]
+                                    <td class="w-[32pt] border-l-[1.5pt] border-black text-center align-top py-2 font-bold text-sm tabular-nums">
+                                        <div class="cursor-text hover:bg-slate-50 px-1 rounded transition-colors" use:editable={{ value: q.choice2?.questions?.[0]?.marks || '4', onUpdate: (v) => { q.choice2.questions[0].marks = v; q.choice2.questions[0].mark = v; } }}>
+                                            [{q.choice2?.questions?.[0]?.marks || 4}]
+                                        </div>
                                     </td>
                                     </tr>
                                 {:else}
                                     <!-- Single Question Row -->
                                     <tr class="group relative hover:bg-slate-50/50 border-b border-black last:border-b-0">
-                                        <td class="w-[30pt] border-r-[1.5pt] border-black font-bold text-center align-top py-2 text-sm tabular-nums">
+                                        <td class="w-[22pt] border-r-[1.5pt] border-black font-bold text-center align-top py-2 text-sm tabular-nums">
                                             {getQuestionNumber(sIdx, qIdx)}.
                                         </td>
                                         <td class="px-2 py-2 text-sm leading-relaxed align-top relative">
                                             {#if isEditable}
-                                                <div class="absolute -left-10 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-                                                    <button onclick={() => openSwapSidebar(q, part)} title="Swap Question" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow hover:bg-indigo-700 animate-in fade-in"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
-                                                    <button onclick={() => removeQuestion(q)} title="Delete Question" class="w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center shadow hover:bg-red-600 animate-in fade-in"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                                <div class="absolute -left-12 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity no-print">
+                                                    <button onclick={() => openSwapSidebar(q, part)} title="Swap Question" class="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow hover:bg-indigo-700 animate-in fade-in transition-all active:scale-95"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                                                    <button onclick={() => moveQuestion(q, 'up')} title="Move Up" class="w-7 h-7 bg-slate-800 text-white rounded-lg flex items-center justify-center shadow hover:bg-black transition-all active:scale-95"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" /></svg></button>
+                                                    <button onclick={() => moveQuestion(q, 'down')} title="Move Down" class="w-7 h-7 bg-slate-800 text-white rounded-lg flex items-center justify-center shadow hover:bg-black transition-all active:scale-95"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg></button>
+                                                    <button onclick={() => removeQuestion(q)} title="Delete Question" class="w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center shadow hover:bg-red-600 animate-in fade-in transition-all active:scale-95"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                                                 </div>
                                             {/if}
                                             <div class="outline-none cursor-text min-h-[1.5em] focus:bg-indigo-50/50 rounded" use:editable={{ value: q.questions?.[0]?.text || '', onUpdate: (v) => updateTextValue(v, 'QUESTION', 'text', q.id, q.questions?.[0]?.id) }}>
                                                 {@html q.questions?.[0]?.text || ''}
                                             </div>
                                         </td>
-                                        <td class="w-[40pt] border-l-[1.5pt] border-black text-center align-top py-2 group/mark relative tabular-nums">
+                                        <td class="w-[32pt] border-l-[1.5pt] border-black text-center align-top py-2 group/mark relative tabular-nums">
                                             <div 
                                                 role="button"
                                                 tabindex="0"
-                                                class="cursor-pointer hover:bg-indigo-50 px-1 rounded transition-colors font-bold text-sm {isEditable ? 'border-b border-dotted border-gray-300' : ''}"
+                                                class="cursor-text hover:bg-slate-50 px-1 rounded transition-colors font-bold text-sm {isEditable ? 'border-b border-dotted border-gray-300' : ''}"
                                                 onclick={(e) => { if (!isEditable) return; e.stopPropagation(); activeMenuId = (activeMenuId === q.id ? null : q.id); }}
                                                 onkeydown={(e) => e.key === 'Enter' && isEditable && (activeMenuId = (activeMenuId === q.id ? null : q.id))}
+                                                use:editable={{ value: q.questions?.[0]?.marks || '2', onUpdate: (v) => { q.questions[0].marks = v; q.questions[0].mark = v; } }}
                                             >
                                                 [{q.questions?.[0]?.marks || 2}]
                                         </div>
