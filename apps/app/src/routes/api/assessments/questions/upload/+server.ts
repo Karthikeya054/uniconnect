@@ -226,7 +226,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const optionMarkerRegex = /(?:^|\s|[\.!\?,]|\))(\([a-d]\)|[a-dA-D][\.\)])(?:\s|$)/gi;
             const unitMarkerRegex = /(?:^|\n)(?:Unit|Module|Chapter)[\s-]*(V|IV|III|II|I|1|2|3|4|5|One|Two|Three|Four|Five)[:\s]*/gi;
             const metaPipeRegex = /(?:^|\n)Q(\d+)\s*\|\s*M(\d+)\s*\|\s*(L[1-5])\s*\|\s*([^|]+)\|\s*(CO[1-9])\s*\|\s*([^|]+)\|\s*([^|\n]+)/gi;
-            const headerRegex = /(?:^|\n)\s*(FILL\s*IN\s*THE\s*BLANKS|SHORT\s*QUESTIONS|LONG\s*QUESTIONS|VERY\s*SHORT|MCQ\s*QUESTIONS|PROGRAMMING|PRACTICALS|DESCRIPTIVE|ESSAY|MATCH\s*THE\s*FOLLOWING)(?:[:\s]|$)/gi;
+            const headerRegex = /(?:^|\n)\s*(FILL\s*IN\s*THE\s*BLANKS?|SHORT\s*(?:QUESTIONS?|ANSWERS?)|LONG\s*(?:QUESTIONS?|ANSWERS?)|VERY\s*SHORT|MCQ\s*(?:QUESTIONS?|ANSWERS?)|PROGRAMMING|PRACTICALS|DESCRIPTIVE|ESSAY|MATCH\s*THE\s*FOLLOWING)(?:[:\s]|$)/gi;
 
             let match;
             while ((match = headerRegex.exec(text)) !== null) markers.push({ index: match.index, type: 'HEADER', value: match[1].toUpperCase(), fullMatch: match[0] });
@@ -278,7 +278,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     else if (h.includes('MCQ')) currentType = 'MCQ';
                     else if (h.includes('VERY SHORT')) currentType = 'VERY_SHORT';
                     else if (h.includes('LONG') || h.includes('DESCRIPTIVE') || h.includes('ESSAY')) currentType = 'LONG';
-                    else if (h.includes('SHORT')) currentType = 'SHORT';
+                    else if (h.includes('SHORT') || h.includes('ANSWERS')) currentType = 'SHORT';
                     else currentType = 'SHORT';
                     continue;
                 }
@@ -372,7 +372,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     const bloomLevelText = meta.bloom || (bText.match(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*(L[1-5])/i)?.[1].toUpperCase()) || 'L1';
 
                     const mMatch = bText.match(/\((?:Marks?|Pts?|Points?):\s*(\d+)\)/i) || bText.match(/\b(\d+)\s*Marks?\b/i) || bText.match(/\((\d+)\)$/);
-                    const marksFromText = mMatch ? parseInt(mMatch[1]) : (options.length > 0 ? 1 : 2);
+                    let marksFromText = mMatch ? parseInt(mMatch[1]) : (options.length > 0 ? 1 : 2);
+                    if (meta.module) {
+                        const mVal = parseInt(meta.module);
+                        if (!isNaN(mVal) && mVal > 0) marksFromText = mVal;
+                    }
 
                     const cleanText = (t: string) => t.replace(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*L[1-5]/gi, '').replace(/Topic:\s*[^\n\r\t,]+/gi, '').replace(/\bCO[1-9]\b/gi, '').replace(/Course\s*Outcome:\s*CO[1-9]/gi, '').replace(/\((\d+)\)$/, '').replace(/\b\d+\s*Marks?\b/gi, '').trim();
 
@@ -414,7 +418,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     options = options.map(cleanText);
 
                     let finalType = options.length > 0 ? 'MCQ' : currentType;
-                    if (qText.includes('___') || qText.toLowerCase().includes('fill in the blank')) finalType = 'FILL_IN_BLANK';
+
+                    const qTextLowerForType = qText.toLowerCase();
+                    const hasBlankMarkers = qText.includes('___') || qTextLowerForType.includes('fill in the blank');
+
+                    if (hasBlankMarkers) {
+                        finalType = 'FILL_IN_BLANK';
+                    } else if (options.length === 0) {
+                        if (currentType === 'FILL_IN_BLANK' || currentType === 'MCQ') {
+                            finalType = (marksFromText >= 5) ? 'LONG' : 'SHORT';
+                        }
+                    }
 
                     if (qText.length > 3 || options.length > 0 || imageUrl) {
                         questionsToCreate.push({

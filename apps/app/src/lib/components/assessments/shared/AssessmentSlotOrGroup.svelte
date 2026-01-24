@@ -35,7 +35,7 @@
             {#if q1}
                 <AssessmentEditable 
                     bind:value={q1.text}
-                    onUpdate={(v) => onUpdateText1(v, q1.id)}
+                    onUpdate={(v: string) => onUpdateText1(v, q1.id)}
                     multiline={true}
                 />
                 <AssessmentMcqOptions options={q1.options} />
@@ -58,11 +58,12 @@
             <AssessmentRowActions 
                 {isEditable}
                 onSwap={onSwap2}
+                onDelete={onRemove}
             />
             {#if q2}
                 <AssessmentEditable 
                     bind:value={q2.text}
-                    onUpdate={(v) => onUpdateText2(v, q2.id)}
+                    onUpdate={(v: string) => onUpdateText2(v, q2.id)}
                     multiline={true}
                 />
                 <AssessmentMcqOptions options={q2.options} />

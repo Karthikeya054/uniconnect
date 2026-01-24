@@ -252,10 +252,18 @@
     async function bulkDeleteQuestions() {
         if (!confirm(`Are you sure you want to delete ${selectedQuestionIds.length} questions?`)) return;
         
-        // Parallel deletion
-        await Promise.all(selectedQuestionIds.map(id => 
-            fetch(`/api/assessments/questions?id=${id}`, { method: 'DELETE' })
-        ));
+        try {
+            const results = await Promise.all(selectedQuestionIds.map(id => 
+                fetch(`/api/assessments/questions?id=${id}`, { method: 'DELETE' })
+            ));
+            
+            const failed = results.filter(r => !r.ok).length;
+            if (failed > 0) {
+                alert(`Warning: ${failed} deletions failed (likely because those questions are used in existing papers).`);
+            }
+        } catch (err) {
+            alert('Failed to delete some questions.');
+        }
         
         selectedQuestionIds = [];
         invalidateAll();
@@ -263,8 +271,17 @@
 
     async function deleteQuestion(qId: string) {
         if (!confirm('Are you sure you want to delete this question?')) return;
-        const res = await fetch(`/api/assessments/questions?id=${qId}`, { method: 'DELETE' });
-        if (res.ok) invalidateAll();
+        try {
+            const res = await fetch(`/api/assessments/questions?id=${qId}`, { method: 'DELETE' });
+            if (res.ok) {
+                invalidateAll();
+            } else {
+                const err = await res.json();
+                alert(`Error: ${err.message || 'Failed to delete. This question might be in use in a paper.'}`);
+            }
+        } catch (err) {
+            alert('Failsafe: Network error during deletion.');
+        }
     }
 
     let expandedQuestions = $state<string[]>([]);
