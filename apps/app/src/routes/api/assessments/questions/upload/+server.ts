@@ -210,15 +210,32 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
             let text = rawText.replace(/\[ROW_START\]|\[ROW_END\]|\[COL\]|\[\/COL\]/g, ' ').replace(/\u00A0/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s+/g, '\n').replace(/\s+\n/g, '\n').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-');
 
-            const markers: { index: number, type: string, value: string, fullMatch: string }[] = [];
+            const markers: { index: number, type: string, value: string, fullMatch: string, metadata?: any }[] = [];
             const partRegex = /\bPART\s+([A-G])\b/gi;
             const answerKeyRegex = /\bANSWER\s*KEY\b/gi;
             const romanMarkerRegex = /(?:^|\s)(VIII|VII|VI|III|II|IV|IX|I|V|X)[\.\)]\s+/gi;
             const numericMarkerRegex = /(?:^|\s)(\d+|[I-X]+-\d+)[\.\)]\s+/gi;
             const optionMarkerRegex = /(?:^|\s|[\.!\?,]|\))(\([a-d]\)|[a-dA-D][\.\)])(?:\s|$)/gi;
             const unitMarkerRegex = /(?:^|\n)(?:Unit|Module|Chapter)[\s-]*(V|IV|III|II|I|1|2|3|4|5|One|Two|Three|Four|Five)[:\s]*/gi;
+            const metaPipeRegex = /(?:^|\n)Q(\d+)\s*\|\s*M(\d+)\s*\|\s*(L[1-5])\s*\|\s*([^|]+)\|\s*(CO[1-9])\s*\|\s*([^|]+)\|\s*([^|\n]+)/gi;
 
             let match;
+            while ((match = metaPipeRegex.exec(text)) !== null) {
+                markers.push({
+                    index: match.index,
+                    type: 'META_PIPE',
+                    value: match[1],
+                    fullMatch: match[0],
+                    metadata: {
+                        module: match[2],
+                        bloom: match[3],
+                        difficulty: match[4].trim(),
+                        co: match[5].toUpperCase(),
+                        unitName: match[6].trim(),
+                        topicName: match[7].trim()
+                    }
+                });
+            }
             while ((match = partRegex.exec(text)) !== null) markers.push({ index: match.index, type: 'PART', value: match[1].toUpperCase(), fullMatch: match[0] });
             while ((match = answerKeyRegex.exec(text)) !== null) markers.push({ index: match.index, type: 'ANS_KEY', value: 'KEY', fullMatch: match[0] });
             while ((match = romanMarkerRegex.exec(text)) !== null) markers.push({ index: match.index, type: 'ROMAN', value: match[1].toUpperCase(), fullMatch: match[0] });
@@ -259,16 +276,39 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     continue;
                 }
 
-                if (marker.type === 'NUMBER') {
+                if (marker.type === 'NUMBER' || marker.type === 'META_PIPE') {
                     const start = marker.index + marker.fullMatch.length;
                     const end = (i + 1 < markers.length) ? markers[i + 1].index : text.length;
-                    const bText = text.substring(start, end).trim();
+                    let bText = text.substring(start, end).trim();
 
                     let qText = bText;
+                    let solutionText = '';
                     let options: string[] = [];
+                    let meta = marker.metadata || {};
+
+                    // Specialized parsing for META_PIPE following lines
+                    if (marker.type === 'META_PIPE') {
+                        // Extract "Question: ..." and "Solution: ..."
+                        const qMatch = bText.match(/Question:\s*([\s\S]*?)(?=Solution:|$)/i);
+                        const sMatch = bText.match(/Solution:\s*([\s\S]*)/i);
+
+                        if (qMatch) qText = qMatch[1].trim();
+                        if (sMatch) solutionText = sMatch[1].trim();
+
+                        // Override defaults with meta
+                        if (meta.module) {
+                            const n = parseInt(meta.module);
+                            let unit = allUnits.find(u => u.unit_number === n);
+                            if (!unit) {
+                                const res = await db.query('INSERT INTO assessment_units (subject_id, unit_number, name) VALUES ($1, $2, $3) RETURNING *', [subjectId, n, meta.unitName || `Unit ${n}`]);
+                                unit = res.rows[0]; allUnits.push(unit);
+                            }
+                            currentDetectedUnitId = unit.id;
+                        }
+                    }
 
                     // Improved Option Detection (Supports embedded options)
-                    const normalizedText = bText.replace(/\s+/g, ' ');
+                    const normalizedText = qText.replace(/\s+/g, ' ');
                     const optRegex = /(?:\s|^|\()([A-Da-d])[\.\)]\s+/g;
                     const allMatches = [...normalizedText.matchAll(optRegex)];
 
@@ -301,9 +341,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                         }
                     }
 
-                    // Extract Bloom and Marks from text
-                    const bMatch = bText.match(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*(L[1-5])/i);
-                    const bloomLevelText = bMatch ? bMatch[1].toUpperCase() : 'L1';
+                    // Extract Bloom and Marks from text if not in meta
+                    const bloomLevelText = meta.bloom || (bText.match(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*(L[1-5])/i)?.[1].toUpperCase()) || 'L1';
 
                     const mMatch = bText.match(/\((?:Marks?|Pts?|Points?):\s*(\d+)\)/i) || bText.match(/\b(\d+)\s*Marks?\b/i) || bText.match(/\((\d+)\)$/);
                     const marksFromText = mMatch ? parseInt(mMatch[1]) : (options.length > 0 ? 1 : 2);
@@ -311,6 +350,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     const scrub = (t: string) => t.replace(/Bloom(?:'s)?\s*(?:Taxonomy\s*)?Level:\s*L[1-5]/gi, '').replace(/Topic:\s*[^\n\r\t,]+/gi, '').replace(/\bCO[1-9]\b/gi, '').replace(/Course\s*Outcome:\s*CO[1-9]/gi, '').replace(/\((\d+)\)$/, '').replace(/\b\d+\s*Marks?\b/gi, '').trim();
                     qText = scrub(qText);
                     options = options.map(scrub);
+
+                    // Find Topic ID if present
+                    let topicId = null;
+                    if (meta.topicName) {
+                        let topic = allTopics.find(t => t.unit_id === currentDetectedUnitId && t.name.toLowerCase() === meta.topicName.toLowerCase());
+                        if (!topic) {
+                            const res = await db.query('INSERT INTO assessment_topics (unit_id, name) VALUES ($1, $2) RETURNING *', [currentDetectedUnitId, meta.topicName]);
+                            topic = res.rows[0]; allTopics.push(topic);
+                        }
+                        topicId = topic.id;
+                    }
 
                     // Image detection for DOCX
                     let imageUrl = null;
@@ -324,13 +374,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     if (qText.length > 3 || options.length > 0 || imageUrl) {
                         questionsToCreate.push({
                             unit_id: currentDetectedUnitId === 'GLOBAL' ? (allUnits[0]?.id || null) : currentDetectedUnitId,
+                            topic_id: topicId,
+                            co_id: meta.co ? coMap.get(meta.co) : null,
                             question_text: qText || (imageUrl ? 'Image-based Question' : `Question ${marker.value}`),
                             marks: marksFromText,
                             bloom_level: bloomLevelText,
                             type: options.length > 0 ? 'MCQ' : currentType,
                             options: options.length > 0 ? options : null,
                             hierarchicalId: currentRoman ? `${currentRoman}-${marker.value}` : marker.value,
-                            image_url: imageUrl
+                            image_url: imageUrl,
+                            answer_key: solutionText || ''
                         });
                     }
                 }

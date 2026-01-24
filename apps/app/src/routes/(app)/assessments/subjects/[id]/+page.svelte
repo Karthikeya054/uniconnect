@@ -558,7 +558,7 @@
             if (unit) {
                 // 2. Add topics & sub-topics
                 // Stricter filtering for noise (page numbers, Course Outcomes, etc.)
-                const lines = mod.content.split(/[\n;]+/)
+                const lines = mod.content.split(/[\n;]+|,\s*(?![^(]*\)|[a-z])/)
                     .map(t => t.trim())
                     .filter(t => {
                         // Skip page numbers (e.g. "Page 5" or just "5" on its own line)

@@ -300,6 +300,7 @@ export async function updateAssessmentQuestion(id: string, data: Partial<Assessm
     if (data.is_important !== undefined) { fields.push(`is_important = $${i++}`); params.push(data.is_important); }
 
     if (data.type) { fields.push(`type = $${i++}`); params.push(data.type); }
+    if (data.image_url !== undefined) { fields.push(`image_url = $${i++}`); params.push(data.image_url); }
     if (data.options !== undefined) {
         fields.push(`options = $${i++}`);
         params.push(data.options ? JSON.stringify(data.options) : null);
