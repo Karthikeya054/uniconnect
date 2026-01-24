@@ -85,16 +85,42 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     let options: string[] = [row['A'], row['B'], row['C'], row['D']].filter(Boolean).map(o => o.toString().trim());
 
                     // Aggressive in-text option extraction for XLSX if columns are empty or not enough options
-                    if (qTextFull && qTextFull.length > 5) {
+                    if (qTextFull && qTextFull.length > 10) {
                         const optRegex = /(?:\s|^|\()([A-Da-d])[\.\)]\s+/g;
-                        const matches = [...qTextFull.matchAll(optRegex)];
-                        if (matches.length >= 2 && options.length < 2) {
-                            qText = qTextFull.substring(0, matches[0].index).trim();
+                        const allMatches = [...qTextFull.matchAll(optRegex)];
+
+                        // Look for a sequence starting with 'A' followed by 'B'
+                        let bestSplitIndex = -1;
+                        let seqMatches: any[] = [];
+
+                        for (let i = 0; i < allMatches.length; i++) {
+                            const label = allMatches[i][1].toUpperCase();
+                            if (label === 'A') {
+                                // Potential start. Check if followed by B
+                                if (allMatches[i + 1] && allMatches[i + 1][1].toUpperCase() === 'B') {
+                                    bestSplitIndex = allMatches[i].index;
+                                    // Collect the full sequence (A, B, C, D)
+                                    seqMatches = [allMatches[i]];
+                                    let nextChar = 66; // 'B'
+                                    for (let j = i + 1; j < allMatches.length; j++) {
+                                        if (allMatches[j][1].toUpperCase() === String.fromCharCode(nextChar)) {
+                                            seqMatches.push(allMatches[j]);
+                                            nextChar++;
+                                            if (nextChar > 68) break; // We got A-D
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (bestSplitIndex !== -1 && options.length < 2) {
+                            qText = qTextFull.substring(0, bestSplitIndex).trim();
                             options = [];
-                            for (let k = 0; k < matches.length; k++) {
-                                const s = matches[k].index + matches[k][0].length;
-                                const e = matches[k + 1] ? matches[k + 1].index : qTextFull.length;
-                                options.push(`${matches[k][1]}. ${qTextFull.substring(s, e).trim()}`);
+                            for (let k = 0; k < seqMatches.length; k++) {
+                                const s = seqMatches[k].index + seqMatches[k][0].length;
+                                const e = seqMatches[k + 1] ? seqMatches[k + 1].index : qTextFull.length;
+                                options.push(`${seqMatches[k][1].toUpperCase()}. ${qTextFull.substring(s, e).trim()}`);
                             }
                             if (qType !== 'MCQ') qType = 'MCQ';
                         }
@@ -244,18 +270,34 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     // Improved Option Detection (Supports embedded options)
                     const normalizedText = bText.replace(/\s+/g, ' ');
                     const optRegex = /(?:\s|^|\()([A-Da-d])[\.\)]\s+/g;
-                    const matches = [...normalizedText.matchAll(optRegex)];
+                    const allMatches = [...normalizedText.matchAll(optRegex)];
 
-                    if (matches.length >= 2) {
-                        // We found multiple option-like markers.
-                        qText = normalizedText.substring(0, matches[0].index).trim();
-                        for (let k = 0; k < matches.length; k++) {
-                            const s = matches[k].index + matches[k][0].length;
-                            const e = matches[k + 1] ? matches[k + 1].index : normalizedText.length;
-                            const optionText = normalizedText.substring(s, e).trim();
-                            if (optionText.length > 0) {
-                                options.push(`${matches[k][1].toUpperCase()}. ${optionText}`);
+                    let bestIndex = -1;
+                    let seq: any[] = [];
+                    for (let j = 0; j < allMatches.length; j++) {
+                        if (allMatches[j][1].toUpperCase() === 'A' && allMatches[j + 1] && allMatches[j + 1][1].toUpperCase() === 'B') {
+                            bestIndex = allMatches[j].index;
+                            seq = [allMatches[j]];
+                            let nextC = 66;
+                            for (let k = j + 1; k < allMatches.length; k++) {
+                                if (allMatches[k][1].toUpperCase() === String.fromCharCode(nextC)) {
+                                    seq.push(allMatches[k]);
+                                    nextC++;
+                                    if (nextC > 68) break;
+                                }
                             }
+                            break;
+                        }
+                    }
+
+                    if (bestIndex !== -1) {
+                        qText = normalizedText.substring(0, bestIndex).trim();
+                        options = [];
+                        for (let k = 0; k < seq.length; k++) {
+                            const s = seq[k].index + seq[k][0].length;
+                            const e = seq[k + 1] ? seq[k + 1].index : normalizedText.length;
+                            const optT = normalizedText.substring(s, e).trim();
+                            if (optT) options.push(`${seq[k][1].toUpperCase()}. ${optT}`);
                         }
                     }
 
