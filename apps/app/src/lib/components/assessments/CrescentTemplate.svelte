@@ -121,8 +121,12 @@
             <div class="header-container flex flex-col items-center mb-1 pt-1 relative">
                  <img src="/crescent-logo.png" alt="Crescent Logo" class="h-14 mb-1" />
                  
-                 <!-- RRN Header (Top Right) -->
+                 <!-- RRN & Course Code Header (Top Right) -->
                  <div class="absolute top-0 right-0 flex flex-col items-end gap-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[8pt] font-bold uppercase">&lt;COURSE CODE&gt;</span>
+                        <AssessmentEditable bind:value={paperMeta.course_code} onUpdate={(v: string) => updateText(v, 'META', 'course_code')} class="font-bold border-b border-black px-1 min-w-[70px] text-right text-[8pt]" />
+                    </div>
                     <div class="flex items-center gap-1 mt-1">
                         <span class="text-[8pt] font-bold text-right">RRN</span>
                         <div class="flex border-y border-r border-black">
@@ -197,16 +201,13 @@
             </table>
 
             <!-- Instructions -->
-            <div class="text-center italic text-[9pt] mb-2">
+            <div class="text-center font-bold italic py-1 text-[9.5pt] mb-1">
                 <AssessmentEditable bind:value={paperMeta.instructions} onUpdate={(v: string) => updateText(v, 'META', 'instructions')} class="w-full text-center" />
             </div>
 
-            <div class="text-center font-bold italic py-1 text-[9.5pt] mb-1">ANSWER ALL QUESTIONS</div>
-
-            <div class="space-y-0">
                 <!-- PART A -->
                 <div class="border-y border-black py-0.5 text-center font-bold uppercase tracking-wider text-[9.5pt] flex items-center justify-center gap-1 whitespace-nowrap overflow-hidden">
-                    <AssessmentEditable value="PART A" onUpdate={(v: string) => {}} class="inline-block" /> 
+                    <AssessmentEditable value="PART A" onUpdate={(v: string) => {}} class="inline-block font-bold" /> 
                     <span>({questionsA.length} X {questionsA[0]?.marks || 2} = {totalMarksA} MARKS)</span>
                 </div>
                 <div class="border-x border-b border-black">
@@ -227,12 +228,12 @@
                                         updateText(v, 'QUESTION', 'text', q.id, q.id);
                                     }}
                                     multiline={true} 
-                                    class="text-[9pt]"
+                                    class="text-[9pt] w-full block min-h-[1.5em]"
                                 />
                                 <AssessmentMcqOptions options={q.options} />
                             </div>
                             <div class="w-16 border-l border-black text-center py-1 font-bold text-[8.5pt] flex items-center justify-center">
-                                ( {q.marks || 2} )
+                                ( <AssessmentEditable value={String(q.marks || 2)} onUpdate={(v: string) => q.marks = Number(v)} class="inline-block min-w-0" /> )
                             </div>
                         </div>
                     {/each}
@@ -272,7 +273,7 @@
                                                                 updateText(v, 'QUESTION', 'text', slot.id, q.id);
                                                             }}
                                                             multiline={true}
-                                                            class="text-[9pt]"
+                                                            class="text-[9pt] w-full block min-h-[1.5em]"
                                                         />
                                                         <AssessmentMcqOptions options={q.options} />
                                                     </div>
@@ -282,7 +283,7 @@
                                     {/if}
                                 </div>
                                 <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt]">
-                                    ( {slot.choice1?.questions?.[0]?.marks || slot.marks || 16} )
+                                    ( <AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 16)} onUpdate={(v: string) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} class="inline-block min-w-0" /> )
                                 </div>
                             </div>
                             <!-- OR -->
@@ -312,7 +313,7 @@
                                                                 updateText(v, 'QUESTION', 'text', slot.id, q.id);
                                                             }}
                                                             multiline={true}
-                                                            class="text-[9pt]"
+                                                            class="text-[9pt] w-full block min-h-[1.5em]"
                                                         />
                                                         <AssessmentMcqOptions options={q.options} />
                                                     </div>
@@ -322,7 +323,7 @@
                                     {/if}
                                 </div>
                                 <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt]">
-                                    ( {slot.choice2?.questions?.[0]?.marks || slot.marks || 16} )
+                                    ( <AssessmentEditable value={String(slot.choice2?.questions?.[0]?.marks || slot.marks || 16)} onUpdate={(v: string) => { if(slot.choice2?.questions?.[0]) slot.choice2.questions[0].marks = Number(v); }} class="inline-block min-w-0" /> )
                                 </div>
                             </div>
                         </div>
@@ -420,8 +421,8 @@
                 {/if}
             </div>
 
-            <!-- Signature Boxes (Exact Match) -->
-            <div class="mt-20 flex justify-between px-4 gap-8">
+             <!-- Signature Boxes (Exact Match) -->
+            <div class="mt-20 flex justify-between px-4 gap-8 mb-8">
                  <div class="border border-black p-8 flex-1 text-center font-bold text-[9pt]">
                     Name & Signature <br/> of DAAC Member
                  </div>
@@ -429,9 +430,12 @@
                     Name & Signature <br/> of DAAC Member
                  </div>
             </div>
-
-            <div class="text-center mt-8 text-[8pt] text-gray-400">***********</div>
+            
+            <!-- Bottom Border Closure -->
+            <div class="border-t border-black w-full mt-4"></div>
         </div>
+        <div class="text-center mt-8 text-[8pt] text-gray-400">***********</div>
+    </div>
     </div>
 
     <!-- Swap Sidebar (Fixed Right Overlay) -->
