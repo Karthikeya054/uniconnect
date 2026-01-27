@@ -262,16 +262,33 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             }
         }
 
-        const globalExcluded = new Set<string>(); // Track questions used across ALL sets
+        const globalExcluded = new Set<string>();
+
+        const allPossibleUnitIds = Array.from(new Set(allQuestions.map(q => q.unit_id)));
 
         for (const setName of sets) {
             const setQuestions: any[] = [];
-            const excludeInSet = new Set<string>([...globalExcluded]); // Start with globally excluded questions
+            const excludeInSet = new Set<string>([...globalExcluded]);
             let autoUnitCounter = 0;
             const setDifficulty = sets_config[setName] || ['ANY'];
 
-            // Shuffle poolByUnitAndMarks internally for each set to ensure diversity
-            Object.values(poolByUnitAndMarks).forEach(marksMap => {
+            // 1. FRESH SHUFFLE of the entire pool for THIS SET
+            const currentPool = [...allQuestions].sort(() => Math.random() - 0.5);
+
+            // 2. RE-GROUP pool for THIS SET to ensure different starting points
+            const currentPoolByUnitAndMarks: Record<string, Record<number, any[]>> = {};
+            allPossibleUnitIds.forEach(uid => { if (uid) currentPoolByUnitAndMarks[uid] = {}; });
+
+            currentPool.forEach(q => {
+                const uid = q.unit_id as string;
+                const marks = q.marks as number;
+                if (!uid || !currentPoolByUnitAndMarks[uid]) return;
+                if (!currentPoolByUnitAndMarks[uid][marks]) currentPoolByUnitAndMarks[uid][marks] = [];
+                currentPoolByUnitAndMarks[uid][marks].push(q);
+            });
+
+            // 3. Update the local group shuffles too
+            Object.values(currentPoolByUnitAndMarks).forEach(marksMap => {
                 Object.values(marksMap).forEach(pool => {
                     for (let i = pool.length - 1; i > 0; i--) {
                         const j = Math.floor(Math.random() * (i + 1));
@@ -280,70 +297,60 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 });
             });
 
+            // Redefine pickOne to use the current pool for this set
+            const localPickOne = (targetMarks: number, unitId: string, exclude: Set<string>) => {
+                // Try exact match first
+                let p = (currentPoolByUnitAndMarks[unitId]?.[targetMarks] || []).filter(q => !exclude.has(q.id));
+
+                // Fallback to any marks in unit
+                if (p.length === 0) {
+                    const allUnit = [].concat(...Object.values(currentPoolByUnitAndMarks[unitId] || {}) as any);
+                    p = allUnit.filter(q => !exclude.has(q.id));
+                }
+
+                // Fallback to any unit in subject
+                if (p.length === 0) {
+                    p = currentPool.filter(q => !exclude.has(q.id));
+                }
+
+                if (p.length > 0) {
+                    const q = p[0] as any;
+                    exclude.add(q.id);
+                    return {
+                        id: q.id, text: q.question_text, marks: q.marks, bloom: q.bloom_level,
+                        co_id: q.co_id, unit_id: q.unit_id, type: q.type || 'NORMAL',
+                        options: q.options, image_url: q.image_url
+                    };
+                }
+                return null;
+            };
+
             for (const slot of slotsToProcess) {
                 if (slot.type === 'SINGLE') {
-                    // Determine unit
                     let unitId = slot.unit;
                     if (unitId === 'Auto') {
                         unitId = unit_ids[autoUnitCounter % unit_ids.length];
                         autoUnitCounter++;
                     }
-
-                    const manualMarks = slot.hasSubQuestions ? [slot.marks_a, slot.marks_b] : undefined;
-                    const questions = pickQuestionsForChoice(slot.marks, unitId, slot.hasSubQuestions, excludeInSet, manualMarks, slot.qType, setDifficulty, slot.co_id);
-
+                    const q = localPickOne(slot.marks, unitId, excludeInSet);
                     setQuestions.push({
-                        id: slot.id, // STABLE ID
-                        type: 'SINGLE',
-                        label: slot.label,
-                        part: slot.part, // PASS PART TO FINAL OBJECT
-                        questions: questions.length > 0 ? questions.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found for Unit ${unitId}]`, marks: slot.marks, part: slot.part }]
+                        id: slot.id, type: 'SINGLE', label: slot.label, part: slot.part,
+                        questions: q ? [{ ...q, part: slot.part }] : [{ text: `[No question found for Unit ${unitId}]`, marks: slot.marks, part: slot.part }]
                     });
                 } else {
-                    // OR_GROUP
                     const choiceConfigs = slot.choices || [];
-                    const c1 = choiceConfigs[0];
-                    const c2 = choiceConfigs[1];
-
-                    let u1 = c1.unit;
-                    let u2 = c2.unit;
-
-                    // If both are Auto, they share the same unit to maintain consistency
+                    const c1 = choiceConfigs[0]; const c2 = choiceConfigs[1];
+                    let u1 = c1.unit; let u2 = c2.unit;
                     if (u1 === 'Auto' && u2 === 'Auto') {
                         const sharedUnit = unit_ids[autoUnitCounter % unit_ids.length];
-                        autoUnitCounter++;
-                        u1 = sharedUnit;
-                        u2 = sharedUnit;
-                    } else {
-                        if (u1 === 'Auto') {
-                            u1 = unit_ids[autoUnitCounter % unit_ids.length];
-                            autoUnitCounter++;
-                        }
-                        if (u2 === 'Auto') {
-                            u2 = unit_ids[autoUnitCounter % unit_ids.length];
-                            autoUnitCounter++;
-                        }
+                        autoUnitCounter++; u1 = sharedUnit; u2 = sharedUnit;
                     }
-
-                    const m1 = c1.hasSubQuestions ? [c1.marks_a, c1.marks_b] : undefined;
-                    const m2 = c2.hasSubQuestions ? [c2.marks_a, c2.marks_b] : undefined;
-
-                    const questions1 = pickQuestionsForChoice(c1.marks, u1, c1.hasSubQuestions, excludeInSet, m1, c1.qType, setDifficulty, c1.co_id);
-                    const questions2 = pickQuestionsForChoice(c2.marks, u2, c2.hasSubQuestions, excludeInSet, m2, c2.qType, setDifficulty, c2.co_id);
-
+                    const q1 = localPickOne(c1.marks, u1, excludeInSet);
+                    const q2 = localPickOne(c2.marks, u2, excludeInSet);
                     setQuestions.push({
-                        id: slot.id, // STABLE ID
-                        type: 'OR_GROUP',
-                        label: slot.label,
-                        part: slot.part, // PASS PART TO FINAL OBJECT
-                        choice1: {
-                            label: c1.label,
-                            questions: questions1.length > 0 ? questions1.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found for Unit ${u1}]`, marks: c1.marks, part: slot.part }]
-                        },
-                        choice2: {
-                            label: c2.label,
-                            questions: questions2.length > 0 ? questions2.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found for Unit ${u2}]`, marks: c2.marks, part: slot.part }]
-                        }
+                        id: slot.id, type: 'OR_GROUP', label: slot.label, part: slot.part,
+                        choice1: { label: c1.label, questions: q1 ? [{ ...q1, part: slot.part }] : [{ text: `[No matching question]`, marks: c1.marks, part: slot.part }] },
+                        choice2: { label: c2.label, questions: q2 ? [{ ...q2, part: slot.part }] : [{ text: `[No matching question]`, marks: c2.marks, part: slot.part }] }
                     });
                 }
             }

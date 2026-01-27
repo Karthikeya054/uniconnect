@@ -7,9 +7,9 @@
     import AssessmentSlotOrGroup from './shared/AssessmentSlotOrGroup.svelte';
 
     let { 
-        paperMeta = {}, 
-        currentSetData = { questions: [] }, 
-        paperStructure = [],
+        paperMeta = $bindable({}), 
+        currentSetData = $bindable({ questions: [] }), 
+        paperStructure = $bindable([]),
         courseOutcomes = [],
         questionPool = [],
         mode = 'view',

@@ -9,9 +9,9 @@
     import AssessmentMcqOptions from './shared/AssessmentMcqOptions.svelte';
 
     let { 
-        paperMeta = {}, 
-        currentSetData = { questions: [] },
-        paperStructure = [],
+        paperMeta = $bindable({}), 
+        currentSetData = $bindable({ questions: [] }),
+        paperStructure = $bindable([]),
         activeSet = 'A',
         courseOutcomes = [],
         questionPool = [],
@@ -288,14 +288,14 @@
                                     <AssessmentMcqOptions options={q.questions?.[0]?.options || q.options} />
                                 </div>
                             </div>
-                            <div class="w-16 border-l border-black text-center py-1 font-bold text-[8.5pt] flex items-center justify-between px-2">
+                            <div class="w-16 border-l border-black text-center py-1 font-bold text-[8.5pt] flex items-center justify-center gap-1.5 px-2">
                                 <span>(</span>
                                 <AssessmentEditable value={String(q.questions?.[0]?.marks || q.marks || 2)} onUpdate={(v: string) => { 
                                     if (q.questions?.[0]) {
                                         q.questions[0].marks = Number(v);
                                         updateText(v, 'QUESTION', 'marks', q.id, q.questions[0].id);
                                     }
-                                }} class="inline-block min-w-[8px] text-center" />
+                                }} class="inline-block min-w-[1ch] text-center" />
                                 <span>)</span>
                             </div>
                         </div>

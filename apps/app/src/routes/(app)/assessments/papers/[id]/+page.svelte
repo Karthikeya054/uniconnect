@@ -631,12 +631,15 @@
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A9 9 0 112.182 17.82L3 21l3.18-.818A8.966 8.966 0 0012 21a9 9 0 008.94-6.94l1.1-3.32z"/></svg>
                         University Standard ({universityLabel})
                     </div>
+                    <!-- Version Tag -->
+                    <div class="ml-auto px-4 py-1.5 rounded-lg text-[9px] font-black bg-green-100 text-green-700 border border-green-200 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        V2.0.4 - DEPLOYED
+                    </div>
                 </div>
 
                 {#if selectedTemplate === 'cdu'}
                     <CDUTemplate 
-                        bind:paperMeta={paperMeta}
-                        bind:currentSetData={editableSets[activeSet]}
                         bind:paperStructure={paperMeta.template_config}
                         activeSet={activeSet}
                         courseOutcomes={data.courseOutcomes}
