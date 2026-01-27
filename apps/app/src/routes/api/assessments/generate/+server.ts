@@ -292,12 +292,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 const pUnit = currentPoolByUnitAndMarks[uId] || {};
 
                 // Try exact marks match
-                let candidates = (pUnit[targetM] || []).filter(q => !exclude.has(q.id));
+                let candidates: any[] = (pUnit[targetM] || []).filter((q: any) => !exclude.has(q.id));
 
                 // Fallback: search nearby marks in the same unit
                 if (candidates.length === 0) {
-                    const flattened = [].concat(...Object.values(pUnit) as any);
-                    candidates = flattened.filter(q => !exclude.has(q.id));
+                    const flattened = [].concat(...Object.values(pUnit) as any) as any[];
+                    candidates = flattened.filter((q: any) => !exclude.has(q.id));
                 }
 
                 // Fallback: search anywhere in the current shuffled pool
