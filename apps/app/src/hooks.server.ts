@@ -91,7 +91,7 @@ export const handleError: HandleServerError = ({ error }) => {
     const err = error as any;
 
     // NUCLEAR SILENCE: Stop ALL 404 and favicon noise from hitting logs
-    if (err.status === 404 || (err.message || '').toLowerCase().includes('favicon') || (err.message || '').includes('Not found')) {
+    if (err && (err.status === 404 || (err.message || '').toLowerCase().includes('favicon') || (err.message || '').includes('Not found'))) {
         return { message: 'Not Found', code: '404' };
     }
 

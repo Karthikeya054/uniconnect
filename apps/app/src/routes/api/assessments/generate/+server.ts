@@ -302,7 +302,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
                 // Fallback: search anywhere in the current shuffled pool
                 if (candidates.length === 0) {
-                    candidates = currentPool.filter(q => !exclude.has(q.id));
+                    candidates = currentPool.filter((q: any) => !exclude.has(q.id));
                 }
 
                 if (candidates.length > 0) {
