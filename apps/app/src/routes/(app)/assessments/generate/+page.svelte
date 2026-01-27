@@ -1265,10 +1265,14 @@
                                         programme: activeBranch?.name || 'B.Tech CSE',
                                         semester: String(selectedSemester),
                                         instructions: paperInstructions,
-                                        subject_name: activeSubject?.name
+                                        subject_name: activeSubject?.name,
+                                        univ_line_1: 'CHAITANYA DEEMED TO BE UNIVERSITY',
+                                        univ_line_2: 'KISHANPURA, HANAMKONDA - 506001 (TS)'
                                     }}
+                                    {paperStructure}
                                     currentSetData={{ questions: [] }} 
                                     {courseOutcomes}
+                                    mode="preview"
                                 />
                             {:else}
                                 <CrescentTemplate 

@@ -9,7 +9,7 @@
     let { 
         paperMeta = $bindable({}), 
         currentSetData = $bindable({ questions: [] }), 
-        paperStructure = $bindable([]),
+        paperStructure = [],
         courseOutcomes = [],
         questionPool = [],
         mode = 'view',
@@ -31,9 +31,12 @@
     // We iterate over this derived list for UI logic
     const sectionKeys = $derived.by(() => {
         const keys = new Set<string>();
-        if (!currentSetData) return [];
-        const qs = (Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter(Boolean);
-        qs.forEach((q: any) => keys.add(q.part || 'A'));
+        if (mode === 'preview') {
+            paperStructure.forEach((s: any) => keys.add(s.part));
+        } else {
+            const qs = (Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter(Boolean);
+            qs.forEach((q: any) => keys.add(q.part || 'A'));
+        }
         return Array.from(keys).sort();
     });
 
@@ -182,22 +185,22 @@
 
                 <div class="flex flex-col border-t-[1.5pt] border-black">
                 {#each sectionKeys as section, sIdx}
-                    {@const cfgIndex = paperStructure.findIndex(s => s.part === section)}
-                    {#if cfgIndex !== -1}
+                    {@const cfg = getSectionConfig(section)}
+                    {#if cfg}
                         <div class="w-full text-center border-b border-black py-1 uppercase font-black italic tracking-[0.2em] text-sm {sIdx > 0 ? 'border-t-[1.5pt]' : ''}">
-                            <AssessmentEditable bind:value={paperStructure[cfgIndex].title} onUpdate={(v: string) => updateSectionTitle(section, v)} class="w-full" />
+                            <AssessmentEditable bind:value={cfg.title} onUpdate={(v: string) => updateSectionTitle(section, v)} class="w-full" />
                         </div>
                         <div class="w-full flex items-center justify-between border-b border-black px-1 py-1 font-bold italic text-xs min-h-[22px] bg-white">
                              <div class="flex-1">
-                                <AssessmentEditable bind:value={paperStructure[cfgIndex].instructions} onUpdate={(v: string) => updateInstructions(section, v)} class="w-full" />
+                                <AssessmentEditable bind:value={cfg.instructions} onUpdate={(v: string) => updateInstructions(section, v)} class="w-full" />
                              </div>
                              <div class="tabular-nums no-print text-right pl-4">
-                                 <AssessmentEditable value={getInstructionsMarks(section)} onUpdate={(v: string) => { paperStructure[cfgIndex].instructions_marks = v; }} class="text-right" />
+                                 <AssessmentEditable value={getInstructionsMarks(section)} onUpdate={(v: string) => { cfg.instructions_marks = v; }} class="text-right" />
                              </div>
                         </div>
                     {/if}
-                    <div class="w-full flex flex-col min-h-[50px]" use:dndzone={{ items: (currentSetData.questions || []).filter((q: any) => q && q.part === section), flipDurationMs: 200 }} onconsider={(e) => handleDndSync(section, (e.detail as any).items)} onfinalize={(e) => handleDndSync(section, (e.detail as any).items)}>
-                        {#each (currentSetData.questions || []) as q (q.id)}
+                    <div class="w-full flex flex-col min-h-[50px]" use:dndzone={{ items: (currentSetData?.questions || []).filter((q: any) => q && q.part === section), flipDurationMs: 200 }} onconsider={(e) => handleDndSync(section, (e.detail as any).items)} onfinalize={(e) => handleDndSync(section, (e.detail as any).items)}>
+                        {#each (currentSetData?.questions || []) as q (q.id)}
                             {#if q && q.part === section}
                                 <div class="w-full border-b border-black last:border-b-0 hover:bg-indigo-50/10 transition-colors">
                                     {#if q.type === 'OR_GROUP'}
@@ -218,6 +221,17 @@
                                 </div>
                             {/if}
                         {/each}
+                        
+                        {#if mode === 'preview' && cfg}
+                            {#each cfg.slots as slot, idx}
+                                <div class="w-full border-b border-black last:border-b-0 p-3 opacity-40 bg-gray-50/50 flex items-center gap-4">
+                                     <div class="font-bold text-xs w-8 text-center">{slot.label}</div>
+                                     <div class="flex-1 text-[10px] uppercase font-black tracking-widest text-gray-400">
+                                         [ {slot.type === 'OR_GROUP' ? 'OR Pair' : 'Single Question'} ] - {slot.marks} Marks
+                                     </div>
+                                </div>
+                            {/each}
+                        {/if}
                     </div>
                 {/each}
                 {#if isEditable}

@@ -120,6 +120,11 @@
     }
 
     const calcTotal = (part: string) => {
+        if (mode === 'preview' && paperStructure?.length) {
+            const section = paperStructure.find((s: any) => s.part === part);
+            if (!section) return 0;
+            return section.slots.reduce((s: number, slot: any) => s + (Number(slot.marks) || 0), 0);
+        }
         const arr = (Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter(Boolean);
         const qs = arr.filter((q: any) => q && q.part === part);
         return qs.reduce((s: number, slot: any) => {
@@ -140,12 +145,12 @@
     const allQuestions = $derived((Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter(Boolean));
     
     // Part A takes questions explicitly marked 'A' OR the first 10 questions if none are marked 'A'
-    const questionsA = $derived(allQuestions.some(q => q?.part === 'A') 
-        ? allQuestions.filter(q => q?.part === 'A')
+    const questionsA = $derived(allQuestions.some((q: any) => q?.part === 'A') 
+        ? allQuestions.filter((q: any) => q?.part === 'A')
         : allQuestions.slice(0, 10));
         
-    const questionsB = $derived(allQuestions.filter(q => q?.part === 'B'));
-    const questionsC = $derived(allQuestions.filter(q => q?.part === 'C'));
+    const questionsB = $derived(allQuestions.filter((q: any) => q?.part === 'B'));
+    const questionsC = $derived(allQuestions.filter((q: any) => q?.part === 'C'));
 </script>
 
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative bg-gray-100 dark:bg-slate-900/50">
@@ -274,7 +279,23 @@
                             </div>
                         </div>
                     {/each}
-                    {#if questionsA.length === 0}
+
+                    {#if mode === 'preview' && questionsA.length === 0}
+                        {@const sectionA = paperStructure.find(s => s.part === 'A')}
+                        {#if sectionA}
+                            {#each sectionA.slots as slot}
+                                <div class="border-b border-black last:border-b-0 min-h-[30px] flex opacity-40 bg-gray-50/30">
+                                    <div class="px-2 py-1 border-r border-black w-10 text-center font-bold text-[9pt] flex items-center justify-center">{slot.label}.</div>
+                                    <div class="flex-1 px-4 py-1 flex items-center text-[9pt] italic text-gray-400 uppercase tracking-widest font-black">
+                                        [ {slot.qType || 'ANY'} ] Question - Generated per Set
+                                    </div>
+                                    <div class="w-16 border-l border-black text-center py-1 font-bold text-[8.5pt] flex items-center justify-center">
+                                        ( {slot.marks} )
+                                    </div>
+                                </div>
+                            {/each}
+                        {/if}
+                    {:else if questionsA.length === 0}
                          <div class="p-8 text-center text-gray-400 italic text-sm">No questions available for Part A. Use Swap to add or check data.</div>
                     {/if}
                 </div>
@@ -378,6 +399,30 @@
                             </div>
                         </div>
                     {/each}
+
+                    {#if mode === 'preview' && questionsB.length === 0}
+                        {@const sectionB = paperStructure.find(s => s.part === 'B')}
+                        {#if sectionB}
+                            {#each sectionB.slots as slot}
+                                <div class="border-b border-black last:border-b-0 opacity-40 bg-gray-50/30">
+                                    {#each slot.choices || [slot] as choice, idx}
+                                        <div class="flex min-h-[40px]">
+                                            <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{choice.label || slot.label}.</div>
+                                            <div class="flex-1 px-4 py-2 flex items-center text-[9pt] italic text-gray-400 uppercase tracking-widest font-black">
+                                                [ {choice.qType || slot.qType || 'ANY'} ] {choice.hasSubQuestions ? 'Part (a) & (b)' : 'Question'} - Generated per Set
+                                            </div>
+                                            <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt]">
+                                                ( {choice.marks || slot.marks} )
+                                            </div>
+                                        </div>
+                                        {#if idx === 0 && slot.type === 'OR_GROUP'}
+                                            <div class="text-center font-bold italic py-0.5 bg-gray-50/50 text-[8.5pt] border-y border-black">(OR)</div>
+                                        {/if}
+                                    {/each}
+                                </div>
+                            {/each}
+                        {/if}
+                    {/if}
                 </div>
 
                 <!-- PART C -->
