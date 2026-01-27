@@ -274,21 +274,28 @@
                                 />
                                 <div class="w-full">
                                     <AssessmentEditable 
-                                        value={q.text || q.question_text || ''} 
+                                        value={q.questions?.[0]?.text || q.questions?.[0]?.question_text || q.text || q.question_text || ''} 
                                         onUpdate={(v: string) => {
-                                            q.text = v;
-                                            q.question_text = v;
-                                            updateText(v, 'QUESTION', 'text', q.id, q.id);
+                                            if (q.questions?.[0]) {
+                                                q.questions[0].text = v;
+                                                q.questions[0].question_text = v;
+                                                updateText(v, 'QUESTION', 'text', q.id, q.questions[0].id);
+                                            }
                                         }}
                                         multiline={true} 
                                         class="text-[9pt] w-full block min-h-[1.2em]"
                                     />
-                                    <AssessmentMcqOptions options={q.options} />
+                                    <AssessmentMcqOptions options={q.questions?.[0]?.options || q.options} />
                                 </div>
                             </div>
                             <div class="w-16 border-l border-black text-center py-1 font-bold text-[8.5pt] flex items-center justify-center gap-1">
                                 <span>(</span>
-                                <AssessmentEditable value={String(q.marks || 2)} onUpdate={(v: string) => { q.marks = Number(v); updateText(v, 'QUESTION', 'marks', q.id, q.id); }} class="inline-block min-w-[8px] text-center" />
+                                <AssessmentEditable value={String(q.questions?.[0]?.marks || q.marks || 2)} onUpdate={(v: string) => { 
+                                    if (q.questions?.[0]) {
+                                        q.questions[0].marks = Number(v);
+                                        updateText(v, 'QUESTION', 'marks', q.id, q.questions[0].id);
+                                    }
+                                }} class="inline-block min-w-[8px] text-center" />
                                 <span>)</span>
                             </div>
                         </div>
