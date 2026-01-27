@@ -268,14 +268,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         for (const setName of sets) {
             const setQuestions: any[] = [];
-            const excludeInSet = new Set<string>([...globalExcluded]);
-            let autoUnitCounter = 0;
-            const setDifficulty = sets_config[setName] || ['ANY'];
 
-            // 1. FRESH SHUFFLE of the entire pool for THIS SET
+            // CRITICAL FIX: Every set must have its OWN shuffled pool to ensure randomization
             const currentPool = [...allQuestions].sort(() => Math.random() - 0.5);
-
-            // 2. RE-GROUP pool for THIS SET to ensure different starting points
             const currentPoolByUnitAndMarks: Record<string, Record<number, any[]>> = {};
             allPossibleUnitIdsArr.forEach(uid => { if (uid) currentPoolByUnitAndMarks[uid] = {}; });
 
@@ -287,34 +282,60 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 (currentPoolByUnitAndMarks[uid][marks] as any[]).push(q);
             });
 
-            // Local picking function within the set loop to use the set-specific shuffled pool
-            const localPickOne = (targetM: number, uId: string, exclude: Set<string>) => {
-                const pUnit = currentPoolByUnitAndMarks[uId] || {};
+            const excludeInSet = new Set<string>([...globalExcluded]);
+            let autoUnitCounter = 0;
+            const setDifficulty = sets_config[setName] || ['ANY'];
 
-                // Try exact marks match
-                let candidates: any[] = (pUnit[targetM] || []).filter((q: any) => !exclude.has(q.id));
+            // Local picking function that uses the SET-SPECIFIC currentPoolByUnitAndMarks
+            const localPickOne = (targetMarks: number, unitId: string, exclude: Set<string>, qType?: string, bloomArr?: string[], co_id?: string) => {
+                const isShortOrMcq = (q: any) => {
+                    const text = (q.question_text || '').toLowerCase();
+                    return text.includes('___') || text.includes('....') || (Array.isArray(q.options) && q.options.length > 0);
+                };
 
-                // Fallback: search nearby marks in the same unit
-                if (candidates.length === 0) {
-                    const flattened = [].concat(...Object.values(pUnit) as any) as any[];
-                    candidates = flattened.filter((q: any) => !exclude.has(q.id));
-                }
+                const filterPool = (pool: any[], strictMarks: boolean = false) => {
+                    let filtered = pool.filter(q => !exclude.has(q.id));
+                    if (strictMarks) filtered = filtered.filter(q => Number(q.marks) === Number(targetMarks));
+                    if (qType && qType !== 'ANY') {
+                        if (qType === 'MIXED') filtered = filtered.filter(q => ['MCQ', 'FILL_IN_BLANK', 'VERY_SHORT', 'SHORT', 'LONG', 'VERY_LONG', 'PARAGRAPH'].includes(q.type || '') || isShortOrMcq(q));
+                        else if (qType === 'NORMAL' && targetMarks < 5) filtered = filtered.filter(q => !['MCQ', 'FILL_IN_BLANK'].includes(q.type || '') && !isShortOrMcq(q));
+                        else filtered = filtered.filter(q => q.type === qType);
+                    }
+                    if (bloomArr && bloomArr.length > 0 && !bloomArr.includes('ANY') && filtered.length > 0) {
+                        const bFiltered = filtered.filter(q => bloomArr.includes(q.bloom_level));
+                        if (bFiltered.length > 0) filtered = bFiltered;
+                    }
+                    if (co_id && filtered.length > 0) {
+                        const cFiltered = filtered.filter(q => q.co_id === co_id);
+                        if (cFiltered.length > 0) filtered = cFiltered;
+                    }
+                    return filtered;
+                };
 
-                // Fallback: search anywhere in the current shuffled pool
-                if (candidates.length === 0) {
-                    candidates = currentPool.filter((q: any) => !exclude.has(q.id));
-                }
+                const finalize = (p: any[]) => {
+                    // Pool is already shuffled in currentPool, but we shuffle candidates for extra randomness
+                    const choice = p[Math.floor(Math.random() * p.length)];
+                    exclude.add(choice.id);
+                    globalUsageCount[choice.id] = (globalUsageCount[choice.id] || 0) + 1;
+                    return { ...choice, type: choice.type || 'NORMAL' };
+                };
 
-                if (candidates.length > 0) {
-                    const q = candidates[0] as any;
-                    exclude.add(q.id);
-                    return {
-                        id: q.id, text: q.question_text, marks: q.marks, bloom: q.bloom_level,
-                        co_id: q.co_id, unit_id: q.unit_id, type: q.type || 'NORMAL',
-                        options: q.options, image_url: q.image_url
-                    };
-                }
-                return null;
+                // 1. Try Unit + Specific Marks
+                let p = filterPool(currentPoolByUnitAndMarks[unitId]?.[targetMarks] || [], true);
+                if (p.length > 0) return finalize(p);
+
+                // 2. Try Entire Unit
+                const allUnitQuestions = [].concat(...Object.values(currentPoolByUnitAndMarks[unitId] || {}) as any);
+                p = filterPool(allUnitQuestions, false);
+                if (p.length > 0) return finalize(p);
+
+                // 3. Try Anywhere in Subject
+                p = filterPool(currentPool, true);
+                if (p.length > 0) return finalize(p);
+
+                // 4. Ultimate Fallback
+                p = filterPool(currentPool, false);
+                return p.length > 0 ? finalize(p) : null;
             };
 
             const localPickQuestionsForChoice = (mTotal: number, uId: string, hasSub: boolean, exclude: Set<string>, mManual?: (number | undefined)[]) => {

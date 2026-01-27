@@ -206,6 +206,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     .replace(/<\/tr>/g, '\n[ROW_END]\n')
                     .replace(/<td>/g, ' [COL] ')
                     .replace(/<\/td>/g, ' [/COL] ')
+                    .replace(/<p[^>]*>/g, '')
                     .replace(/<\/p>/g, '\n')
                     .replace(/<br\s*\/?>/g, '\n')
                     .replace(/<\/?[^>]+(>|$)/g, " "); // Strip other tags
@@ -216,7 +217,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 throw error(400, 'Unsupported file format. Please upload PDF, DOCX, or XLSX.');
             }
 
-            let text = rawText.replace(/\[ROW_START\]|\[ROW_END\]|\[COL\]|\[\/COL\]/g, ' ').replace(/\u00A0/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s+/g, '\n').replace(/\s+\n/g, '\n').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-');
+            let text = rawText
+                .replace(/\[ROW_START\]/g, '\n')
+                .replace(/\[ROW_END\]/g, '\n')
+                .replace(/\[COL\]/g, ' | ')
+                .replace(/\[\/COL\]/g, ' ')
+                .replace(/\u00A0/g, ' ')
+                .replace(/[ \t]+/g, ' ')
+                .replace(/\n\s+/g, '\n')
+                .replace(/\s+\n/g, '\n')
+                .replace(/[\u2018\u2019]/g, "'")
+                .replace(/[\u201C\u201D]/g, '"')
+                .replace(/[\u2013\u2014]/g, '-');
 
             const markers: { index: number, type: string, value: string, fullMatch: string, metadata?: any }[] = [];
             const partRegex = /\bPART\s+([A-G])\b/gi;
