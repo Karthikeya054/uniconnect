@@ -94,7 +94,7 @@
     const calcTotal = (part: string) => {
         const arr = (Array.isArray(currentSetData) ? currentSetData : (currentSetData.questions || [])).filter(Boolean);
         const qs = arr.filter((q: any) => q && q.part === part);
-        return qs.reduce((s, slot) => {
+        return qs.reduce((s: number, slot: any) => {
             const marks = Number(slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0)));
             return s + (slot.type === 'OR_GROUP' ? marks * 2 : marks);
         }, 0);
@@ -104,26 +104,31 @@
     let totalMarksB = $derived(calcTotal('B'));
     let totalMarksC = $derived(calcTotal('C'));
     
-    const partAQuestions = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'A'));
-    const partBQuestions = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'B'));
-    const partCQuestions = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'C'));
+    function toRoman(n: number) {
+        return ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'][n] || String(n + 1);
+    }
+
+    const questionsA = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'A'));
+    const questionsB = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'B'));
+    const questionsC = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'C'));
 </script>
 
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative bg-gray-100 dark:bg-slate-900/50">
     <div class="flex-1 overflow-auto p-4 sm:p-8">
         <div id="crescent-paper-actual" class="mx-auto bg-white p-[0.3in] shadow-2xl transition-all duration-500 font-serif text-black relative border border-black" style="width: 8.27in; min-height: 11.69in;">
             
-            <!-- Header (Exact Match) -->
-            <div class="header-container flex flex-col items-center mb-4 pt-4">
-                 <img src="/crescent-logo.png" alt="Crescent Logo" class="h-20 mb-2" />
+            <!-- Header -->
+            <div class="header-container flex flex-col items-center mb-2 pt-2 relative">
+                 <img src="/crescent-logo.png" alt="Crescent Logo" class="h-16 mb-1" />
                  
-                 <!-- RRN & Course Code -->
-                 <div class="absolute top-[0.3in] right-[0.3in] flex flex-col items-end gap-2">
+                 <!-- RRN & Course Code Header (Top Right) -->
+                 <div class="absolute top-0 right-0 flex flex-col items-end gap-1">
                     <div class="flex items-center gap-2">
-                        <AssessmentEditable bind:value={paperMeta.course_code} onUpdate={(v: string) => updateText(v, 'META', 'course_code')} class="font-bold border-b border-black px-1 min-w-[80px] text-right" />
+                        <span class="text-[9pt] font-bold uppercase">&lt;COURSE CODE&gt;</span>
+                        <AssessmentEditable bind:value={paperMeta.course_code} onUpdate={(v: string) => updateText(v, 'META', 'course_code')} class="font-bold border-b border-black px-1 min-w-[70px] text-right" />
                     </div>
-                    <div class="flex items-center gap-1 mt-2">
-                        <span class="text-[9pt] font-bold">RRN</span>
+                    <div class="flex items-center gap-1 mt-1">
+                        <span class="text-[9pt] font-bold text-right">RRN</span>
                         <div class="flex border-y border-r border-black">
                             {#each Array(11) as _, i}
                                 <div class="w-5 h-5 border-l border-black"></div>
@@ -139,29 +144,58 @@
             </div>
 
             <!-- Metadata Table (Exact Match) -->
-            <table class="w-full border-collapse border border-black text-[9pt] mb-6">
+            <table class="w-full border-collapse border border-black text-[9pt] mb-4">
                 <tbody>
                     <tr>
-                        <td class="border border-black p-2 w-[18%] font-bold">Programme & Branch</td>
-                        <td class="border border-black p-2 w-[32%] flex gap-2">: <AssessmentEditable bind:value={paperMeta.programme} onUpdate={(v: string) => updateText(v, 'META', 'programme')} class="flex-1" /></td>
-                        <td class="border border-black p-2 w-[15%] font-bold">Semester</td>
-                        <td class="border border-black p-2 w-[35%]">: <AssessmentEditable bind:value={paperMeta.semester} onUpdate={(v: string) => updateText(v, 'META', 'semester')} /></td>
+                        <td class="border border-black p-1 w-[20%] font-bold">Programme & Branch</td>
+                        <td colspan="3" class="border border-black p-1 text-[9pt]">
+                            <div class="flex gap-2">
+                                <span>:</span>
+                                <AssessmentEditable bind:value={paperMeta.programme} onUpdate={(v: string) => updateText(v, 'META', 'programme')} class="flex-1" />
+                            </div>
+                        </td>
                     </tr>
                     <tr>
-                        <td class="border border-black p-2 font-bold">Course Code & Name</td>
-                        <td class="border border-black p-2">: <AssessmentEditable bind:value={paperMeta.course_code} onUpdate={(v: string) => updateText(v, 'META', 'course_code')} /></td>
-                        <td class="border border-black p-2 font-bold">Date & Session</td>
-                        <td class="border border-black p-2">: <AssessmentEditable bind:value={paperMeta.paper_date} onUpdate={(v: string) => updateText(v, 'META', 'paper_date')} /></td>
+                        <td class="border border-black p-1 font-bold">Semester</td>
+                        <td class="border border-black p-1 w-[30%]">
+                            <div class="flex gap-2">
+                                <span>:</span>
+                                <AssessmentEditable bind:value={paperMeta.semester} onUpdate={(v: string) => updateText(v, 'META', 'semester')} />
+                            </div>
+                        </td>
+                        <td class="border border-black p-1 w-[20%] font-bold">Date & Session</td>
+                        <td class="border border-black p-1 w-[30%]">
+                            <div class="flex gap-2">
+                                <span>:</span>
+                                <AssessmentEditable bind:value={paperMeta.paper_date} onUpdate={(v: string) => updateText(v, 'META', 'paper_date')} />
+                            </div>
+                        </td>
                     </tr>
                     <tr>
-                        <td class="border border-black p-2 font-bold">Course Name</td>
-                        <td colspan="3" class="border border-black p-2">: <AssessmentEditable bind:value={paperMeta.subject_name} onUpdate={(v: string) => updateText(v, 'META', 'subject_name')} /></td>
+                        <td class="border border-black p-1 font-bold">Course Code & Name</td>
+                        <td colspan="3" class="border border-black p-1">
+                            <div class="flex gap-2">
+                                <span>:</span>
+                                <AssessmentEditable bind:value={paperMeta.subject_name} onUpdate={(v: string) => updateText(v, 'META', 'subject_name')} />
+                            </div>
+                        </td>
                     </tr>
                     <tr>
-                        <td class="border border-black p-2 font-bold">Duration</td>
-                        <td class="border border-black p-2">: <AssessmentEditable bind:value={paperMeta.duration_minutes} onUpdate={(v: string) => updateText(v, 'META', 'duration_minutes')} /> minutes</td>
-                        <td class="border border-black p-2 font-bold">Maximum Marks</td>
-                        <td class="border border-black p-2">: <AssessmentEditable bind:value={paperMeta.max_marks} onUpdate={(v: string) => updateText(v, 'META', 'max_marks')} /></td>
+                        <td class="border border-black p-1 font-bold">Duration</td>
+                        <td class="border border-black p-1">
+                            <div class="flex gap-2">
+                                <span>:</span>
+                                <AssessmentEditable bind:value={paperMeta.duration_minutes} onUpdate={(v: string) => updateText(v, 'META', 'duration_minutes')} />
+                                <span>minutes</span>
+                            </div>
+                        </td>
+                        <td class="border border-black p-1 font-bold">Maximum Marks</td>
+                        <td class="border border-black p-1">
+                            <div class="flex gap-2">
+                                <span>:</span>
+                                <AssessmentEditable bind:value={paperMeta.max_marks} onUpdate={(v: string) => updateText(v, 'META', 'max_marks')} />
+                            </div>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -172,16 +206,16 @@
 
             <div class="space-y-4">
                 <!-- PART A -->
-                <div class="border-y border-black py-1 text-center font-bold uppercase tracking-widest text-[11pt]">
-                    <AssessmentEditable value="PART A" onUpdate={(v) => {}} /> 
-                    ({partAQuestions.length} X <AssessmentEditable value={String(partAQuestions[0]?.marks || 2)} onUpdate={(v) => {}} /> = {totalMarksA} MARKS)
+                <div class="border-y border-black py-0.5 text-center font-bold uppercase tracking-wider text-[10pt]">
+                    <AssessmentEditable value="PART A" onUpdate={(v: string) => {}} /> 
+                    ({questionsA.length} X <AssessmentEditable value={String(questionsA[0]?.marks || 2)} onUpdate={(v: string) => {}} /> = {totalMarksA} MARKS)
                 </div>
                 <div class="border-x border-b border-black">
-                    <div class="w-full" use:dndzone={{ items: partAQuestions, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', (e.detail as any).items)} onfinalize={(e) => handleDndSync('A', (e.detail as any).items)}>
+                    <div class="w-full" use:dndzone={{ items: questionsA, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', (e.detail as any).items)} onfinalize={(e) => handleDndSync('A', (e.detail as any).items)}>
                         {#each (currentSetData.questions || []) as q, i (q.id)}
                             {#if q && q.part === 'A'}
-                                <div class="border-b border-black last:border-b-0 min-h-[30px] flex group relative">
-                                    <div class="px-2 py-1 border-r border-black w-10 text-center font-bold">{(partAQuestions.findIndex(x => x.id === q.id) + 1)}.</div>
+                                <div class="border-b border-black last:border-b-0 min-h-[25px] flex group relative">
+                                    <div class="px-2 py-1 border-r border-black w-10 text-center font-bold text-[9.5pt]">{(questionsA.findIndex(x => x.id === q.id) + 1)}.</div>
                                     <div class="flex-1 px-4 py-1 relative">
                                         <AssessmentRowActions 
                                             {isEditable}
@@ -189,18 +223,19 @@
                                             onDelete={() => removeQuestion(q)}
                                         />
                                         <AssessmentEditable 
-                                            value={q.text} 
+                                            value={q.text || q.question_text || ''} 
                                             onUpdate={(v: string) => {
                                                 q.text = v;
                                                 q.question_text = v;
                                                 updateText(v, 'QUESTION', 'text', q.id, q.id);
                                             }}
                                             multiline={true} 
+                                            class="text-[9.5pt]"
                                         />
                                         <AssessmentMcqOptions options={q.options} />
                                     </div>
-                                    <div class="w-16 border-l border-black text-center py-1 font-bold">
-                                        (<AssessmentEditable value={String(q.marks || 2)} onUpdate={(v) => q.marks = Number(v)} />)
+                                    <div class="w-16 border-l border-black text-center py-1 font-bold text-[9pt] flex items-center justify-center">
+                                        (<AssessmentEditable value={String(q.marks || 2)} onUpdate={(v: string) => q.marks = Number(v)} />)
                                     </div>
                                 </div>
                             {/if}
@@ -209,20 +244,20 @@
                 </div>
 
                 <!-- PART B -->
-                <div class="border-y border-black py-1 text-center font-bold uppercase tracking-widest text-[11pt] mt-8">
-                    <AssessmentEditable value="PART B" onUpdate={(v) => {}} />
-                    ({partBQuestions.length} X <AssessmentEditable value={String(partBQuestions[0]?.marks || 16)} onUpdate={(v) => {}} /> = {totalMarksB} MARKS)
+                <div class="border-y border-black py-0.5 text-center font-bold uppercase tracking-wider text-[10pt] mt-6">
+                    <AssessmentEditable value="PART B" onUpdate={(v: string) => {}} />
+                    ({questionsB.length} X <AssessmentEditable value={String(questionsB[0]?.marks || 16)} onUpdate={(v: string) => {}} /> = {totalMarksB} MARKS)
                 </div>
                 <div class="border-x border-black">
-                    <div class="w-full" use:dndzone={{ items: partBQuestions, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', (e.detail as any).items)} onfinalize={(e) => handleDndSync('B', (e.detail as any).items)}>
+                    <div class="w-full" use:dndzone={{ items: questionsB, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', (e.detail as any).items)} onfinalize={(e) => handleDndSync('B', (e.detail as any).items)}>
                         {#each (currentSetData.questions || []) as slot, i (slot.id)}
                             {#if slot && slot.part === 'B'}
-                            {@const slotIdx = partBQuestions.findIndex(x => x.id === slot.id)}
-                            {@const currentNum = partAQuestions.length + slotIdx + 1}
+                            {@const slotIdx = questionsB.findIndex(x => x.id === slot.id)}
+                            {@const currentNum = questionsA.length + slotIdx + 1}
                             <div class="border-b border-black last:border-b-0">
                                 <!-- Choice 1 -->
                                 <div class="flex group relative">
-                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[10pt]">{currentNum}.a</div>
+                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9.5pt]">{currentNum}.a</div>
                                     <div class="flex-1 px-4 py-2 relative">
                                         <AssessmentRowActions 
                                             {isEditable}
@@ -234,18 +269,18 @@
                                                 {#each slot.choice1.questions as q, subIdx}
                                                     <div class="flex gap-2">
                                                         {#if slot.choice1.questions.length > 1}
-                                                            <span class="font-bold min-w-[20px] text-[10pt]">({subIdx === 0 ? 'i' : 'ii'})</span>
+                                                            <span class="font-bold min-w-[25px] text-[9.5pt]">({toRoman(subIdx)})</span>
                                                         {/if}
                                                         <div class="flex-1">
                                                             <AssessmentEditable 
-                                                                value={q.text}
+                                                                value={q.text || q.question_text || ''}
                                                                 onUpdate={(v: string) => {
                                                                     q.text = v;
                                                                     q.question_text = v;
                                                                     updateText(v, 'QUESTION', 'text', slot.id, q.id);
                                                                 }}
                                                                 multiline={true}
-                                                                class="text-[10pt]"
+                                                                class="text-[9.5pt]"
                                                             />
                                                             <AssessmentMcqOptions options={q.options} />
                                                         </div>
@@ -254,15 +289,15 @@
                                             </div>
                                         {/if}
                                     </div>
-                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[10pt]">
-                                        (<AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 16)} onUpdate={(v) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} />)
+                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[9pt]">
+                                        (<AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 16)} onUpdate={(v: string) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} />)
                                     </div>
                                 </div>
                                 <!-- OR -->
-                                <div class="text-center font-bold italic py-1 bg-gray-50/50 text-[10pt] border-y border-black">(OR)</div>
+                                <div class="text-center font-bold italic py-0.5 bg-gray-50/50 text-[9pt] border-y border-black">(OR)</div>
                                 <!-- Choice 2 -->
                                 <div class="flex group relative">
-                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[10pt]">{currentNum}.b</div>
+                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9.5pt]">b</div>
                                     <div class="flex-1 px-4 py-2 relative">
                                         <AssessmentRowActions 
                                             {isEditable}
@@ -274,18 +309,18 @@
                                                 {#each slot.choice2.questions as q, subIdx}
                                                     <div class="flex gap-2">
                                                         {#if slot.choice2.questions.length > 1}
-                                                            <span class="font-bold min-w-[20px] text-[10pt]">({subIdx === 0 ? 'i' : 'ii'})</span>
+                                                            <span class="font-bold min-w-[25px] text-[9.5pt]">({toRoman(subIdx)})</span>
                                                         {/if}
                                                         <div class="flex-1">
                                                             <AssessmentEditable 
-                                                                value={q.text}
+                                                                value={q.text || q.question_text || ''}
                                                                 onUpdate={(v: string) => {
                                                                     q.text = v;
                                                                     q.question_text = v;
                                                                     updateText(v, 'QUESTION', 'text', slot.id, q.id);
                                                                 }}
                                                                 multiline={true}
-                                                                class="text-[10pt]"
+                                                                class="text-[9.5pt]"
                                                             />
                                                             <AssessmentMcqOptions options={q.options} />
                                                         </div>
@@ -294,8 +329,8 @@
                                             </div>
                                         {/if}
                                     </div>
-                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[10pt]">
-                                        (<AssessmentEditable value={String(slot.choice2?.questions?.[0]?.marks || slot.marks || 16)} onUpdate={(v) => { if(slot.choice2?.questions?.[0]) slot.choice2.questions[0].marks = Number(v); }} />)
+                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[9pt]">
+                                        (<AssessmentEditable value={String(slot.choice2?.questions?.[0]?.marks || slot.marks || 16)} onUpdate={(v: string) => { if(slot.choice2?.questions?.[0]) slot.choice2.questions[0].marks = Number(v); }} />)
                                     </div>
                                 </div>
                             </div>
@@ -305,20 +340,20 @@
                 </div>
 
                 <!-- PART C -->
-                {#if partCQuestions.length > 0}
-                <div class="border-y border-black py-1 text-center font-bold uppercase tracking-widest text-[11pt] mt-8">
-                    <AssessmentEditable value="PART C" onUpdate={(v) => {}} />
-                    ({partCQuestions.length} X <AssessmentEditable value={String(partCQuestions[0]?.marks || 8)} onUpdate={(v) => {}} /> = {totalMarksC} MARKS)
+                {#if questionsC.length > 0}
+                <div class="border-y border-black py-0.5 text-center font-bold uppercase tracking-wider text-[10pt] mt-6">
+                    <AssessmentEditable value="PART C" onUpdate={(v: string) => {}} />
+                    ({questionsC.length} X <AssessmentEditable value={String(questionsC[0]?.marks || 8)} onUpdate={(v: string) => {}} /> = {totalMarksC} MARKS)
                 </div>
                 <div class="border-x border-b border-black">
-                    <div class="w-full" use:dndzone={{ items: partCQuestions, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('C', (e.detail as any).items)} onfinalize={(e) => handleDndSync('C', (e.detail as any).items)}>
+                    <div class="w-full" use:dndzone={{ items: questionsC, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('C', (e.detail as any).items)} onfinalize={(e) => handleDndSync('C', (e.detail as any).items)}>
                         {#each (currentSetData.questions || []) as slot, i (slot.id)}
                             {#if slot && slot.part === 'C'}
-                            {@const slotIdx = partCQuestions.findIndex(x => x.id === slot.id)}
-                            {@const currentNum = partAQuestions.length + partBQuestions.length + slotIdx + 1}
+                            {@const slotIdx = questionsC.findIndex(x => x.id === slot.id)}
+                            {@const currentNum = questionsA.length + questionsB.length + slotIdx + 1}
                             <div class="border-b border-black last:border-b-0">
                                 <div class="flex group relative">
-                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[10pt]">{currentNum}.a</div>
+                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9.5pt]">{currentNum}.a</div>
                                     <div class="flex-1 px-4 py-2 relative">
                                         <AssessmentRowActions 
                                             {isEditable}
@@ -330,18 +365,18 @@
                                                 {#each slot.choice1.questions as q, subIdx}
                                                     <div class="flex gap-2">
                                                         {#if slot.choice1.questions.length > 1}
-                                                            <span class="font-bold min-w-[20px] text-[10pt]">({subIdx === 0 ? 'i' : 'ii'})</span>
+                                                            <span class="font-bold min-w-[25px] text-[9.5pt]">({toRoman(subIdx)})</span>
                                                         {/if}
                                                         <div class="flex-1">
                                                             <AssessmentEditable 
-                                                                value={q.text}
+                                                                value={q.text || q.question_text || ''}
                                                                 onUpdate={(v: string) => {
                                                                     q.text = v;
                                                                     q.question_text = v;
                                                                     updateText(v, 'QUESTION', 'text', slot.id, q.id);
                                                                 }}
                                                                 multiline={true}
-                                                                class="text-[10pt]"
+                                                                class="text-[9.5pt]"
                                                             />
                                                             <AssessmentMcqOptions options={q.options} />
                                                         </div>
@@ -350,13 +385,13 @@
                                             </div>
                                         {/if}
                                     </div>
-                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[10pt]">
-                                        (<AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 8)} onUpdate={(v) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} />)
+                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[9pt]">
+                                        (<AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 8)} onUpdate={(v: string) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} />)
                                     </div>
                                 </div>
-                                <div class="text-center font-bold italic py-1 bg-gray-50/50 text-[10pt] border-y border-black">(OR)</div>
+                                <div class="text-center font-bold italic py-0.5 bg-gray-50/50 text-[9pt] border-y border-black">(OR)</div>
                                 <div class="flex group relative">
-                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[10pt]">{currentNum}.b</div>
+                                    <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9.5pt]">b</div>
                                     <div class="flex-1 px-4 py-2 relative">
                                         <AssessmentRowActions 
                                             {isEditable}
@@ -368,18 +403,18 @@
                                                 {#each slot.choice2.questions as q, subIdx}
                                                     <div class="flex gap-2">
                                                         {#if slot.choice2.questions.length > 1}
-                                                            <span class="font-bold min-w-[20px] text-[10pt]">({subIdx === 0 ? 'i' : 'ii'})</span>
+                                                            <span class="font-bold min-w-[25px] text-[9.5pt]">({toRoman(subIdx)})</span>
                                                         {/if}
                                                         <div class="flex-1">
                                                             <AssessmentEditable 
-                                                                value={q.text}
+                                                                value={q.text || q.question_text || ''}
                                                                 onUpdate={(v: string) => {
                                                                     q.text = v;
                                                                     q.question_text = v;
                                                                     updateText(v, 'QUESTION', 'text', slot.id, q.id);
                                                                 }}
                                                                 multiline={true}
-                                                                class="text-[10pt]"
+                                                                class="text-[9.5pt]"
                                                             />
                                                             <AssessmentMcqOptions options={q.options} />
                                                         </div>
@@ -388,8 +423,8 @@
                                             </div>
                                         {/if}
                                     </div>
-                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[10pt]">
-                                        (<AssessmentEditable value={String(slot.choice2?.questions?.[0]?.marks || slot.marks || 8)} onUpdate={(v) => { if(slot.choice2?.questions?.[0]) slot.choice2.questions[0].marks = Number(v); }} />)
+                                    <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[9pt]">
+                                        (<AssessmentEditable value={String(slot.choice2?.questions?.[0]?.marks || slot.marks || 8)} onUpdate={(v: string) => { if(slot.choice2?.questions?.[0]) slot.choice2.questions[0].marks = Number(v); }} />)
                                     </div>
                                 </div>
                             </div>
