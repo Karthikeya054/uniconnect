@@ -279,12 +279,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const currentPoolByUnitAndMarks: Record<string, Record<number, any[]>> = {};
             allPossibleUnitIdsArr.forEach(uid => { if (uid) currentPoolByUnitAndMarks[uid] = {}; });
 
-            currentPool.forEach(q => {
+            currentPool.forEach((q: any) => {
                 const uid = q.unit_id as string;
                 const marks = q.marks as number;
                 if (!uid || !currentPoolByUnitAndMarks[uid]) return;
                 if (!currentPoolByUnitAndMarks[uid][marks]) currentPoolByUnitAndMarks[uid][marks] = [];
-                currentPoolByUnitAndMarks[uid][marks].push(q);
+                (currentPoolByUnitAndMarks[uid][marks] as any[]).push(q);
             });
 
             // Local picking function within the set loop to use the set-specific shuffled pool
@@ -317,12 +317,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 return null;
             };
 
-            const localPickQuestionsForChoice = (mTotal: number, uId: string, hasSub: boolean, exclude: Set<string>, mManual?: number[]) => {
+            const localPickQuestionsForChoice = (mTotal: number, uId: string, hasSub: boolean, exclude: Set<string>, mManual?: (number | undefined)[]) => {
                 if (!hasSub) {
                     const q = localPickOne(mTotal, uId, exclude);
                     return q ? [q] : [];
                 } else {
-                    const split = mManual || [Number((mTotal / 2).toFixed(1)), Number((mTotal / 2).toFixed(1))];
+                    const split = (mManual as number[]) || [Number((mTotal / 2).toFixed(1)), Number((mTotal / 2).toFixed(1))];
                     const picked: any[] = [];
                     split.forEach((m, idx) => {
                         const q = localPickOne(m, uId, exclude);
