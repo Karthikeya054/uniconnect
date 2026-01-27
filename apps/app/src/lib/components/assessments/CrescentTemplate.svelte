@@ -64,9 +64,20 @@
         else currentSetData.questions = currentSetData.questions.filter((s: any) => s.id !== slot.id);
     }
 
-    function openSwapSidebar(slot: any, part: string, subPart?: 'q1' | 'q2') {
-        const cQ = slot.type === 'OR_GROUP' ? (subPart === 'q1' ? slot.choice1?.questions?.[0] : slot.choice2?.questions?.[0]) : (slot.questions?.[0] || slot);
-        const marks = Number(cQ?.marks || slot.marks || (part === 'A' ? 2 : 16));
+    function openSwapSidebar(slot: any, part: string, subPart?: 'q1' | 'q2', subQuestionId?: string) {
+        let targetQuestion = slot;
+        if (slot.type === 'OR_GROUP') {
+            const choice = subPart === 'q1' ? slot.choice1 : slot.choice2;
+            if (subQuestionId) {
+                targetQuestion = (choice.questions || []).find((q: any) => q.id === subQuestionId);
+            } else {
+                targetQuestion = choice.questions?.[0] || slot;
+            }
+        } else if (slot.questions?.length) {
+             targetQuestion = slot.questions[0];
+        }
+
+        const marks = Number(targetQuestion?.marks || slot.marks || (part === 'A' ? 2 : 16));
         const arr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
         const index = arr.indexOf(slot);
         
@@ -74,8 +85,9 @@
             slotIndex: index, 
             part, 
             subPart, 
+            subQuestionId,
             currentMark: marks,
-            alternates: (questionPool || []).filter((q: any) => Number(q.marks || q.mark) === marks && q.id !== cQ?.id) 
+            alternates: (questionPool || []).filter((q: any) => Number(q.marks || q.mark) === marks && q.id !== targetQuestion?.id) 
         };
         isSwapSidebarOpen = true;
     }
@@ -83,11 +95,27 @@
     function selectAlternate(question: any) {
         if (!swapContext) return;
         const arr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
-        const slot = arr[swapContext.slotIndex];
-        const nQ = { id: question.id, text: question.question_text, marks: question.marks, options: question.options };
-        if (slot.type === 'OR_GROUP') { if(swapContext.subPart === 'q1') slot.choice1.questions = [nQ]; else slot.choice2.questions = [nQ]; }
-        else slot.questions = [nQ];
-        if(Array.isArray(currentSetData)) currentSetData = [...currentSetData]; else currentSetData.questions = [...currentSetData.questions];
+        let slot = arr[swapContext.slotIndex];
+        const nQ = { id: question.id, text: question.question_text, question_text: question.question_text, marks: question.marks, options: question.options, part: swapContext.part };
+        
+        if (swapContext.part === 'A') {
+            arr[swapContext.slotIndex] = nQ;
+        } else {
+            if (slot.type === 'OR_GROUP') {
+                const choice = swapContext.subPart === 'q1' ? slot.choice1 : slot.choice2;
+                if (swapContext.subQuestionId) {
+                    const idx = choice.questions.findIndex((q: any) => q.id === swapContext.subQuestionId);
+                    if (idx !== -1) choice.questions[idx] = nQ;
+                } else {
+                    choice.questions = [nQ];
+                }
+            } else {
+                slot.questions = [nQ];
+            }
+        }
+        
+        if(Array.isArray(currentSetData)) currentSetData = [...currentSetData]; 
+        else currentSetData.questions = [...currentSetData.questions];
         isSwapSidebarOpen = false;
     }
 
@@ -109,9 +137,15 @@
         return ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'][n] || String(n + 1);
     }
 
-    const questionsA = $derived((Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter((q: any) => q && q.part === 'A'));
-    const questionsB = $derived((Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter((q: any) => q && q.part === 'B'));
-    const questionsC = $derived((Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || [])).filter((q: any) => q && q.part === 'C'));
+    const allQuestions = $derived(Array.isArray(currentSetData) ? currentSetData : (currentSetData?.questions || []));
+    
+    // Part A takes questions explicitly marked 'A' OR the first 10 questions if none are marked 'A'
+    const questionsA = $derived(allQuestions.some(q => q.part === 'A') 
+        ? allQuestions.filter(q => q.part === 'A')
+        : allQuestions.slice(0, 10));
+        
+    const questionsB = $derived(allQuestions.filter(q => q.part === 'B'));
+    const questionsC = $derived(allQuestions.filter(q => q.part === 'C'));
 </script>
 
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative bg-gray-100 dark:bg-slate-900/50">
@@ -125,14 +159,13 @@
                  <!-- RRN & Course Code Header (Top Right) -->
                  <div class="absolute top-0 right-0 flex flex-col items-end gap-1">
                     <div class="flex items-center gap-2">
-                        <span class="text-[8pt] font-bold uppercase">&lt;COURSE CODE&gt;</span>
-                        <AssessmentEditable bind:value={paperMeta.course_code} onUpdate={(v: string) => updateText(v, 'META', 'course_code')} class="font-bold border-b border-black px-1 min-w-[70px] text-right text-[8pt]" />
+                        <AssessmentEditable bind:value={paperMeta.course_code} onUpdate={(v: string) => updateText(v, 'META', 'course_code')} class="font-bold px-1 min-w-[70px] text-right text-[10pt]" />
                     </div>
                     <div class="flex items-center gap-1 mt-1">
                         <span class="text-[8pt] font-bold text-right">RRN</span>
-                        <div class="flex border-y border-r border-black">
+                        <div class="flex border border-black">
                             {#each Array(11) as _, i}
-                                <div class="w-4 h-4 border-l border-black"></div>
+                                <div class="w-4 h-4 border-r border-black last:border-r-0"></div>
                             {/each}
                         </div>
                     </div>
@@ -202,13 +235,14 @@
             </table>
 
             <!-- Instructions -->
-            <div class="text-center font-bold italic py-1 text-[9.5pt] mb-1">
+            <div class="text-center font-bold italic py-1 text-[9.5pt]">
                 <AssessmentEditable bind:value={paperMeta.instructions} onUpdate={(v: string) => updateText(v, 'META', 'instructions')} class="w-full text-center" />
             </div>
 
+
                 <!-- PART A -->
-                <div class="border-y border-black py-0.5 text-center font-bold uppercase tracking-wider text-[9.5pt] flex items-center justify-center gap-1 whitespace-nowrap overflow-hidden">
-                    <AssessmentEditable value="PART A" onUpdate={(v: string) => {}} class="inline-block font-bold" /> 
+                <div class="border-b border-black py-0.5 text-center font-bold uppercase tracking-wider text-[9.5pt] flex items-center justify-center gap-1 whitespace-nowrap overflow-hidden">
+                    <AssessmentEditable bind:value={paperMeta.partA_title} onUpdate={(v: string) => updateText(v, 'META', 'partA_title')} class="inline-block font-bold" /> 
                     <span>({questionsA.length} X {questionsA[0]?.marks || 2} = {totalMarksA} MARKS)</span>
                 </div>
                 <div class="border-x border-b border-black">
@@ -240,11 +274,14 @@
                             </div>
                         </div>
                     {/each}
+                    {#if questionsA.length === 0}
+                         <div class="p-8 text-center text-gray-400 italic text-sm">No questions available for Part A. Use Swap to add or check data.</div>
+                    {/if}
                 </div>
 
                 <!-- PART B -->
                 <div class="border-y border-black py-0.5 text-center font-bold uppercase tracking-wider text-[9.5pt] flex items-center justify-center gap-1 whitespace-nowrap overflow-hidden">
-                    <AssessmentEditable value="PART B" onUpdate={(v: string) => {}} class="inline-block" />
+                    <AssessmentEditable bind:value={paperMeta.partB_title} onUpdate={(v: string) => updateText(v, 'META', 'partB_title')} class="inline-block font-bold" />
                     <span>({questionsB.length} X {questionsB[0]?.marks || 16} = {totalMarksB} MARKS)</span>
                 </div>
                 <div class="border-x border-black">
@@ -263,11 +300,16 @@
                                     {#if slot.choice1?.questions}
                                         <div class="space-y-3">
                                             {#each slot.choice1.questions as q, subIdx}
-                                                <div class="flex gap-2">
+                                                <div class="flex gap-2 group/sub relative">
                                                     {#if slot.choice1.questions.length > 1}
                                                         <span class="font-bold min-w-[25px] text-[9pt]">{String.fromCharCode(97 + subIdx)}.</span>
                                                     {/if}
-                                                    <div class="flex-1">
+                                                    <div class="flex-1 relative">
+                                                        <div class="absolute -left-10 top-0 opacity-0 group-hover/sub:opacity-100 transition-opacity no-print">
+                                                            <button onclick={() => openSwapSidebar(slot, 'B', 'q1', q.id)} class="p-1 hover:bg-indigo-100 text-indigo-600 rounded" title="Swap sub-question">
+                                                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                                            </button>
+                                                        </div>
                                                         <AssessmentEditable 
                                                             value={q.text || q.question_text || ''}
                                                             onUpdate={(v: string) => {
@@ -303,11 +345,16 @@
                                     {#if slot.choice2?.questions}
                                         <div class="space-y-3">
                                             {#each slot.choice2.questions as q, subIdx}
-                                                <div class="flex gap-2">
+                                                <div class="flex gap-2 group/sub relative">
                                                     {#if slot.choice2.questions.length > 1}
                                                         <span class="font-bold min-w-[25px] text-[9pt]">{String.fromCharCode(97 + subIdx)}.</span>
                                                     {/if}
-                                                    <div class="flex-1">
+                                                    <div class="flex-1 relative">
+                                                        <div class="absolute -left-10 top-0 opacity-0 group-hover/sub:opacity-100 transition-opacity no-print">
+                                                            <button onclick={() => openSwapSidebar(slot, 'B', 'q2', q.id)} class="p-1 hover:bg-indigo-100 text-indigo-600 rounded" title="Swap sub-question">
+                                                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                                            </button>
+                                                        </div>
                                                         <AssessmentEditable 
                                                             value={q.text || q.question_text || ''}
                                                             onUpdate={(v: string) => {
