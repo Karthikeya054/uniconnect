@@ -95,14 +95,15 @@
         const arr = (Array.isArray(currentSetData) ? currentSetData : (currentSetData.questions || [])).filter(Boolean);
         const qs = arr.filter((q: any) => q && q.part === part);
         return qs.reduce((s: number, slot: any) => {
-            const marks = Number(slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0)));
-            return s + marks;
+            const m = slot.marks || (slot.type === 'OR_GROUP' ? (slot.choice1?.questions?.[0]?.marks || 0) : (slot.questions?.[0]?.marks || 0));
+            return s + (Number(m) || 0);
         }, 0);
     };
 
-    let totalMarksA = $derived(calcTotal('A'));
-    let totalMarksB = $derived(calcTotal('B'));
-    let totalMarksC = $derived(calcTotal('C'));
+    const totalMarksA = $derived(calcTotal('A'));
+    const totalMarksB = $derived(calcTotal('B'));
+    const totalMarksC = $derived(calcTotal('C'));
+    const allTotalMarks = $derived(totalMarksA + totalMarksB + totalMarksC);
     
     function toRoman(n: number) {
         return ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'][n] || String(n + 1);
@@ -212,28 +213,30 @@
                 </div>
                 <div class="border-x border-b border-black">
                     {#each questionsA as q, i (q.id)}
-                        <div class="border-b border-black last:border-b-0 min-h-[25px] flex group relative">
-                            <div class="px-2 py-1 border-r border-black w-10 text-center font-bold text-[9pt]">{i + 1}.</div>
-                            <div class="flex-1 px-4 py-1 relative">
+                        <div class="border-b border-black last:border-b-0 min-h-[30px] flex group relative">
+                            <div class="px-2 py-1 border-r border-black w-10 text-center font-bold text-[9pt] flex items-center justify-center">{i + 1}.</div>
+                            <div class="flex-1 px-4 py-1 relative min-h-[30px] flex flex-col justify-center">
                                 <AssessmentRowActions 
                                     {isEditable}
                                     onSwap={() => openSwapSidebar(q, 'A')}
                                     onDelete={() => removeQuestion(q)}
                                 />
-                                <AssessmentEditable 
-                                    value={q.text || q.question_text || ''} 
-                                    onUpdate={(v: string) => {
-                                        q.text = v;
-                                        q.question_text = v;
-                                        updateText(v, 'QUESTION', 'text', q.id, q.id);
-                                    }}
-                                    multiline={true} 
-                                    class="text-[9pt] w-full block min-h-[1.5em]"
-                                />
-                                <AssessmentMcqOptions options={q.options} />
+                                <div class="w-full">
+                                    <AssessmentEditable 
+                                        value={q.text || q.question_text || ''} 
+                                        onUpdate={(v: string) => {
+                                            q.text = v;
+                                            q.question_text = v;
+                                            updateText(v, 'QUESTION', 'text', q.id, q.id);
+                                        }}
+                                        multiline={true} 
+                                        class="text-[9pt] w-full block min-h-[1.2em]"
+                                    />
+                                    <AssessmentMcqOptions options={q.options} />
+                                </div>
                             </div>
                             <div class="w-16 border-l border-black text-center py-1 font-bold text-[8.5pt] flex items-center justify-center">
-                                ( <AssessmentEditable value={String(q.marks || 2)} onUpdate={(v: string) => q.marks = Number(v)} class="inline-block min-w-0" /> )
+                                ( <AssessmentEditable value={String(q.marks || 2)} onUpdate={(v: string) => { q.marks = Number(v); updateText(v, 'QUESTION', 'marks', q.id, q.id); }} class="inline-block min-w-0" /> )
                             </div>
                         </div>
                     {/each}
@@ -430,10 +433,10 @@
                  </div>
             </div>
             
-            <!-- Bottom Border Closure -->
-            <div class="border-t border-black w-full mt-4"></div>
+            <!-- Bottom Border Closure (Exact Match to Page Width) -->
+            <div class="border-t-2 border-black w-full mt-4"></div>
         </div>
-        <div class="text-center mt-8 text-[8pt] text-gray-400">***********</div>
+        <div class="text-center mt-8 text-[10pt] font-bold text-black no-print">***********</div>
     </div>
 
     <!-- Swap Sidebar (Fixed Right Overlay) -->
