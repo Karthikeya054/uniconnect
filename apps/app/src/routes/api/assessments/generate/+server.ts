@@ -259,9 +259,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             }
         }
 
+        const globalExcluded = new Set<string>(); // Track questions used across ALL sets
+
         for (const setName of sets) {
             const setQuestions: any[] = [];
-            const excludeInSet = new Set<string>();
+            const excludeInSet = new Set<string>([...globalExcluded]); // Start with globally excluded questions
             let autoUnitCounter = 0;
             const setDifficulty = sets_config[setName] || ['ANY'];
 
@@ -342,6 +344,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     });
                 }
             }
+
+            // Add all questions from this set to global exclusion
+            setQuestions.forEach(slot => {
+                if (slot.type === 'SINGLE') {
+                    slot.questions?.forEach((q: any) => globalExcluded.add(q.id));
+                } else if (slot.type === 'OR_GROUP') {
+                    slot.choice1?.questions?.forEach((q: any) => globalExcluded.add(q.id));
+                    slot.choice2?.questions?.forEach((q: any) => globalExcluded.add(q.id));
+                }
+            });
 
             generatedSets[setName] = { questions: setQuestions };
         }
