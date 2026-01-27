@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Build stage
 FROM base AS build
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 RUN pnpm run build
 
 # Production stage (Unified)
