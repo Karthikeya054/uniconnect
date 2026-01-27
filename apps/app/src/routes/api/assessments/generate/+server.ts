@@ -65,6 +65,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             poolByUnitAndMarks[uid][marks].push(q);
         });
 
+        const allPossibleUnitIdsArr = Array.from(allPossibleUnitIds);
+
         // 2. Prepare Slots to Process
         const slotsToProcess: any[] = [];
         if (generation_mode === 'Modifiable' && template_config) {
@@ -264,8 +266,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         const globalExcluded = new Set<string>();
 
-        const allPossibleUnitIds = Array.from(new Set(allQuestions.map(q => q.unit_id)));
-
         for (const setName of sets) {
             const setQuestions: any[] = [];
             const excludeInSet = new Set<string>([...globalExcluded]);
@@ -277,7 +277,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
             // 2. RE-GROUP pool for THIS SET to ensure different starting points
             const currentPoolByUnitAndMarks: Record<string, Record<number, any[]>> = {};
-            allPossibleUnitIds.forEach(uid => { if (uid) currentPoolByUnitAndMarks[uid] = {}; });
+            allPossibleUnitIdsArr.forEach(uid => { if (uid) currentPoolByUnitAndMarks[uid] = {}; });
 
             currentPool.forEach(q => {
                 const uid = q.unit_id as string;
@@ -287,34 +287,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 currentPoolByUnitAndMarks[uid][marks].push(q);
             });
 
-            // 3. Update the local group shuffles too
-            Object.values(currentPoolByUnitAndMarks).forEach(marksMap => {
-                Object.values(marksMap).forEach(pool => {
-                    for (let i = pool.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [pool[i], pool[j]] = [pool[j], pool[i]];
-                    }
-                });
-            });
+            // Local picking function within the set loop to use the set-specific shuffled pool
+            const localPickOne = (targetM: number, uId: string, exclude: Set<string>) => {
+                const pUnit = currentPoolByUnitAndMarks[uId] || {};
 
-            // Redefine pickOne to use the current pool for this set
-            const localPickOne = (targetMarks: number, unitId: string, exclude: Set<string>) => {
-                // Try exact match first
-                let p = (currentPoolByUnitAndMarks[unitId]?.[targetMarks] || []).filter(q => !exclude.has(q.id));
+                // Try exact marks match
+                let candidates = (pUnit[targetM] || []).filter(q => !exclude.has(q.id));
 
-                // Fallback to any marks in unit
-                if (p.length === 0) {
-                    const allUnit = [].concat(...Object.values(currentPoolByUnitAndMarks[unitId] || {}) as any);
-                    p = allUnit.filter(q => !exclude.has(q.id));
+                // Fallback: search nearby marks in the same unit
+                if (candidates.length === 0) {
+                    const flattened = [].concat(...Object.values(pUnit) as any);
+                    candidates = flattened.filter(q => !exclude.has(q.id));
                 }
 
-                // Fallback to any unit in subject
-                if (p.length === 0) {
-                    p = currentPool.filter(q => !exclude.has(q.id));
+                // Fallback: search anywhere in the current shuffled pool
+                if (candidates.length === 0) {
+                    candidates = currentPool.filter(q => !exclude.has(q.id));
                 }
 
-                if (p.length > 0) {
-                    const q = p[0] as any;
+                if (candidates.length > 0) {
+                    const q = candidates[0] as any;
                     exclude.add(q.id);
                     return {
                         id: q.id, text: q.question_text, marks: q.marks, bloom: q.bloom_level,
@@ -325,44 +317,52 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 return null;
             };
 
+            const localPickQuestionsForChoice = (mTotal: number, uId: string, hasSub: boolean, exclude: Set<string>, mManual?: number[]) => {
+                if (!hasSub) {
+                    const q = localPickOne(mTotal, uId, exclude);
+                    return q ? [q] : [];
+                } else {
+                    const split = mManual || [Number((mTotal / 2).toFixed(1)), Number((mTotal / 2).toFixed(1))];
+                    const picked: any[] = [];
+                    split.forEach((m, idx) => {
+                        const q = localPickOne(m, uId, exclude);
+                        if (q) picked.push({ ...q, sub_label: `(${String.fromCharCode(idx + 97)})` });
+                    });
+                    return picked;
+                }
+            };
+
             for (const slot of slotsToProcess) {
+                let unitId = slot.unit === 'Auto' ? unit_ids[autoUnitCounter++ % unit_ids.length] : slot.unit;
+
                 if (slot.type === 'SINGLE') {
-                    let unitId = slot.unit;
-                    if (unitId === 'Auto') {
-                        unitId = unit_ids[autoUnitCounter % unit_ids.length];
-                        autoUnitCounter++;
-                    }
-                    const q = localPickOne(slot.marks, unitId, excludeInSet);
+                    const questions = localPickQuestionsForChoice(slot.marks, unitId, slot.hasSubQuestions, excludeInSet, slot.hasSubQuestions ? [slot.marks_a, slot.marks_b] : undefined);
                     setQuestions.push({
                         id: slot.id, type: 'SINGLE', label: slot.label, part: slot.part,
-                        questions: q ? [{ ...q, part: slot.part }] : [{ text: `[No question found for Unit ${unitId}]`, marks: slot.marks, part: slot.part }]
+                        questions: questions.length > 0 ? questions.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found]`, marks: slot.marks, part: slot.part }]
                     });
                 } else {
-                    const choiceConfigs = slot.choices || [];
-                    const c1 = choiceConfigs[0]; const c2 = choiceConfigs[1];
-                    let u1 = c1.unit; let u2 = c2.unit;
-                    if (u1 === 'Auto' && u2 === 'Auto') {
-                        const sharedUnit = unit_ids[autoUnitCounter % unit_ids.length];
-                        autoUnitCounter++; u1 = sharedUnit; u2 = sharedUnit;
-                    }
-                    const q1 = localPickOne(c1.marks, u1, excludeInSet);
-                    const q2 = localPickOne(c2.marks, u2, excludeInSet);
+                    const c1 = slot.choices?.[0] || { marks: slot.marks };
+                    const c2 = slot.choices?.[1] || { marks: slot.marks };
+
+                    const u1 = c1.unit === 'Auto' ? unitId : c1.unit;
+                    const u2 = c2.unit === 'Auto' ? unitId : c2.unit;
+
+                    const q1 = localPickQuestionsForChoice(c1.marks, u1, c1.hasSubGroups || c1.hasSubQuestions, excludeInSet, (c1.hasSubGroups || c1.hasSubQuestions) ? [c1.marks_a, c1.marks_b] : undefined);
+                    const q2 = localPickQuestionsForChoice(c2.marks, u2, c2.hasSubGroups || c2.hasSubQuestions, excludeInSet, (c2.hasSubGroups || c2.hasSubQuestions) ? [c2.marks_a, c2.marks_b] : undefined);
+
                     setQuestions.push({
                         id: slot.id, type: 'OR_GROUP', label: slot.label, part: slot.part,
-                        choice1: { label: c1.label, questions: q1 ? [{ ...q1, part: slot.part }] : [{ text: `[No matching question]`, marks: c1.marks, part: slot.part }] },
-                        choice2: { label: c2.label, questions: q2 ? [{ ...q2, part: slot.part }] : [{ text: `[No matching question]`, marks: c2.marks, part: slot.part }] }
+                        choice1: { label: c1.label, questions: q1.map(q => ({ ...q, part: slot.part })) },
+                        choice2: { label: c2.label, questions: q2.map(q => ({ ...q, part: slot.part })) }
                     });
                 }
             }
 
-            // Add all questions from this set to global exclusion
+            // Sync global exclusions
             setQuestions.forEach(slot => {
-                if (slot.type === 'SINGLE') {
-                    slot.questions?.forEach((q: any) => globalExcluded.add(q.id));
-                } else if (slot.type === 'OR_GROUP') {
-                    slot.choice1?.questions?.forEach((q: any) => globalExcluded.add(q.id));
-                    slot.choice2?.questions?.forEach((q: any) => globalExcluded.add(q.id));
-                }
+                const qs = (slot.type === 'SINGLE' ? (slot.questions || []) : [...(slot.choice1?.questions || []), ...(slot.choice2?.questions || [])]) as any[];
+                qs.forEach((q: any) => { if (q.id) globalExcluded.add(q.id); });
             });
 
             generatedSets[setName] = { questions: setQuestions };
