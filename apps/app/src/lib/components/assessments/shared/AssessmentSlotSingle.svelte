@@ -39,7 +39,9 @@
         />
         <AssessmentMcqOptions options={slot.questions[0].options} />
     </div>
-    <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 border-l-[1.5pt] border-black min-w-[50px] print:border-l-[1.5pt]">
-        ( {slot.questions[0].marks || slot.marks || ''} )
+    <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 border-l-[1.5pt] border-black min-w-[50px] print:border-l-[1.5pt] gap-1">
+        <span>(</span>
+        <span>{slot.questions[0].marks || slot.marks || ''}</span>
+        <span>)</span>
     </div>
 </div>

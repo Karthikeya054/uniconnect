@@ -44,8 +44,10 @@
                 <AssessmentMcqOptions options={slot.choice1.questions[0].options} />
             {/if}
         </div>
-        <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 min-w-[50px]">
-            ( {slot.choice1?.questions?.[0]?.marks || slot.marks || ''} )
+        <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 min-w-[50px] gap-1">
+            <span>(</span>
+            <span>{slot.choice1?.questions?.[0]?.marks || slot.marks || ''}</span>
+            <span>)</span>
         </div>
     </div>
 
@@ -79,8 +81,10 @@
                 <AssessmentMcqOptions options={slot.choice2.questions[0].options} />
             {/if}
         </div>
-        <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 min-w-[50px]">
-            ( {slot.choice2?.questions?.[0]?.marks || slot.marks || ''} )
+        <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 min-w-[50px] gap-1">
+            <span>(</span>
+            <span>{slot.choice2?.questions?.[0]?.marks || slot.marks || ''}</span>
+            <span>)</span>
         </div>
     </div>
 </div>
