@@ -338,16 +338,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 return p.length > 0 ? finalize(p) : null;
             };
 
-            const localPickQuestionsForChoice = (mTotal: number, uId: string, hasSub: boolean, exclude: Set<string>, mManual?: (number | undefined)[]) => {
+            const localPickQuestionsForChoice = (mTotal: number, uId: string, hasSub: boolean, exclude: Set<string>, mManual?: (number | undefined)[], _slotType?: string, _bloom?: string[], _co?: string) => {
                 if (!hasSub) {
-                    const q = localPickOne(mTotal, uId, exclude);
+                    const q = localPickOne(mTotal, uId, exclude, _slotType, _bloom, _co);
+                    if (q) globalExcluded.add(q.id); // Prevent this question from appearing in NEXT sets
                     return q ? [q] : [];
                 } else {
                     const split = (mManual as number[]) || [Number((mTotal / 2).toFixed(1)), Number((mTotal / 2).toFixed(1))];
                     const picked: any[] = [];
                     split.forEach((m, idx) => {
-                        const q = localPickOne(m, uId, exclude);
-                        if (q) picked.push({ ...q, sub_label: `(${String.fromCharCode(idx + 97)})` });
+                        const q = localPickOne(m, uId, exclude, _slotType, _bloom, _co);
+                        if (q) {
+                            globalExcluded.add(q.id);
+                            picked.push({ ...q, sub_label: `(${String.fromCharCode(idx + 97)})` });
+                        }
                     });
                     return picked;
                 }
@@ -357,35 +361,27 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 let unitId = slot.unit === 'Auto' ? unit_ids[autoUnitCounter++ % unit_ids.length] : slot.unit;
 
                 if (slot.type === 'SINGLE') {
-                    const questions = localPickQuestionsForChoice(slot.marks, unitId, slot.hasSubQuestions, excludeInSet, slot.hasSubQuestions ? [slot.marks_a, slot.marks_b] : undefined);
+                    const qArr = localPickQuestionsForChoice(slot.marks, unitId, slot.hasSubQuestions, excludeInSet, slot.hasSubQuestions ? [slot.marks_a, slot.marks_b] : undefined, slot.qType, slot.bloom, slot.co_id);
                     setQuestions.push({
                         id: slot.id, type: 'SINGLE', label: slot.label, part: slot.part,
-                        questions: questions.length > 0 ? questions.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found]`, marks: slot.marks, part: slot.part }]
+                        questions: qArr.length > 0 ? qArr.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found]`, marks: slot.marks, part: slot.part }]
                     });
                 } else {
                     const c1 = slot.choices?.[0] || { marks: slot.marks };
                     const c2 = slot.choices?.[1] || { marks: slot.marks };
 
-                    const u1 = c1.unit === 'Auto' ? unitId : c1.unit;
-                    const u2 = c2.unit === 'Auto' ? unitId : c2.unit;
-
-                    const q1 = localPickQuestionsForChoice(c1.marks, u1, c1.hasSubGroups || c1.hasSubQuestions, excludeInSet, (c1.hasSubGroups || c1.hasSubQuestions) ? [c1.marks_a, c1.marks_b] : undefined);
-                    const q2 = localPickQuestionsForChoice(c2.marks, u2, c2.hasSubGroups || c2.hasSubQuestions, excludeInSet, (c2.hasSubGroups || c2.hasSubQuestions) ? [c2.marks_a, c2.marks_b] : undefined);
+                    const qArr1 = localPickQuestionsForChoice(c1.marks, c1.unit === 'Auto' ? unitId : c1.unit, c1.hasSubQuestions, excludeInSet, c1.hasSubQuestions ? [c1.marks_a, c1.marks_b] : undefined, c1.qType || slot.qType, c1.bloom || slot.bloom, c1.co_id || slot.co_id);
+                    const qArr2 = localPickQuestionsForChoice(c2.marks, c2.unit === 'Auto' ? unitId : c2.unit, c2.hasSubQuestions, excludeInSet, c2.hasSubQuestions ? [c2.marks_a, c2.marks_b] : undefined, c2.qType || slot.qType, c2.bloom || slot.bloom, c2.co_id || slot.co_id);
 
                     setQuestions.push({
                         id: slot.id, type: 'OR_GROUP', label: slot.label, part: slot.part,
-                        choice1: { label: c1.label, questions: q1.map(q => ({ ...q, part: slot.part })) },
-                        choice2: { label: c2.label, questions: q2.map(q => ({ ...q, part: slot.part })) }
+                        choices: [
+                            { questions: qArr1.length > 0 ? qArr1.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found]`, marks: c1.marks, part: slot.part }] },
+                            { questions: qArr2.length > 0 ? qArr2.map(q => ({ ...q, part: slot.part })) : [{ text: `[No question found]`, marks: c2.marks, part: slot.part }] }
+                        ]
                     });
                 }
             }
-
-            // Sync global exclusions
-            setQuestions.forEach(slot => {
-                const qs = (slot.type === 'SINGLE' ? (slot.questions || []) : [...(slot.choice1?.questions || []), ...(slot.choice2?.questions || [])]) as any[];
-                qs.forEach((q: any) => { if (q.id) globalExcluded.add(q.id); });
-            });
-
             generatedSets[setName] = { questions: setQuestions };
         }
 
