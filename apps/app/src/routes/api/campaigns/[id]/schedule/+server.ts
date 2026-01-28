@@ -1,7 +1,8 @@
-import { db, getCampaignById, getStudents, createRecipients, getCampaignRecipients, getTemplateById } from '@uniconnect/shared';
-import { addEmailJob } from '$lib/server/queue';
+import { db, getCampaignById, getStudents, createRecipients, getCampaignRecipients, getTemplateById, getMailboxCredentials, decryptString, TemplateRenderer } from '@uniconnect/shared';
 import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
+import { google } from 'googleapis';
+import { env } from '$env/dynamic/private';
 
 export const POST: RequestHandler = async ({ params, locals, request }) => {
     if (!locals.user) throw error(401);
@@ -15,63 +16,176 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
     }
 
     try {
-        // 1. Snapshot recipients
-        const students = await getStudents(campaign.university_id, 10000);
-        if (students.length === 0) {
-            return json({ success: false, message: 'No students found in university to initiate campaign' }, { status: 400 });
+        console.log(`[CAMPAIGN_START] Starting campaign ${campaignId}`);
+
+        // Populate process.env for shared package crypto
+        process.env.ENCRYPTION_KEY_BASE64 = env.ENCRYPTION_KEY_BASE64;
+
+        // 1. Get template
+        const template = await getTemplateById(campaign.template_id);
+        if (!template) {
+            return json({ success: false, message: 'Template not found' }, { status: 400 });
         }
 
-        await createRecipients(campaignId, students, campaign.recipient_email_key);
+        // 2. Get mailbox credentials
+        const mailbox = await getMailboxCredentials(campaign.mailbox_id);
+        if (!mailbox || !mailbox.refresh_token_enc) {
+            return json({ success: false, message: 'Mailbox not authenticated' }, { status: 400 });
+        }
 
-        // 2. Fetch created recipients to get tokens
+        console.log(`[CAMPAIGN_START] Decrypting mailbox credentials...`);
+        const refreshToken = decryptString(mailbox.refresh_token_enc);
+        if (!refreshToken) {
+            return json({ success: false, message: 'Failed to decrypt mailbox credentials' }, { status: 500 });
+        }
+
+        // 3. Setup OAuth2
+        const oauth2Client = new google.auth.OAuth2(
+            env.GOOGLE_CLIENT_ID,
+            env.GOOGLE_CLIENT_SECRET
+        );
+        oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+        console.log(`[CAMPAIGN_START] Getting access token...`);
+        const { token } = await oauth2Client.getAccessToken();
+        if (!token) {
+            return json({ success: false, message: 'Failed to get access token from Google' }, { status: 500 });
+        }
+
+        const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+        // 4. Get all students
+        const students = await getStudents(campaign.university_id, 10000);
+        if (students.length === 0) {
+            return json({ success: false, message: 'No students found in university' }, { status: 400 });
+        }
+
+        console.log(`[CAMPAIGN_START] Found ${students.length} students`);
+
+        // 5. Create recipients if not already created
+        await createRecipients(campaignId, students, campaign.recipient_email_key);
         const recipients = await getCampaignRecipients(campaignId);
 
-        // 3. Check for scheduling
-        const body = await request.json().catch(() => ({}));
-        const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : new Date();
-        const delay = Math.max(0, scheduledAt.getTime() - Date.now());
+        // 6. Update campaign status
+        await db.query(
+            `UPDATE campaigns SET status = 'IN_PROGRESS', started_at = NOW() WHERE id = $1`,
+            [campaignId]
+        );
 
-        // 4. Enqueue Jobs for only NEW (PENDING) recipients
-        let enqueuedCount = 0;
-        for (const r of recipients.filter(rect => rect.status === 'PENDING')) {
-            const student = students.find(s => s.id === r.student_id);
+        // 7. Send emails directly to all PENDING recipients
+        let sentCount = 0;
+        let failedCount = 0;
 
-            if (student) {
-                await addEmailJob({
-                    recipientId: r.id,
-                    campaignId: campaign.id,
-                    email: r.to_email,
-                    trackingToken: r.tracking_token,
-                    templateId: campaign.template_id,
-                    mailboxId: campaign.mailbox_id,
+        for (const recipient of recipients.filter(r => r.status === 'PENDING')) {
+            try {
+                const student = students.find(s => s.id === recipient.student_id);
+                if (!student) continue;
+
+                // Prepare variables
+                const variables = {
+                    studentName: student.name,
+                    STUDENT_NAME: student.name,
+                    studentExternalId: student.external_id,
+                    metadata: student.metadata,
+                    ...(student.metadata || {})
+                };
+
+                // Render template
+                const subject = TemplateRenderer.render(template.subject, variables, {
+                    config: template.config,
+                    noLayout: true
+                }).replace(/<[^>]*>/g, '').trim();
+
+                const htmlBody = TemplateRenderer.render(template.html, variables, {
                     includeAck: campaign.include_ack,
-                    variables: {
-                        studentName: student.name,
-                        studentExternalId: student.external_id,
-                        metadata: student.metadata
-                    }
-                }, delay);
+                    trackingToken: recipient.tracking_token,
+                    baseUrl: env.PUBLIC_BASE_URL,
+                    config: template.config
+                });
 
-                // Mark as QUEUED immediately to avoid double processing
-                await db.query(`UPDATE campaign_recipients SET status = 'QUEUED' WHERE id = $1`, [r.id]);
-                enqueuedCount++;
+                // Send via Gmail API
+                const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+                const messageParts = [
+                    `MIME-Version: 1.0`,
+                    `To: ${recipient.to_email}`,
+                    `From: "NIAT Support" <${mailbox.email}>`,
+                    `Subject: ${utf8Subject}`,
+                    `X-UniConnect-Token: ${recipient.tracking_token}`,
+                    `Content-Type: text/html; charset=utf-8`,
+                    `Content-Transfer-Encoding: base64`,
+                    '',
+                    Buffer.from(htmlBody).toString('base64')
+                ];
+
+                const rawMessage = messageParts.join('\r\n');
+                const encodedMail = Buffer.from(rawMessage).toString('base64')
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+
+                const res = await gmail.users.messages.send({
+                    userId: 'me',
+                    requestBody: { raw: encodedMail }
+                });
+
+                // Update recipient status
+                await db.query(
+                    `UPDATE campaign_recipients 
+                     SET status = 'SENT', sent_at = NOW(), gmail_message_id = $1, updated_at = NOW() 
+                     WHERE id = $2`,
+                    [res.data.id, recipient.id]
+                );
+
+                sentCount++;
+                console.log(`[CAMPAIGN_SEND] ✅ Sent to ${recipient.to_email} (${sentCount}/${recipients.length})`);
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+            } catch (err: any) {
+                console.error(`[CAMPAIGN_SEND] ❌ Failed to send to ${recipient.to_email}:`, err.message);
+
+                // Update recipient as failed
+                await db.query(
+                    `UPDATE campaign_recipients 
+                     SET status = 'FAILED', error_message = $1, updated_at = NOW() 
+                     WHERE id = $2`,
+                    [err.message, recipient.id]
+                );
+
+                failedCount++;
             }
         }
 
-        // Update campaign status to IN_PROGRESS if we just started sending
-        await db.query(`UPDATE campaigns SET status = 'IN_PROGRESS', started_at = NOW() WHERE id = $1 AND (status = 'SCHEDULED' OR status = 'DRAFT' OR status = 'PENDING')`, [campaign.id]);
+        // 8. Update campaign stats
+        await db.query(
+            `UPDATE campaigns 
+             SET sent_count = $1, failed_count = $2, status = 'COMPLETED', completed_at = NOW() 
+             WHERE id = $3`,
+            [sentCount, failedCount, campaignId]
+        );
+
+        console.log(`[CAMPAIGN_COMPLETE] Campaign ${campaignId} finished: ${sentCount} sent, ${failedCount} failed`);
 
         return json({
             success: true,
-            message: `Successfully enqueued ${enqueuedCount} emails`,
-            count: recipients.length,
-            scheduledAt: scheduledAt.toISOString()
+            message: `Campaign completed! Sent: ${sentCount}, Failed: ${failedCount}`,
+            sent: sentCount,
+            failed: failedCount
         });
+
     } catch (err: any) {
-        console.error(`[SCHEDULE_API_ERROR] Failed for campaign ${campaignId}:`, err);
+        console.error(`[CAMPAIGN_ERROR] Failed for campaign ${campaignId}:`, err);
+
+        // Mark campaign as failed
+        await db.query(
+            `UPDATE campaigns SET status = 'FAILED' WHERE id = $1`,
+            [campaignId]
+        ).catch(console.error);
+
         return json({
             success: false,
-            message: err.message || 'Internal server error while scheduling'
+            message: err.message || 'Internal server error while starting campaign'
         }, { status: 500 });
     }
-}
+};
