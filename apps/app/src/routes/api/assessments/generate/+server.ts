@@ -89,9 +89,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const realCountB = isChaitanya ? 2 : (is100 ? 5 : 8);
             for (let i = 0; i < realCountB; i++) {
                 const marksB = isChaitanya ? 4 : (is100 ? 16 : 5);
+                const startNum = countA + 1 + i * 2;
                 slotsToProcess.push({
                     id: crypto.randomUUID(),
-                    label: `${countA + 1 + i * 2}`,
+                    label: `${startNum}`,
+                    displayLabel: `${startNum} OR ${startNum + 1}`,
                     marks: marksB,
                     type: 'OR_GROUP',
                     unit: 'Auto',
@@ -99,8 +101,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     qType: 'NORMAL',
                     part: 'B',
                     choices: [
-                        { label: ``, unit: 'Auto', marks: marksB, hasSubQuestions: false, qType: 'NORMAL' },
-                        { label: ``, unit: 'Auto', marks: marksB, hasSubQuestions: false, qType: 'NORMAL' }
+                        { label: `${startNum}`, unit: 'Auto', marks: marksB, hasSubQuestions: false, qType: 'NORMAL' },
+                        { label: `${startNum + 1}`, unit: 'Auto', marks: marksB, hasSubQuestions: false, qType: 'NORMAL' }
                     ]
                 });
             }

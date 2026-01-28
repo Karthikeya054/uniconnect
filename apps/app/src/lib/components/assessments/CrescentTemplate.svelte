@@ -148,12 +148,8 @@
             
             <!-- Header -->
             <div class="header-container flex flex-col items-center mb-1 pt-1 relative">
-                 <div class="absolute top-0 left-0 text-[10pt] font-black border border-black px-2 py-0.5">SET - {activeSet}</div>
-                  <div class="mb-1">
-                      <img src="/crescent-logo.png" alt="University Logo" class="h-20 mb-1" />
-                  </div>
-                <div class="text-[10pt] font-extrabold uppercase tracking-[0.2em] text-blue-900 leading-tight mt-1">
-                    <AssessmentEditable value={paperMeta.exam_title} onUpdate={(v: string) => updateText(v, 'META', 'exam_title')} />
+                <div class="mb-4">
+                    <img src="/crescent-logo.png" alt="University Logo" class="h-20 mb-1" />
                 </div>
                   <div class="absolute top-0 right-0 flex flex-col items-end gap-1">
                     <div class="flex items-center gap-2">
@@ -171,7 +167,8 @@
             </div>
 
             <!-- Title -->
-            <div class="text-center my-6 font-bold uppercase text-[11pt]">
+            <div class="text-center my-6 font-bold uppercase text-[11pt] relative">
+                <div class="absolute -top-12 left-0 text-[10pt] font-black border border-black px-2 py-0.5">SET - {activeSet}</div>
                 <AssessmentEditable value={paperMeta.exam_title} onUpdate={(v: string) => updateText(v, 'META', 'exam_title')} class="w-full text-center" />
             </div>
 
@@ -272,10 +269,8 @@
                 <span class="font-normal text-[8.5pt]">({questionsB.length} X {questionsB[0]?.marks || paperStructure.find((s: any)=>s.part==='B')?.marks_per_q || 5} = {totalMarksB} MARKS)</span>
             </div>
             <div class="border-x border-black" use:dndzone={{ items: questionsB, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', (e.detail as any).items)} onfinalize={(e) => handleDndSync('B', (e.detail as any).items)}>
-                {#each questionsB as slot, i (slot.id)}
-                    {@const currentNum = questionsA.length + (i * 2) + 1}
                     <div class="border-b border-black">
-                        <div class="flex group relative">
+                        <div class="flex">
                             <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{currentNum}.</div>
                             <div class="flex-1 px-4 py-2 relative">
                                 <AssessmentRowActions {isEditable} onSwap={() => openSwapSidebar(slot, 'B', 'q1')} onDelete={() => removeQuestion(slot)} />
@@ -288,8 +283,8 @@
                                 ( <AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 5)} onUpdate={(v: string) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} class="inline-block" /> )
                             </div>
                         </div>
-                        <div class="text-center font-bold italic py-0.5 bg-gray-50/50 text-[8.5pt] border-y border-black">(OR)</div>
-                        <div class="flex group relative">
+                        <div class="text-center font-bold italic py-0.5 bg-gray-50/50 text-[8.5pt] border-y border-black uppercase">(OR)</div>
+                        <div class="flex">
                             <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{currentNum + 1}.</div>
                             <div class="flex-1 px-4 py-2 relative">
                                 <AssessmentRowActions {isEditable} onSwap={() => openSwapSidebar(slot, 'B', 'q2')} onDelete={() => removeQuestion(slot)} />
@@ -347,24 +342,23 @@
 
     <!-- Swap Sidebar -->
     {#if isSwapSidebarOpen && isEditable}
-         <div class="fixed inset-0 bg-black/20 z-[90] no-print" role="presentation" onclick={() => isSwapSidebarOpen = false}></div>
-         <div transition:slide={{ axis: 'x' }} class="fixed right-0 top-0 bottom-0 w-96 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 shadow-2xl p-6 overflow-y-auto no-print z-[100]">
-            <div class="flex items-center justify-between mb-6 sticky top-0 bg-white dark:bg-slate-900 pb-4 z-10">
-                <h3 class="font-black text-gray-900 dark:text-white uppercase tracking-tight">SWAP QUESTION</h3>
-                <button onclick={() => isSwapSidebarOpen = false} class="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"><svg class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+         <div class="fixed inset-0 bg-black/20 z-[200] no-print" role="none" onclick={() => isSwapSidebarOpen = false}></div>
+         <div transition:slide={{ axis: 'x' }} class="fixed right-0 top-0 bottom-0 w-[500px] bg-white border-l border-gray-200 shadow-2xl p-4 overflow-y-auto no-print z-[210]">
+            <div class="flex items-center justify-between mb-4 border-b pb-4 text-black">
+                <h3 class="font-black text-sm uppercase tracking-widest">SWAP QUESTION ({swapContext.currentMark}M)</h3>
+                <button onclick={() => isSwapSidebarOpen = false} class="p-2 hover:bg-gray-100 rounded-lg text-black"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
-            <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
                 {#each swapContext?.alternates || [] as q}
-                    <button onclick={() => selectAlternate(q)} class="w-full text-left p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[10px] font-black text-indigo-600">{q.marks}M</span>
-                            <span class="text-[9px] font-black text-gray-400 uppercase">{q.type || 'SHORT'}</span>
+                    <button onclick={() => selectAlternate(q)} class="text-left p-3 bg-gray-50 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 rounded-xl transition-all h-24 flex flex-col justify-between overflow-hidden text-black">
+                        <div class="text-[10px] font-bold line-clamp-3">{@html q.question_text || q.text}</div>
+                        <div class="flex items-center justify-between mt-1">
+                            <span class="text-[8px] font-black uppercase text-indigo-600 bg-white px-1 rounded">{q.type}</span>
                         </div>
-                        <div class="text-xs font-medium text-gray-700 dark:text-slate-300 leading-relaxed italic line-clamp-3">{@html q.question_text || q.text}</div>
                     </button>
                 {/each}
                 {#if !swapContext?.alternates?.length}
-                    <div class="text-center py-10"><p class="text-sm text-gray-400 font-bold uppercase tracking-widest">No alternates found</p></div>
+                    <div class="col-span-2 text-center py-20 text-gray-400 text-[10px] font-black uppercase tracking-widest">No Alternates Found</div>
                 {/if}
             </div>
          </div>
