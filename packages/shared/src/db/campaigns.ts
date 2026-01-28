@@ -93,9 +93,9 @@ export async function createRecipients(campaignId: string, students: any[], reci
 
         for (const s of students) {
             const token = crypto.randomBytes(16).toString('hex');
-            let toEmail = s.email;
+            let toEmail = s.email || 'invalid-email';
             let status = 'PENDING';
-            let errorMessage = null;
+            let errorMessage: string | null = null;
 
             // If recipientEmailKey is provided, we MUST use it. 
             if (recipientEmailKey) {
@@ -103,7 +103,7 @@ export async function createRecipients(campaignId: string, students: any[], reci
                 if (!customEmail || typeof customEmail !== 'string' || !customEmail.trim().includes('@')) {
                     status = 'FAILED';
                     errorMessage = `Missing or invalid email in column: ${recipientEmailKey}`;
-                    toEmail = 'invalid-email'; // Placeholder for DB constraint
+                    toEmail = 'invalid-email';
                 } else {
                     toEmail = customEmail.trim();
                 }
@@ -115,12 +115,17 @@ export async function createRecipients(campaignId: string, students: any[], reci
                 toEmail = 'invalid-email';
             }
 
-            await client.query(
-                `INSERT INTO campaign_recipients (campaign_id, student_id, to_email, tracking_token, status, error_message)
-                 VALUES ($1, $2, $3, $4, $5, $6)
-                 ON CONFLICT (campaign_id, student_id) DO NOTHING`,
-                [campaignId, s.id, toEmail.toLowerCase(), token, status, errorMessage]
-            );
+            try {
+                await client.query(
+                    `INSERT INTO campaign_recipients (campaign_id, student_id, to_email, tracking_token, status, error_message)
+                     VALUES ($1, $2, $3, $4, $5, $6)
+                     ON CONFLICT (campaign_id, student_id) DO NOTHING`,
+                    [campaignId, s.id, toEmail.toLowerCase().trim(), token, status, errorMessage]
+                );
+            } catch (err: any) {
+                console.error(`[DB_ERROR] Failed to insert recipient for campaign ${campaignId}, student ${s.id}:`, err);
+                // Continue with other recipients instead of crashing the whole transaction if one row is bad
+            }
         }
 
         // Recalculate total_recipients and failed_count for accuracy
