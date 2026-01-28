@@ -269,6 +269,7 @@
                                 {/each}
                             {/key}
                         </div>
+                    {/each}
                 </div>
 
                 <div class="mt-4 border-t border-black/10 pt-1 text-[8pt] text-center opacity-50 no-print">
