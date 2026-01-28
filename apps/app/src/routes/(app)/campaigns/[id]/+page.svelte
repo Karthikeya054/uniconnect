@@ -41,7 +41,8 @@
               body: JSON.stringify({ testEmail })
           });
           if (res.ok) {
-              alert('Test email sent! Please check your inbox (and spam).');
+              const result = await res.json();
+              alert(`Test email enqueued! (Job ID: ${result.jobId || 'OK'})\nSending to: ${testEmail}\n\nPlease check your inbox and SPAM folder in 1-2 minutes.`);
           } else {
               const err = await res.json();
               alert(err.message || 'Failed to send test email');
@@ -298,7 +299,7 @@
     {#if data.campaign.status === 'DRAFT'}
         <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 shadow-sm">
             <h2 class="text-xl font-bold mb-2" style="color: #312e81 !important">Production Readiness Check 🧪</h2>
-            <p class="text-sm text-indigo-700 mb-5 font-medium">
+            <p class="text-sm mb-5 font-bold" style="color: #312e81 !important">
                 Verify your layout, NIAT branding, and dynamic placeholders using real student data before the official launch.
             </p>
             <div class="flex items-center space-x-3">
@@ -324,7 +325,7 @@
             <div class="flex justify-between items-end">
                 <div>
                     <h3 class="text-sm font-black uppercase tracking-widest" style="color: #6b7280 !important">Global Sending Progress</h3>
-                    <div class="text-2xl font-black mt-1" style="color: #111827 !important">{progress}% <span class="text-sm font-bold text-gray-400">({(data.campaign.sent_count || 0) + (data.campaign.failed_count || 0)} / {data.campaign.total_recipients})</span></div>
+                    <div class="text-2xl font-black mt-1" style="color: #111827 !important">{progress}% <span class="text-sm font-bold" style="color: #9ca3af !important">({(data.campaign.sent_count || 0) + (data.campaign.failed_count || 0)} / {data.campaign.total_recipients})</span></div>
                 </div>
                 <div class="text-xs font-bold text-indigo-600 animate-pulse">
                     {#if progress >= 100 && data.campaign.status === 'IN_PROGRESS'}
@@ -390,7 +391,7 @@
                         <button 
                             onclick={() => statusFilter = filter as any}
                             class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
-                            {statusFilter === filter ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white text-gray-400 border border-gray-100 hover:border-indigo-200'}"
+                            {statusFilter === filter ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white text-gray-700 border border-gray-100 hover:border-indigo-200 font-bold'}"
                         >
                             {filter}
                         </button>

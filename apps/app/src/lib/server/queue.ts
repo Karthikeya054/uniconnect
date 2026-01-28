@@ -38,6 +38,7 @@ export async function addEmailJob(data: {
             removeOnFail: 1000
         });
         console.log(`[QUEUE] Successfully added job ${job.id} for ${data.email}`);
+        return job.id;
     } catch (err) {
         console.error(`[QUEUE] Failed to add job for ${data.email}:`, err);
         throw err;

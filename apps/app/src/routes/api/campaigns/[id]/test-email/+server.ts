@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
     // 2. Enqueue a single test job
     const trackingToken = 'test_' + crypto.randomBytes(8).toString('hex');
 
-    await addEmailJob({
+    const jobId = await addEmailJob({
         recipientId: 'test_recipient',
         campaignId: campaign.id,
         email: testEmail,
@@ -45,5 +45,5 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
         }
     });
 
-    return json({ success: true, message: `Test email enqueued to ${testEmail}` });
+    return json({ success: true, message: `Test email enqueued to ${testEmail}`, jobId });
 };
