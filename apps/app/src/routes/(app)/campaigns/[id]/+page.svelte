@@ -277,10 +277,9 @@
                     </button>
                 {:else}
                     <div class="flex items-center space-x-2">
-                        <input 
                             type="datetime-local" 
                             bind:value={scheduledAt}
-                            class="block w-48 pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+                            class="block w-48 pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md text-gray-900 bg-white"
                         />
                         <button 
                             onclick={scheduleCampaign}
@@ -303,11 +302,10 @@
                 Verify your layout, NIAT branding, and dynamic placeholders using real student data before the official launch.
             </p>
             <div class="flex items-center space-x-3">
-                <input 
                     type="email" 
                     bind:value={testEmail}
                     placeholder="Enter your email address"
-                    class="block w-72 px-4 py-2.5 text-sm border-indigo-200 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 rounded-xl outline-none transition-all"
+                    class="block w-72 px-4 py-2.5 text-sm border-indigo-200 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 rounded-xl outline-none transition-all text-gray-900 font-bold"
                 />
                 <button 
                     onclick={sendTestEmail}
@@ -484,15 +482,15 @@
         <div class="space-y-4">
             <div>
                 <label for="edit-name" class="block text-sm font-medium text-gray-700">Student Name</label>
-                <input id="edit-name" type="text" bind:value={editingRecipient.student_name} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                <input id="edit-name" type="text" bind:value={editingRecipient.student_name} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm text-gray-900 font-medium px-3 py-2">
             </div>
             <div>
                 <label for="edit-email" class="block text-sm font-medium text-gray-700">Email Address</label>
-                <input id="edit-email" type="email" bind:value={editingRecipient.to_email} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                <input id="edit-email" type="email" bind:value={editingRecipient.to_email} class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm text-gray-900 font-medium px-3 py-2">
             </div>
             <div>
                 <label for="edit-meta" class="block text-sm font-medium text-gray-700">Metadata (JSON)</label>
-                <textarea id="edit-meta" bind:value={editingRecipient.metadata_str} rows="10" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm font-mono text-xs"></textarea>
+                <textarea id="edit-meta" bind:value={editingRecipient.metadata_str} rows="10" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm font-mono text-xs text-gray-900 px-3 py-2"></textarea>
                 <p class="mt-1 text-xs dark:text-slate-400 italic">This will update the student's record and all future mails sent to them.</p>
             </div>
         </div>
