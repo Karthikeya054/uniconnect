@@ -115,8 +115,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             }
         }
 
-        // 2a. Shuffle pool for variety
-        const shuffledPool = allQuestions.sort(() => Math.random() - 0.5);
+        // 2a. Shuffle pool for extreme variety
+        const globalShuffledPool = allQuestions.sort(() => Math.random() - 0.5);
 
         const sets = ['A', 'B', 'C', 'D'];
         const generatedSets: Record<string, any> = {};
@@ -128,6 +128,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             const excludeInSet = new Set<string>();
 
             // Randomize unit order for each set to ensure different question distribution
+            // Use a local shuffle of unit_ids to ensure variety even in unit distribution
             const shuffledUnitIds = [...unit_ids].sort(() => Math.random() - 0.5);
             let setUnitCounter = 0;
 
@@ -139,45 +140,46 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
                 const filterPool = (pool: any[], strictMarks: boolean) => {
                     // Stage 1: Prefer questions NOT used in ANY set yet (true variety)
-                    let filtered = pool.filter(q => !excludeInSet.has(q.id) && !globalExcluded.has(q.id));
+                    let candidates = pool.filter(q => !excludeInSet.has(q.id) && !globalExcluded.has(q.id));
 
-                    // Stage 2: If pool is dry, fallback to cross-set reuse (variety is preferred but not at cost of generation)
-                    if (filtered.length === 0) {
-                        filtered = pool.filter(q => !excludeInSet.has(q.id));
+                    // Stage 2: If pool is dry for NEW questions, fallback to cross-set reuse
+                    // but ONLY pick questions NOT used in THIS set (still unique within the set)
+                    if (candidates.length === 0) {
+                        candidates = pool.filter(q => !excludeInSet.has(q.id));
                     }
 
-                    // Shuffle filtered to maintain randomness within the same category
-                    filtered = filtered.sort(() => Math.random() - 0.5);
+                    // Shuffle candidates every time to avoid predictable orderings
+                    candidates = candidates.sort(() => Math.random() - 0.5);
 
                     if (strictMarks) {
-                        const sFiltered = filtered.filter(q => Number(q.marks) === Number(targetMarks));
-                        if (sFiltered.length > 0) filtered = sFiltered;
+                        const sFiltered = candidates.filter(q => Number(q.marks) === Number(targetMarks));
+                        if (sFiltered.length > 0) candidates = sFiltered;
                         else {
                             // Lenient Fallback: Try +/- 1 mark if strict fails
-                            const lFiltered = filtered.filter(q => Math.abs(Number(q.marks) - Number(targetMarks)) <= 1);
-                            if (lFiltered.length > 0) filtered = lFiltered;
+                            const lFiltered = candidates.filter(q => Math.abs(Number(q.marks) - Number(targetMarks)) <= 1);
+                            if (lFiltered.length > 0) candidates = lFiltered;
                         }
                     }
 
                     if (qType && qType !== 'ANY') {
-                        if (qType === 'MIXED') filtered = filtered.filter(q => ['MCQ', 'FILL_IN_BLANK', 'VERY_SHORT', 'SHORT', 'LONG', 'VERY_LONG', 'PARAGRAPH'].includes(q.type || '') || isShortOrMcq(q));
-                        else if (qType === 'MCQ') filtered = filtered.filter(q => q.type === 'MCQ' || isShortOrMcq(q));
-                        else if (qType === 'NORMAL' && targetMarks < 5) filtered = filtered.filter(q => !['MCQ', 'FILL_IN_BLANK'].includes(q.type || '') && !isShortOrMcq(q));
-                        else filtered = filtered.filter(q => q.type === qType);
+                        if (qType === 'MIXED') candidates = candidates.filter(q => ['MCQ', 'FILL_IN_BLANK', 'VERY_SHORT', 'SHORT', 'LONG', 'VERY_LONG', 'PARAGRAPH'].includes(q.type || '') || isShortOrMcq(q));
+                        else if (qType === 'MCQ') candidates = candidates.filter(q => q.type === 'MCQ' || isShortOrMcq(q));
+                        else if (qType === 'NORMAL' && targetMarks < 5) candidates = candidates.filter(q => !['MCQ', 'FILL_IN_BLANK'].includes(q.type || '') && !isShortOrMcq(q));
+                        else candidates = candidates.filter(q => q.type === qType);
                     }
 
-                    // Bloom Filter (Difficulty) - CRITICAL: Prioritize this
-                    if (bloomArr && bloomArr.length > 0 && !bloomArr.includes('ANY') && filtered.length > 0) {
-                        const bFiltered = filtered.filter(q => bloomArr.includes(q.bloom_level));
-                        if (bFiltered.length > 0) filtered = bFiltered;
+                    // Bloom Filter (Difficulty)
+                    if (bloomArr && bloomArr.length > 0 && !bloomArr.includes('ANY') && candidates.length > 0) {
+                        const bFiltered = candidates.filter(q => bloomArr.includes(q.bloom_level));
+                        if (bFiltered.length > 0) candidates = bFiltered;
                     }
 
-                    if (co_id && filtered.length > 0) {
-                        const cFiltered = filtered.filter(q => q.co_id === co_id);
-                        if (cFiltered.length > 0) filtered = cFiltered;
+                    if (co_id && candidates.length > 0) {
+                        const cFiltered = candidates.filter(q => q.co_id === co_id);
+                        if (cFiltered.length > 0) candidates = cFiltered;
                     }
 
-                    return filtered;
+                    return candidates;
                 };
 
                 const finalize = (cand: any[]) => {
@@ -191,21 +193,24 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     };
                 };
 
+                // Use the global shuffled pool as the base for all selection
+                const poolBase = globalShuffledPool;
+
                 // Fallback Chain
                 // 1. Strict Unit + Strict Marks
-                let p = filterPool(allQuestions.filter(q => q.unit_id === unitId), true);
+                let p = filterPool(poolBase.filter(q => q.unit_id === unitId), true);
                 if (p.length > 0) return finalize(p);
 
                 // 2. Strict Unit + Any Marks
-                p = filterPool(allQuestions.filter(q => q.unit_id === unitId), false);
+                p = filterPool(poolBase.filter(q => q.unit_id === unitId), false);
                 if (p.length > 0) return finalize(p);
 
                 // 3. Any Unit + Strict Marks
-                p = filterPool(allQuestions, true);
+                p = filterPool(poolBase, true);
                 if (p.length > 0) return finalize(p);
 
                 // 4. Ultimate Fallback (Anything available)
-                p = filterPool(allQuestions, false);
+                p = filterPool(poolBase, false);
                 if (p.length > 0) return finalize(p);
 
                 return null;

@@ -101,9 +101,9 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 -mt-24 md:-mt-32 relative z-10">
         <!-- Sidebar Profile Card -->
         <div class="lg:col-span-4 space-y-6">
-            <div class="bg-white rounded-[32px] p-8 shadow-floating border border-gray-100 flex flex-col items-center text-center space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-[32px] p-8 shadow-floating border border-gray-100 dark:border-slate-800 flex flex-col items-center text-center space-y-6">
                 <div class="relative inline-block group">
-                    <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-indigo-50 flex items-center justify-center text-4xl font-black text-indigo-700 mx-auto transition-transform group-hover:scale-[1.02]">
+                    <div class="w-32 h-32 rounded-full border-4 border-white dark:border-slate-800 shadow-lg overflow-hidden bg-indigo-50 dark:bg-slate-800 flex items-center justify-center text-4xl font-black text-indigo-700 mx-auto transition-transform group-hover:scale-[1.02]">
                         {#if user?.profile_picture_url}
                             <img src={user.profile_picture_url} alt={user.name} class="w-full h-full object-cover">
                         {:else}
@@ -126,19 +126,19 @@
                     <p class="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">{user?.role?.replace('_', ' ') || 'Team Member'}</p>
                 </div>
 
-                <div class="flex items-center justify-center gap-4 py-4 border-y border-gray-50">
+                <div class="flex items-center justify-center gap-4 py-4 border-y border-gray-50 dark:border-slate-800">
                     <div class="text-center">
-                        <div class="text-lg font-black dark:text-white">{stats.tasks.total}</div>
+                        <div class="text-lg font-black text-gray-900 dark:text-white">{stats.tasks.total}</div>
                         <div class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Tasks</div>
                     </div>
-                    <div class="w-px h-8 bg-gray-100"></div>
+                    <div class="w-px h-8 bg-gray-100 dark:bg-slate-800"></div>
                     <div class="text-center">
-                        <div class="text-lg font-black dark:text-white">{stats.mails.total}</div>
+                        <div class="text-lg font-black text-gray-900 dark:text-white">{stats.mails.total}</div>
                         <div class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Mails</div>
                     </div>
-                    <div class="w-px h-8 bg-gray-100"></div>
+                    <div class="w-px h-8 bg-gray-100 dark:bg-slate-800"></div>
                     <div class="text-center">
-                        <div class="text-lg font-black dark:text-white">{stats.efficiency}%</div>
+                        <div class="text-lg font-black text-gray-900 dark:text-white">{stats.efficiency}%</div>
                         <div class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Efficiency</div>
                     </div>
                 </div>
@@ -178,11 +178,11 @@
         <!-- Main Content (Forms/Timeline) -->
         <div class="lg:col-span-8 space-y-8 pb-12">
             <!-- Profile Information -->
-            <div class="bg-white rounded-[32px] border border-gray-100 shadow-floating overflow-hidden">
-                <div class="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+            <div class="bg-white dark:bg-slate-900 rounded-[32px] border border-gray-100 dark:border-slate-800 shadow-floating overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50 dark:border-slate-800 flex items-center justify-center bg-gray-50/30 dark:bg-slate-800/30">
                     <div>
-                        <h3 class="text-lg font-black dark:text-white">Account Details</h3>
-                        <p class="text-xs font-bold text-gray-400">Personalize your professional identity</p>
+                        <h3 class="text-lg font-black text-gray-900 dark:text-white">Account Details</h3>
+                        <p class="text-xs font-bold text-gray-400 dark:text-slate-500">Personalize your professional identity</p>
                     </div>
                     <button 
                         onclick={() => isEditing = !isEditing}
@@ -204,20 +204,20 @@
 
                     <div class="grid grid-cols-2 gap-6">
                         <div class="col-span-2 sm:col-span-1">
-                            <label for="p-name" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
-                            <input id="p-name" type="text" bind:value={form.display_name} readonly={!isEditing} class="w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-4 text-sm font-black outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 focus:bg-white transition-all read-only:opacity-60">
+                            <label for="p-name" class="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                            <input id="p-name" type="text" bind:value={form.display_name} readonly={!isEditing} class="w-full bg-gray-50 dark:bg-slate-800 border border-transparent dark:text-white rounded-2xl px-5 py-4 text-sm font-black outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-700 transition-all read-only:opacity-60">
                         </div>
                         <div class="col-span-2 sm:col-span-1">
-                            <label for="p-age" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Age</label>
-                            <input id="p-age" type="number" bind:value={form.age} readonly={!isEditing} class="w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-4 text-sm font-black outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 focus:bg-white transition-all read-only:opacity-60">
+                            <label for="p-age" class="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Age</label>
+                            <input id="p-age" type="number" bind:value={form.age} readonly={!isEditing} class="w-full bg-gray-50 dark:bg-slate-800 border border-transparent dark:text-white rounded-2xl px-5 py-4 text-sm font-black outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-700 transition-all read-only:opacity-60">
                         </div>
                         <div class="col-span-2">
-                            <label for="p-phone" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">WhatsApp / Phone</label>
-                            <input id="p-phone" type="text" bind:value={form.phone} readonly={!isEditing} class="w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-4 text-sm font-black outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 focus:bg-white transition-all read-only:opacity-60">
+                            <label for="p-phone" class="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">WhatsApp / Phone</label>
+                            <input id="p-phone" type="text" bind:value={form.phone} readonly={!isEditing} class="w-full bg-gray-50 dark:bg-slate-800 border border-transparent dark:text-white rounded-2xl px-5 py-4 text-sm font-black outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-700 transition-all read-only:opacity-60">
                         </div>
                         <div class="col-span-2">
-                            <label for="p-bio" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Public Bio</label>
-                            <textarea id="p-bio" bind:value={form.bio} readonly={!isEditing} rows="3" class="w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 focus:bg-white transition-all read-only:opacity-60" placeholder="Tell the team about your role..."></textarea>
+                            <label for="p-bio" class="block text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Public Bio</label>
+                            <textarea id="p-bio" bind:value={form.bio} readonly={!isEditing} rows="3" class="w-full bg-gray-50 dark:bg-slate-800 border border-transparent dark:text-white rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-700 transition-all read-only:opacity-60" placeholder="Tell the team about your role..."></textarea>
                         </div>
                         
                         {#if isEditing}
@@ -232,22 +232,22 @@
             </div>
 
             <!-- Activity Timeline -->
-            <div class="bg-white rounded-[32px] border border-gray-100 shadow-floating p-8">
-                <h3 class="text-lg font-black dark:text-white mb-6">Live Activity Audit</h3>
+            <div class="bg-white dark:bg-slate-900 rounded-[32px] border border-gray-100 dark:border-slate-800 shadow-floating p-8">
+                <h3 class="text-lg font-black text-gray-900 dark:text-white mb-6">Live Activity Audit</h3>
                 {#if auditLogs.length > 0}
                     <div class="space-y-6">
                         {#each auditLogs as log}
                             <div class="flex gap-4 group">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-10 h-10 rounded-xl dark:bg-slate-950 border border-gray-100 flex items-center justify-center text-lg shadow-sm group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
+                                    <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-950 border border-gray-100 dark:border-slate-800 flex items-center justify-center text-lg shadow-sm group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/20 group-hover:border-indigo-100 transition-colors">
                                         {#if log.action.includes('CREATE')} 📝 {:else if log.action.includes('SEND')} 📤 {:else if log.action.includes('DELETE')} 🗑️ {:else} ⚡ {/if}
                                     </div>
-                                    <div class="w-px flex-1 bg-gray-100 my-2 group-last:hidden"></div>
+                                    <div class="w-px flex-1 bg-gray-100 dark:bg-slate-800 my-2 group-last:hidden"></div>
                                 </div>
                                 <div class="pb-6">
-                                    <div class="text-sm font-black dark:text-white">{log.action.replace('_', ' ')}</div>
-                                    <p class="text-xs font-bold dark:text-slate-400 mt-0.5">{log.entity_type}: {log.entity_id || 'System Event'}</p>
-                                    <span class="text-[10px] font-black text-gray-300 uppercase mt-2 block tracking-widest">{formatTime(log.created_at)}</span>
+                                    <div class="text-sm font-black text-gray-900 dark:text-white">{log.action.replace('_', ' ')}</div>
+                                    <p class="text-xs font-bold text-gray-500 dark:text-slate-400 mt-0.5">{log.entity_type}: {log.entity_id || 'System Event'}</p>
+                                    <span class="text-[10px] font-black text-gray-300 dark:text-slate-600 uppercase mt-2 block tracking-widest">{formatTime(log.created_at)}</span>
                                 </div>
                             </div>
                         {/each}
@@ -261,18 +261,18 @@
 </div>
 
 {#if showPerformanceModal}
-    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" in:fade>
-        <div class="bg-white rounded-[40px] w-full max-w-2xl overflow-hidden shadow-2xl" in:fly={{ y: 50 }}>
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm" in:fade>
+        <div class="bg-white dark:bg-slate-900 rounded-[40px] w-full max-w-2xl overflow-hidden shadow-2xl" in:fly={{ y: 50 }}>
             <div class="p-10 space-y-8">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-3xl font-black dark:text-white">Performance Report</h2>
-                        <p class="text-sm font-bold text-gray-400 mt-1">Institutional productivity metrics for {user.name}</p>
+                        <h2 class="text-3xl font-black text-gray-900 dark:text-white">Performance Report</h2>
+                        <p class="text-sm font-bold text-gray-400 dark:text-slate-500 mt-1">Institutional productivity metrics for {user.name}</p>
                     </div>
                     <button 
                         onclick={() => showPerformanceModal = false} 
                         aria-label="Close performance report"
-                        class="p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 dark:bg-slate-900 transition-colors"
+                        class="p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                     >
                         <svg class="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
@@ -292,13 +292,13 @@
                 </div>
 
                 <div class="space-y-4">
-                    <h4 class="text-sm font-black dark:text-white uppercase tracking-widest pl-1">Operational Efficiency</h4>
-                    <div class="p-6 bg-gray-50 rounded-3xl border border-gray-100 relative overflow-hidden">
+                    <h4 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest pl-1">Operational Efficiency</h4>
+                    <div class="p-6 bg-gray-50 dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 relative overflow-hidden">
                         <div class="relative z-10 flex items-center justify-between mb-4">
-                            <span class="text-2xl font-black dark:text-white">{stats.efficiency}%</span>
-                            <span class="text-xs font-bold text-gray-400">Target Range: 90-100%</span>
+                            <span class="text-2xl font-black text-gray-900 dark:text-white">{stats.efficiency}%</span>
+                            <span class="text-xs font-bold text-gray-400 dark:text-slate-500">Target Range: 90-100%</span>
                         </div>
-                        <div class="h-3 bg-gray-200 rounded-full overflow-hidden relative">
+                        <div class="h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden relative">
                              <div class="h-full bg-gradient-to-r from-indigo-500 to-blue-500" style="width: {stats.efficiency}%"></div>
                         </div>
                     </div>

@@ -48,8 +48,8 @@
 
 <div 
     use:editable
-    class="outline-none focus:bg-indigo-50/10 min-w-[20px] transition-colors rounded {className} {isEditable ? 'cursor-text hover:bg-slate-50' : 'pointer-events-none'}"
-    style="white-space: pre-wrap; font-family: {value?.includes('      ') || value?.includes('    ') || value?.includes('\t') || value?.includes('[COL]') ? 'monospace' : 'inherit'};"
+    class="outline-none focus:bg-indigo-50/10 dark:focus:bg-indigo-900/20 min-w-[20px] transition-colors rounded {className} {isEditable ? 'cursor-text hover:bg-slate-50 dark:hover:bg-slate-800' : 'pointer-events-none'}"
+    style="white-space: pre-wrap; color: inherit; font-family: {value?.includes('      ') || value?.includes('    ') || value?.includes('\t') || value?.includes('[COL]') ? 'monospace' : 'inherit'};"
     role="textbox"
     aria-multiline={multiline}
     tabindex="0"
