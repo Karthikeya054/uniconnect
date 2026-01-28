@@ -22,7 +22,7 @@
 </script>
 
 <div class="flex border-b border-black {className}">
-    <div class="w-10 border-r border-black flex items-center justify-center font-bold {textClass} tabular-nums" style="width: {snoWidth}px">
+    <div class="w-10 border-r border-black flex items-center justify-center font-bold {textClass} tabular-nums no-print-border" style="width: {snoWidth}px">
         {qNumber}.
     </div>
     <div class="flex-1 px-4 py-2 {textClass} relative group whitespace-pre-wrap">

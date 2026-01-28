@@ -20,6 +20,7 @@
 
     let isSwapSidebarOpen = $state(false);
     let swapContext = $state<any>(null);
+    let swapCounter = $state(0);
     const isEditable = $derived(mode === 'edit' || mode === 'preview');
 
     function handleDndSync(part: string, items: any[]) {
@@ -132,6 +133,7 @@
             currentSetData = Array.isArray(currentSetData) ? [...nArr] : { ...currentSetData, questions: [...nArr] };
         }
         
+        swapCounter++;
         isSwapSidebarOpen = false;
     }
 
@@ -258,28 +260,30 @@
                     ( <AssessmentEditable value={paperMeta.partA_marks_label || `${questionsA.length} X ${questionsA[0]?.marks || paperStructure.find((s: any)=>s.part==='A')?.marks_per_q || 2} = ${totalMarksA}`} onUpdate={(v: string) => updateText(v, 'META', 'partA_marks_label')} class="inline-block" /> MARKS )
                 </span>
             </div>
-            <div class="border-x border-t border-black" use:dndzone={{ items: questionsA, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', (e.detail as any).items)} onfinalize={(e) => handleDndSync('A', (e.detail as any).items)}>
-                {#each questionsA as slot, i (String(slot.questions?.[0]?.id || slot.id) + activeSet)}
-                    <AssessmentSlotSingle {slot} qNumber={i + 1} {isEditable} snoWidth={40} 
-                        onUpdateText={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', slot.id, qid)} 
-                        onSwap={() => openSwapSidebar(slot, 'A')}
-                        onRemove={() => removeQuestion(slot)}
-                        textClass="text-[9pt]"
-                        marksClass="py-2"
-                    />
-                {:else}
-                    {#if mode === 'preview'}
-                        {@const secA = paperStructure.find((s: any) => s.part === 'A')}
-                        {#if secA}
-                            {#each secA.slots as slot}
-                                <div class="border-b border-black min-h-[30px] flex opacity-40 bg-gray-50/20 italic font-bold">
-                                    <div class="px-2 border-r border-black w-10 flex items-center justify-center text-[9pt]">{slot.label}.</div>
-                                    <div class="flex-1 px-4 flex items-center text-[9pt]">[ {slot.qType || 'ANY'} ] Question - {slot.marks} Marks</div>
-                                </div>
-                            {/each}
+            <div class="border-x border-t border-black">
+                {#key activeSet + swapCounter}
+                    {#each questionsA as slot, i (String(slot.questions?.[0]?.id || slot.id) + activeSet)}
+                        <AssessmentSlotSingle {slot} qNumber={i + 1} {isEditable} snoWidth={40} 
+                            onUpdateText={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', slot.id, qid)} 
+                            onSwap={() => openSwapSidebar(slot, 'A')}
+                            onRemove={() => removeQuestion(slot)}
+                            textClass="text-[9pt]"
+                            marksClass="py-2"
+                        />
+                    {:else}
+                        {#if mode === 'preview'}
+                            {@const secA = paperStructure.find((s: any) => s.part === 'A')}
+                            {#if secA}
+                                {#each secA.slots as slot}
+                                    <div class="border-b border-black min-h-[30px] flex opacity-40 bg-gray-50/20 italic font-bold">
+                                        <div class="px-2 border-r border-black w-10 flex items-center justify-center text-[9pt]">{slot.label}.</div>
+                                        <div class="flex-1 px-4 flex items-center text-[9pt]">[ {slot.qType || 'ANY'} ] Question - {slot.marks} Marks</div>
+                                    </div>
+                                {/each}
+                            {/if}
                         {/if}
-                    {/if}
-                {/each}
+                    {/each}
+                {/key}
             </div>
 
             <!-- PART B -->
@@ -289,58 +293,60 @@
                     ( <AssessmentEditable value={paperMeta.partB_marks_label || `${questionsB.length} X ${questionsB[0]?.marks || paperStructure.find((s: any)=>s.part==='B')?.marks_per_q || 5} = ${totalMarksB}`} onUpdate={(v: string) => updateText(v, 'META', 'partB_marks_label')} class="inline-block" /> MARKS )
                 </span>
             </div>
-            <div class="border-x border-black" use:dndzone={{ items: questionsB, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('B', (e.detail as any).items)} onfinalize={(e) => handleDndSync('B', (e.detail as any).items)}>
-                {#each questionsB as slot, i (slot.id + activeSet)}
-                    {@const currentNum = questionsA.length + (i * 2) + 1}
-                    <div class="border-b border-black">
-                        <div class="flex">
-                            <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{currentNum}.</div>
-                            <div class="flex-1 px-4 py-2 relative group">
-                                <AssessmentRowActions {isEditable} onSwap={() => openSwapSidebar(slot, 'B', 'q1')} onDelete={() => removeQuestion(slot)} />
-                                {#if slot.choice1?.questions?.[0]}
-                                    <AssessmentEditable value={slot.choice1.questions[0].text} onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, slot.choice1.questions[0].id)} multiline={true} class="text-[9pt]" />
-                                    <AssessmentMcqOptions options={slot.choice1.questions[0].options} />
-                                {/if}
+            <div class="border-x border-black">
+                {#key activeSet + swapCounter}
+                    {#each questionsB as slot, i (slot.id + activeSet)}
+                        {@const currentNum = questionsA.length + (i * 2) + 1}
+                        <div class="border-b border-black">
+                            <div class="flex">
+                                <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{currentNum}.</div>
+                                <div class="flex-1 px-4 py-2 relative group">
+                                    <AssessmentRowActions {isEditable} onSwap={() => openSwapSidebar(slot, 'B', 'q1')} onDelete={() => removeQuestion(slot)} />
+                                    {#if slot.choice1?.questions?.[0]}
+                                        <AssessmentEditable value={slot.choice1.questions[0].text} onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, slot.choice1.questions[0].id)} multiline={true} class="text-[9pt]" />
+                                        <AssessmentMcqOptions options={slot.choice1.questions[0].options} />
+                                    {/if}
+                                </div>
+                                <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt]">
+                                    ( <AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 5)} onUpdate={(v: string) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} class="inline-block" /> )
+                                </div>
                             </div>
-                            <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt]">
-                                ( <AssessmentEditable value={String(slot.choice1?.questions?.[0]?.marks || slot.marks || 5)} onUpdate={(v: string) => { if(slot.choice1?.questions?.[0]) slot.choice1.questions[0].marks = Number(v); }} class="inline-block" /> )
+                            <div class="text-center font-bold italic py-0.5 bg-gray-50/50 text-[8.5pt] border-y border-black uppercase">(OR)</div>
+                            <div class="flex">
+                                <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{currentNum + 1}.</div>
+                                <div class="flex-1 px-4 py-2 relative group">
+                                    <AssessmentRowActions {isEditable} onSwap={() => openSwapSidebar(slot, 'B', 'q2')} onDelete={() => removeQuestion(slot)} />
+                                    {#if slot.choice2?.questions?.[0]}
+                                        <AssessmentEditable value={slot.choice2.questions[0].text} onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, slot.choice2.questions[0].id)} multiline={true} class="text-[9pt]" />
+                                        <AssessmentMcqOptions options={slot.choice2.questions[0].options} />
+                                    {/if}
+                                </div>
+                                <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt]">
+                                    ( <AssessmentEditable value={String(slot.choice2?.questions?.[0]?.marks || slot.marks || 5)} onUpdate={(v: string) => { if(slot.choice2?.questions?.[0]) slot.choice2.questions[0].marks = Number(v); }} class="inline-block" /> )
+                                </div>
                             </div>
                         </div>
-                        <div class="text-center font-bold italic py-0.5 bg-gray-50/50 text-[8.5pt] border-y border-black uppercase">(OR)</div>
-                        <div class="flex">
-                            <div class="w-10 border-r border-black flex items-center justify-center font-bold text-[9pt]">{currentNum + 1}.</div>
-                            <div class="flex-1 px-4 py-2 relative group">
-                                <AssessmentRowActions {isEditable} onSwap={() => openSwapSidebar(slot, 'B', 'q2')} onDelete={() => removeQuestion(slot)} />
-                                {#if slot.choice2?.questions?.[0]}
-                                    <AssessmentEditable value={slot.choice2.questions[0].text} onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', slot.id, slot.choice2.questions[0].id)} multiline={true} class="text-[9pt]" />
-                                    <AssessmentMcqOptions options={slot.choice2.questions[0].options} />
-                                {/if}
-                            </div>
-                            <div class="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt]">
-                                ( <AssessmentEditable value={String(slot.choice2?.questions?.[0]?.marks || slot.marks || 5)} onUpdate={(v: string) => { if(slot.choice2?.questions?.[0]) slot.choice2.questions[0].marks = Number(v); }} class="inline-block" /> )
-                            </div>
-                        </div>
-                    </div>
-                {:else}
-                    {#if mode === 'preview'}
-                         {@const secB = paperStructure.find((s: any) => s.part === 'B')}
-                         {#if secB}
-                             {#each secB.slots as slot}
-                                 <div class="border-b border-black opacity-40 bg-gray-50/20 font-bold">
-                                     <div class="flex border-b border-black/20 min-h-[40px]">
-                                         <div class="w-10 border-r border-black flex items-center justify-center">1.</div>
-                                         <div class="flex-1 px-4 flex items-center text-[9pt]">[ {slot.qType || 'ANY'} ] Question - {slot.marks} Marks</div>
+                    {:else}
+                        {#if mode === 'preview'}
+                             {@const secB = paperStructure.find((s: any) => s.part === 'B')}
+                             {#if secB}
+                                 {#each secB.slots as slot}
+                                     <div class="border-b border-black opacity-40 bg-gray-50/20 font-bold">
+                                         <div class="flex border-b border-black/20 min-h-[40px]">
+                                             <div class="w-10 border-r border-black flex items-center justify-center">1.</div>
+                                             <div class="flex-1 px-4 flex items-center text-[9pt]">[ {slot.qType || 'ANY'} ] Question - {slot.marks} Marks</div>
+                                         </div>
+                                         <div class="text-center text-[8pt] italic border-b border-black/20 font-bold">(OR)</div>
+                                         <div class="flex min-h-[40px]">
+                                             <div class="w-10 border-r border-black flex items-center justify-center">2.</div>
+                                             <div class="flex-1 px-4 flex items-center text-[9pt]">[ {slot.qType || 'ANY'} ] Question - {slot.marks} Marks</div>
+                                         </div>
                                      </div>
-                                     <div class="text-center text-[8pt] italic border-b border-black/20 font-bold">(OR)</div>
-                                     <div class="flex min-h-[40px]">
-                                         <div class="w-10 border-r border-black flex items-center justify-center">2.</div>
-                                         <div class="flex-1 px-4 flex items-center text-[9pt]">[ {slot.qType || 'ANY'} ] Question - {slot.marks} Marks</div>
-                                     </div>
-                                 </div>
-                             {/each}
-                         {/if}
-                    {/if}
-                {/each}
+                                 {/each}
+                             {/if}
+                        {/if}
+                    {/each}
+                {/key}
             </div>
 
             <!-- PART C -->
@@ -360,7 +366,7 @@
                  <div class="border border-black p-8 flex-1 text-center font-bold text-[9pt]">Name & Signature <br/> of DAAC Member</div>
                  <div class="border border-black p-8 flex-1 text-center font-bold text-[9pt]">Name & Signature <br/> of DAAC Member</div>
             </div>
-            <div class="border-t-2 border-black w-full mt-4 text-[8pt] text-center opacity-50">V2.2.9 - FINAL UI SYNC</div>
+            <div class="border-t-2 border-black w-full mt-4 text-[8pt] text-center opacity-50">V.2.3.0 - FINAL SYNC</div>
         </div>
         <div class="text-center mt-8 text-[10pt] font-bold text-black no-print">***********</div>
     </div>
