@@ -315,6 +315,23 @@
         return deficientMarks;
     });
 
+    let availableBloomLevels = $derived(() => {
+        const levels = new Set<string>();
+        unitsWithTopics.forEach(u => {
+            if (selectedUnitIds.includes(u.id)) {
+                // If question_counts has bloom info, extract it
+                // Assuming the API returns bloom distribution. Let's check.
+                if (u.bloom_counts) {
+                    Object.keys(u.bloom_counts).forEach(l => levels.add(l));
+                } else {
+                    // Fallback: If no bloom counts, assume standard L1-L3 as often available
+                    ['L1', 'L2', 'L3'].forEach(l => levels.add(l));
+                }
+            }
+        });
+        return Array.from(levels).sort();
+    });
+
     async function fetchTopics() {
         if (!selectedSubjectId) return;
         isLoadingTopics = true;
@@ -606,7 +623,7 @@
     });
 
     // Determine the user-facing label for the "Standard" mode
-    let universityLabel = $derived(isChaitanya ? 'Chaitanya (CDU)' : (isCrescent ? 'Crescent (IST)' : 'University Standard'));
+    let universityLabel = $derived(isChaitanya ? 'Chaitanya' : (isCrescent ? 'Crescent' : 'University Standard'));
 
     let previewPaperMeta = $state<any>({ 
         paper_date: '',

@@ -111,6 +111,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             }
         }
 
+        // 2a. Shuffle pool for variety
+        const shuffledPool = allQuestions.sort(() => Math.random() - 0.5);
+
         const sets = ['A', 'B', 'C', 'D'];
         const generatedSets: Record<string, any> = {};
         const globalExcluded = new Set<string>(); // Tracking VARIETY across sets
@@ -128,8 +131,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 };
 
                 const filterPool = (pool: any[], strictMarks: boolean) => {
-                    // Stage 1: Exclude already used in THIS set and already used in PREVIOUS sets
+                    // Variety Logic: Prefer questions NOT used in previous sets (globalExcluded)
+                    // and prioritize variety based on set name (A/B/C/D) via set-specific offset
                     let filtered = pool.filter(q => !excludeInSet.has(q.id) && !globalExcluded.has(q.id));
+
+                    // Shuffle filtered to avoid ordered bias
+                    filtered = filtered.sort(() => Math.random() - 0.5);
 
                     // Stage 2: If pool is dry, fallback to cross-set reuse (variety is preferred but not at cost of generation)
                     if (filtered.length === 0) filtered = pool.filter(q => !excludeInSet.has(q.id));
@@ -169,19 +176,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
                 // Fallback Chain
                 // 1. Strict Unit + Strict Marks
-                let p = filterPool(allQuestions.filter(q => q.unit_id === unitId), true);
+                let p = filterPool(shuffledPool.filter(q => q.unit_id === unitId), true);
                 if (p.length > 0) return finalize(p);
 
                 // 2. Strict Unit + Any Marks
-                p = filterPool(allQuestions.filter(q => q.unit_id === unitId), false);
+                p = filterPool(shuffledPool.filter(q => q.unit_id === unitId), false);
                 if (p.length > 0) return finalize(p);
 
                 // 3. Any Unit + Strict Marks
-                p = filterPool(allQuestions, true);
+                p = filterPool(shuffledPool, true);
                 if (p.length > 0) return finalize(p);
 
                 // 4. Ultimate Fallback (Anything available)
-                p = filterPool(allQuestions, false);
+                p = filterPool(shuffledPool, false);
                 if (p.length > 0) return finalize(p);
 
                 return null;

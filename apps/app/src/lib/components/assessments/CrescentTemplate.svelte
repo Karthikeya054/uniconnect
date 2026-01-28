@@ -149,8 +149,15 @@
             <!-- Header -->
             <div class="header-container flex flex-col items-center mb-1 pt-1 relative">
                  <div class="absolute top-0 left-0 text-[10pt] font-black border border-black px-2 py-0.5">SET - {activeSet}</div>
-                  <div class="mb-1"></div>
-                <h1 class="text-xs font-black uppercase tracking-tighter"><AssessmentEditable value={paperMeta.univ_line_1} onUpdate={(v: string) => updateText(v, 'META', 'univ_line_1')} /></h1>
+                  <div class="mb-1">
+                      <img src="/crescent-logo.png" alt="University Logo" class="h-20 mb-1" />
+                  </div>
+                <h1 class="text-xs font-black uppercase tracking-tighter">
+                    <AssessmentEditable value={paperMeta.univ_line_1 || 'BS ABDUR RAHMAN'} onUpdate={(v: string) => updateText(v, 'META', 'univ_line_1')} />
+                </h1>
+                <div class="text-[10pt] font-bold uppercase tracking-widest text-blue-900 leading-tight">
+                    <AssessmentEditable value={paperMeta.univ_line_1_2 || 'CRESCENT INSTITUTE OF SCIENCE & TECHNOLOGY'} onUpdate={(v: string) => updateText(v, 'META', 'univ_line_1_2')} />
+                </div>
                   <div class="absolute top-0 right-0 flex flex-col items-end gap-1">
                     <div class="flex items-center gap-2">
                         <AssessmentEditable value={paperMeta.course_code} onUpdate={(v: string) => updateText(v, 'META', 'course_code')} class="font-bold px-1 min-w-[70px] text-right text-[10pt]" />
@@ -240,18 +247,12 @@
             </div>
             <div class="border-x border-b border-black" use:dndzone={{ items: questionsA, flipDurationMs: 200 }} onconsider={(e) => handleDndSync('A', (e.detail as any).items)} onfinalize={(e) => handleDndSync('A', (e.detail as any).items)}>
                 {#each questionsA as q, i (q.id)}
-                    <div class="border-b border-black min-h-[30px] flex group relative transition-colors duration-200">
-                        <div class="px-2 py-1 border-r border-black w-10 text-center font-bold text-[9pt] flex items-center justify-center">{i + 1}.</div>
-                        <div class="flex-1 px-4 py-1 relative min-h-[30px] flex flex-col justify-center">
-                            <AssessmentRowActions {isEditable} onSwap={() => openSwapSidebar(q, 'A')} onDelete={() => removeQuestion(q)} />
-                            <div class="w-full">
-                                <AssessmentEditable value={q.text || q.question_text || ''} onUpdate={(v: string) => updateText(v, 'QUESTION', 'text', q.id, q.id)} multiline={true} class="text-[9pt] w-full block min-h-[1.2em]" />
-                                <AssessmentMcqOptions options={q.options} />
-                            </div>
-                        </div>
-                        <div class="w-16 border-l border-black text-center py-1 font-bold text-[8.5pt] flex items-center justify-center gap-1.5 px-2">
-                             ( <AssessmentEditable value={String(q.marks || 2)} onUpdate={(v: string) => { q.marks = Number(v); currentSetData.questions = [...currentSetData.questions]; }} class="inline-block min-w-[1ch] text-center" /> )
-                        </div>
+                    <div class="border-b border-black">
+                        <AssessmentSlotSingle slot={q} qNumber={i + 1} {isEditable} snoWidth={40} 
+                            onUpdateText={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} 
+                            onSwap={() => openSwapSidebar(q, 'A')}
+                            onRemove={() => removeQuestion(q)}
+                        />
                     </div>
                 {:else}
                     {#if mode === 'preview'}

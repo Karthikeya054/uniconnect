@@ -26,6 +26,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                 question_counts: counts.reduce((acc: any, curr: any) => {
                     acc[curr.marks] = parseInt(curr.count);
                     return acc;
+                }, {}),
+                bloom_counts: (await db.query(
+                    'SELECT bloom_level, COUNT(*) as count FROM assessment_questions WHERE unit_id = $1 GROUP BY bloom_level',
+                    [u.id]
+                )).rows.reduce((acc: any, curr: any) => {
+                    acc[curr.bloom_level] = parseInt(curr.count);
+                    return acc;
                 }, {})
             };
         }));
