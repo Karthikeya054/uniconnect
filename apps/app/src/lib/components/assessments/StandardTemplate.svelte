@@ -102,17 +102,18 @@
     let totalMarksB = $derived(calcTotal('B'));
     let totalMarksC = $derived(calcTotal('C'));
 
-    const questionsA = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'A'));
-    const questionsB = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'B'));
-    const questionsC = $derived((currentSetData.questions || []).filter((q: any) => q.part === 'C'));
+    const allQuestionsInSet = $derived(Array.isArray(currentSetData.questions) ? currentSetData.questions : []);
+    const questionsA = $derived(allQuestionsInSet.filter((q: any) => q && q.part === 'A'));
+    const questionsB = $derived(allQuestionsInSet.filter((q: any) => q && q.part === 'B'));
+    const questionsC = $derived(allQuestionsInSet.filter((q: any) => q && q.part === 'C'));
 </script>
 
 <div class="h-full overflow-hidden flex flex-col xl:flex-row relative bg-gray-100 dark:bg-slate-900/50">
     <div class="flex-1 overflow-auto p-4 sm:p-8">
         <div id="standard-paper-actual" class="mx-auto bg-white p-[0.75in] shadow-2xl transition-all duration-500 font-serif text-black relative" style="width: 8.27in; min-height: 11.69in;">
             <div class="text-center mb-8 border-b-2 border-black pb-4">
-                <h1 class="text-2xl font-black uppercase tracking-tighter mb-1">Examination Paper</h1>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">University Standard Assessment</p>
+                <h1 class="text-2xl font-black uppercase tracking-tighter mb-1">UniConnect Assessment</h1>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Powered by NxtWave</p>
             </div>
 
             <div class="grid grid-cols-2 gap-y-4 text-sm mb-8 border-b-2 border-black pb-4">
@@ -131,7 +132,7 @@
                         <AssessmentEditable value={paperMeta.partA_title || 'PART A'} onUpdate={(v: string) => updateText(v, 'META', 'partA_title')} class="inline-block font-bold" />
                         <div class="flex items-center gap-1">
                             <span>(</span>
-                            <AssessmentEditable value={paperMeta.totalMarksA_text || `${questionsA.length} x ${questionsA[0]?.marks || paperStructure.find(s=>s.part==='A')?.marks_per_q || 2} = ${totalMarksA} Marks`} onUpdate={(v) => updateText(v, 'META', 'totalMarksA_text')} class="inline-block" />
+                            <AssessmentEditable value={paperMeta.totalMarksA_text || `${questionsA.length} x ${questionsA[0]?.marks || paperStructure.find((s: any)=>s.part==='A')?.marks_per_q || 2} = ${totalMarksA} Marks`} onUpdate={(v: string) => updateText(v, 'META', 'totalMarksA_text')} class="inline-block" />
                             <span>)</span>
                         </div>
                     </div>
@@ -153,7 +154,7 @@
                          <AssessmentEditable value={paperMeta.partB_title || 'PART B'} onUpdate={(v: string) => updateText(v, 'META', 'partB_title')} class="inline-block font-bold" />
                          <div class="flex items-center gap-1">
                              <span>(</span>
-                             <AssessmentEditable value={paperMeta.totalMarksB_text || `${questionsB.length} x ${questionsB[0]?.marks || paperStructure.find(s=>s.part==='B')?.marks_per_q || 5} = ${totalMarksB} Marks`} onUpdate={(v) => updateText(v, 'META', 'totalMarksB_text')} class="inline-block" />
+                             <AssessmentEditable value={paperMeta.totalMarksB_text || `${questionsB.length} x ${questionsB[0]?.marks || paperStructure.find((s: any)=>s.part==='B')?.marks_per_q || 5} = ${totalMarksB} Marks`} onUpdate={(v: string) => updateText(v, 'META', 'totalMarksB_text')} class="inline-block" />
                              <span>)</span>
                          </div>
                     </div>

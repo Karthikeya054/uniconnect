@@ -220,12 +220,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             let text = rawText
                 .replace(/\[ROW_START\]/g, '\n')
                 .replace(/\[ROW_END\]/g, '\n')
-                .replace(/\[COL\]/g, ' | ')
+                .replace(/\[COL\]/g, '   ') // Larger gap for columns
                 .replace(/\[\/COL\]/g, ' ')
                 .replace(/\u00A0/g, ' ')
-                .replace(/[ \t]+/g, ' ')
-                .replace(/\n\s+/g, '\n')
-                .replace(/\s+\n/g, '\n')
+                .replace(/[\t]/g, '    ') // Expand tabs to 4 spaces
+                .replace(/[ \t]{4,}/g, '    ') // Cap excessive spaces but keep some
+                .replace(/\n\s+\n/g, '\n\n')
                 .replace(/[\u2018\u2019]/g, "'")
                 .replace(/[\u201C\u201D]/g, '"')
                 .replace(/[\u2013\u2014]/g, '-');

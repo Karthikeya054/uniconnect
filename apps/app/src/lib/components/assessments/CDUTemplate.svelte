@@ -160,8 +160,10 @@
             <div class="border-[1.5pt] border-black flex flex-col h-full bg-white">
                 <!-- Header -->
                 <div class="text-center pb-4 pt-2 border-b-[1.5pt] border-black">
-                    <div class="text-[10pt] font-bold mb-1">Set - {activeSet}</div>
-                    <AssessmentEditable value={paperMeta.univ_line_1 || 'CHAITANYA'} onUpdate={(v: string) => updateTextValue(v, 'META', 'univ_line_1')} class="text-[17pt] font-bold uppercase tracking-[0.1em]" />
+                    <div class="mb-2">
+                        <img src="/nxtwave-logo.png" alt="NxtWave Logo" class="h-14 mx-auto" />
+                    </div>
+                    <AssessmentEditable value={paperMeta.univ_line_1 || 'NxtWave Institution'} onUpdate={(v: string) => updateTextValue(v, 'META', 'univ_line_1')} class="text-[17pt] font-bold uppercase tracking-[0.1em]" />
                     <AssessmentEditable value={paperMeta.univ_line_2 || '(DEEMED TO BE UNIVERSITY)'} onUpdate={(v: string) => updateTextValue(v, 'META', 'univ_line_2')} class="text-[11pt] font-bold uppercase" />
                     <AssessmentEditable value={paperMeta.exam_title || 'I INTERNAL EXAMINATIONS-NOV -2024'} onUpdate={(v: string) => updateTextValue(v, 'META', 'exam_title')} class="text-[11pt] font-bold uppercase" />
                     
@@ -180,6 +182,7 @@
                         <div class="flex items-center gap-1">
                             <span>[Max. Marks:</span>
                             <AssessmentEditable value={paperMeta.max_marks || '20'} onUpdate={(v: string) => updateTextValue(v, 'META', 'max_marks')} class="min-w-[20px] border-b border-dotted text-center" />
+                            <span>]</span>
                         </div>
                     </div>
                 </div>
