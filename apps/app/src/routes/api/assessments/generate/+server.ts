@@ -26,6 +26,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             part_a_type = 'Mixed',
             sets_config = {}, // { 'A': ['L1'], 'B': ['L2'], ... }
             selected_template = 'standard',
+            preview_only = false,
             template_config: incoming_template_config
         } = await request.json();
 
@@ -264,6 +265,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             generatedSets[setName] = { questions: setQuestions, setName };
         }
 
+        if (preview_only) {
+            return json({ sets: generatedSets, template_config });
+        }
+
         // 3. PERSIST THE PAPER
         const paperRes = await db.query(
             `INSERT INTO assessment_papers (
@@ -274,7 +279,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             RETURNING id`,
             [
                 university_id, batch_id, branch_id, subject_id,
-                exam_type, semester, paper_date,
+                exam_type ?? 'MID1', semester, paper_date,
                 duration_minutes, max_marks,
                 JSON.stringify({
                     ...generatedSets,
