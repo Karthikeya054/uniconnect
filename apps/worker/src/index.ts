@@ -76,10 +76,11 @@ async function updateRecipientStatus(id: string, status: 'SENT' | 'FAILED' | 'CA
 }
 
 // 1. Email Campaign Worker
+console.log('[WORKER_INIT] 🚀 Starting email-sending worker...');
 const worker = new Worker('email-sending', async (job: Job) => {
-  console.log(`[WORKER] Received job ${job.id} for campaign ${job.data.campaignId}`);
+  console.log(`[WORKER] ✉️  Received job ${job.id} for campaign ${job.data.campaignId}`);
   const { recipientId, campaignId, email, trackingToken, templateId, mailboxId, variables } = job.data;
-  console.log(`[WORKER] Processing job ${job.id} for ${email}`);
+  console.log(`[WORKER] 📧 Processing job ${job.id} for ${email}`);
 
   try {
     // 1. Check if campaign is STOPPED
@@ -325,4 +326,6 @@ setInterval(checkTaskDeadlines, 15 * 60 * 1000);
 // Run once on start
 checkTaskDeadlines();
 
-console.log('Worker started with Campaign, System, and Reminder support.');
+console.log('✅ Worker started with Campaign, System, and Reminder support.');
+console.log('📬 Listening for jobs on queue: email-sending');
+console.log('🔔 Listening for jobs on queue: system-notifications');
