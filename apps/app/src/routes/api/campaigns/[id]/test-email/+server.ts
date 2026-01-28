@@ -83,7 +83,7 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
         const subject = TemplateRenderer.render(template.subject, variables, {
             config: template.config,
             noLayout: true
-        }).replace(/\u003c[^\u003e]*\u003e/g, '').trim();
+        }).replace(/<[^>]*>/g, '').trim();
 
         const htmlBody = TemplateRenderer.render(template.html, variables, {
             includeAck: campaign.include_ack,
@@ -100,7 +100,7 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
         const messageParts = [
             `MIME-Version: 1.0`,
             `To: ${testEmail}`,
-            `From: \"NIAT Support\" \u003c${mailbox.email}\u003e`,
+            `From: "NIAT Support" <${mailbox.email}>`,
             `Subject: [TEST] ${utf8Subject}`,
             `X-UniConnect-Token: ${trackingToken}`,
             `Content-Type: text/html; charset=utf-8`,
@@ -109,8 +109,8 @@ export const POST: RequestHandler = async ({ params, locals, request }) => {
             Buffer.from(htmlBody).toString('base64')
         ];
 
-        const rawMessage = messageParts.join('\\r\\n');
-        const encodedMail = Buffer.from(rawMessage).toString('base64').replace(/\\+/g, '-').replace(/\\/ / g, '_').replace(/=+$/, '');
+        const rawMessage = messageParts.join('\r\n');
+        const encodedMail = Buffer.from(rawMessage).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
         const res = await gmail.users.messages.send({
             userId: 'me',
