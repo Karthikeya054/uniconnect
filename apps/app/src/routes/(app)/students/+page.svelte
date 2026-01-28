@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invalidateAll, goto } from '$app/navigation';
+  import { fade, fly, slide } from 'svelte/transition';
   import type { PageData } from './$types';
   
   // @ts-ignore
@@ -21,6 +22,7 @@
   let previewRows = $state<any[]>([]);
   let totalPreviewRows = $state(0);
   let masterWorkbook: any = $state(null);
+  let importResult = $state<{ count: number, skipped: number, message?: string } | null>(null);
 
   // Parse file when selected
   $effect(() => {
@@ -168,12 +170,21 @@
             }
 
             const result = await res.json();
-            alert(result.message || `Successfully imported ${result.count} students.`);
-            showUploadModal = false;
-            resetPreview();
-            invalidateAll();
+            importResult = result;
+            
+            // Auto-close modal after 3 seconds if successful
+            setTimeout(() => {
+                if (importResult) {
+                    showUploadModal = false;
+                    resetPreview();
+                    importResult = null;
+                    invalidateAll();
+                }
+            }, 3000);
+
         } catch (e) {
-            alert('Upload failed');
+            console.error('Upload Error:', e);
+            alert('Upload failed. Please check the file format.');
         } finally {
             isUploading = false;
         }
@@ -365,6 +376,35 @@
       <div class="px-8 pt-8 pb-6 sm:p-10 max-h-[85vh] overflow-y-auto">
         <h3 class="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter mb-6" id="modal-title">Import Students</h3>
         
+        {#if importResult}
+            <div class="mb-10 animate-premium-scale" in:fade>
+                <div class="bg-indigo-600 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-500/40">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center text-center">
+                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-md">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                        <h4 class="text-xl font-black uppercase tracking-widest mb-2">Import Successful</h4>
+                        <div class="flex gap-4 mt-2">
+                            <div class="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                <span class="block text-[10px] uppercase font-black opacity-60">Imported</span>
+                                <span class="text-2xl font-black tracking-tighter">{importResult.count}</span>
+                            </div>
+                            {#if importResult.skipped > 0}
+                                <div class="bg-red-500/20 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                    <span class="block text-[10px] uppercase font-black opacity-60">Skipped</span>
+                                    <span class="text-2xl font-black tracking-tighter">{importResult.skipped}</span>
+                                </div>
+                            {/if}
+                        </div>
+                        <p class="mt-6 text-[10px] font-black uppercase tracking-[0.2em] opacity-80 animate-pulse">Closing session...</p>
+                    </div>
+                </div>
+            </div>
+        {/if}
+
         {#if data.universities.length > 1 && !selectedUniversityId}
             <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-5 rounded-2xl mb-6 text-[11px] font-black uppercase tracking-widest border border-red-100 dark:border-red-800/50">
                 Warning: A university must be selected before importing.
@@ -482,118 +522,4 @@
 {/if}
  <!-- Closes root space-y-6 -->
 
-{#if showUploadModal}
-<div class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-    <div 
-      class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
-      onclick={() => showUploadModal = false}
-      onkeydown={(e) => e.key === 'Escape' && (showUploadModal = false)}
-      role="button"
-      tabindex="-1"
-      aria-label="Close Modal"
-    ></div>
-    <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[80vh] overflow-y-auto">
-        <h3 class="text-lg leading-6 font-bold text-gray-900 mb-4" id="modal-title">Import Students</h3>
-        
-        {#if data.universities.length > 1 && !selectedUniversityId}
-            <div class="bg-red-50 text-red-700 p-4 rounded-lg mb-4 text-sm">Please select a university on the main page first.</div>
-        {:else}
-            <div class="space-y-6">
-                <!-- File Input -->
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors bg-gray-50">
-                    <input 
-                        type="file" 
-                        accept=".csv,.xlsx,.xls"
-                        bind:files={uploadFiles}
-                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                    />
-                    <p class="text-xs text-gray-400 mt-2">Supports .CSV and .XLSX files. First row must be headers.</p>
-                </div>
 
-                <!-- Sheet Selection -->
-                {#if detectedSheets.length > 1}
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                        <label for="sheet-select" class="block text-sm font-bold text-blue-900 mb-2">Select Sheet to Import:</label>
-                        <select 
-                            id="sheet-select" 
-                            bind:value={selectedSheet}
-                            class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                        >
-                            {#each detectedSheets as sheet}
-                                <option value={sheet}>{sheet}</option>
-                            {/each}
-                        </select>
-                    </div>
-                {/if}
-
-                <!-- Preview Table -->
-                {#if previewHeaders.length > 0}
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                             <h4 class="text-sm font-bold text-gray-700">Data Preview</h4>
-                             <span class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">Total Rows: {totalPreviewRows} (Showing first 10)</span>
-                        </div>
-                        <div class="border border-gray-200 rounded-lg overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        {#each previewHeaders as header}
-                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{header}</th>
-                                        {/each}
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    {#each previewRows as row}
-                                        <tr>
-                                            {#each previewHeaders as header}
-                                                <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
-                                                    {Array.isArray(row) ? row[previewHeaders.indexOf(header)] : row[header] || '-'}
-                                                </td>
-                                            {/each}
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                {/if}
-            </div>
-        {/if}
-      </div>
-      <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
-        <button 
-            type="button" 
-            onclick={uploadCsv}
-            disabled={isUploading || !uploadFiles || (data.universities.length > 1 && !selectedUniversityId)}
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isUploading ? 'Importing...' : `Import ${totalPreviewRows > 0 ? totalPreviewRows + ' Rows' : ''}`}
-        </button>
-        <button 
-            type="button" 
-            onclick={() => showUploadModal = false}
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-{/if}
-
-{#if isUploading}
-    <!-- Loading Overlay -->
-    <div class="fixed inset-0 bg-gray-900 bg-opacity-50 z-[60] flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-xl flex items-center space-x-4">
-            <svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-gray-700 font-medium">Importing students... please wait.</span>
-        </div>
-    </div>
-{/if}

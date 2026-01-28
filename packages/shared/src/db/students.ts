@@ -40,29 +40,36 @@ export async function createStudent(data: { university_id: string; name: string;
 export async function createStudentsBulk(students: Array<{ university_id: string; name: string; email: string; external_id: string; metadata?: any; sort_order?: number }>) {
     if (students.length === 0) return;
 
-    const client = await db.pool.connect();
-    try {
-        await client.query('BEGIN');
-        for (const s of students) {
-            await client.query(
-                `INSERT INTO students (university_id, name, email, external_id, metadata, sort_order) 
-                 VALUES ($1, $2, $3, $4, $5, $6) 
-                 ON CONFLICT (university_id, email) DO UPDATE SET 
-                    name = EXCLUDED.name, 
-                    external_id = EXCLUDED.external_id,
-                    metadata = EXCLUDED.metadata,
-                    sort_order = EXCLUDED.sort_order,
-                    updated_at = NOW()`,
-                [s.university_id, s.name, s.email, s.external_id, s.metadata || {}, s.sort_order || 0]
-            );
-        }
-        await client.query('COMMIT');
-    } catch (e) {
-        await client.query('ROLLBACK');
-        throw e;
-    } finally {
-        client.release();
-    }
+    // Build multi-row insert query
+    // This is significantly faster for large imports
+    const values: any[] = [];
+    const placeholders: string[] = [];
+
+    students.forEach((s, i) => {
+        const offset = i * 6;
+        placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`);
+        values.push(
+            s.university_id,
+            s.name,
+            s.email,
+            s.external_id,
+            s.metadata || {},
+            s.sort_order || 0
+        );
+    });
+
+    const query = `
+        INSERT INTO students (university_id, name, email, external_id, metadata, sort_order) 
+        VALUES ${placeholders.join(', ')} 
+        ON CONFLICT (university_id, email) DO UPDATE SET 
+            name = EXCLUDED.name, 
+            external_id = EXCLUDED.external_id,
+            metadata = EXCLUDED.metadata,
+            sort_order = EXCLUDED.sort_order,
+            updated_at = NOW()
+    `;
+
+    await db.query(query, values);
 }
 
 export async function deleteStudent(id: string, universityId: string) {
