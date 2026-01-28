@@ -11,6 +11,9 @@
         onRemove, 
         onUpdateText,
         snoWidth = 40,
+        borderClass = "divide-x-[1.5pt] divide-black",
+        textClass = "text-sm",
+        marksClass = "border-l-[1.5pt] border-black min-w-[50px] print:border-l-[1.5pt]",
         class: className = ""
     } = $props();
 
@@ -18,11 +21,11 @@
     // Instead, we access slot.questions[0] directly in the template and use callbacks for updates.
 </script>
 
-<div class="flex divide-x-[1.5pt] divide-black min-h-[40px] {className}">
-    <div class="flex items-center justify-center font-bold text-sm tabular-nums no-print print:border-none" style="width: {snoWidth}px">
+<div class="flex {borderClass} min-h-[40px] {className}">
+    <div class="flex items-center justify-center font-bold {textClass} tabular-nums no-print print:border-none" style="width: {snoWidth}px">
         {qNumber}.
     </div>
-    <div class="flex-1 px-2 py-2 text-sm leading-relaxed relative group whitespace-pre-wrap">
+    <div class="flex-1 px-4 py-2 {textClass} leading-relaxed relative group whitespace-pre-wrap">
         <AssessmentRowActions 
             {isEditable}
             onSwap={onSwap}
@@ -41,11 +44,11 @@
         <AssessmentMcqOptions options={slot.questions[0].options} />
         {#if slot.questions[0].image_url}
             <div class="mt-2 max-w-full overflow-hidden">
-                <img src={slot.questions[0].image_url} alt="Question" class="max-height-[300px] object-contain" />
+                <img src={slot.questions[0].image_url} alt="Question" class="max-h-[300px] object-contain" />
             </div>
         {/if}
     </div>
-    <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 border-l-[1.5pt] border-black min-w-[50px] print:border-l-[1.5pt] gap-1">
+    <div class="flex items-center justify-center font-bold text-xs tabular-nums px-2 {marksClass} gap-1">
         <span>(</span>
         <AssessmentEditable 
             value={String(slot.questions[0].marks || slot.marks || '')} 

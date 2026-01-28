@@ -94,13 +94,21 @@
         if (!swapContext) return;
         const arr = Array.isArray(currentSetData) ? currentSetData : currentSetData.questions;
         let slot = arr[swapContext.slotIndex];
-        const nQ = { id: question.id, text: question.question_text, question_text: question.question_text, marks: question.marks, options: question.options, part: swapContext.part };
+        const nQ = { 
+            id: question.id, 
+            text: question.question_text, 
+            question_text: question.question_text, 
+            marks: question.marks, 
+            options: question.options, 
+            part: swapContext.part,
+            image_url: question.image_url
+        };
         
         if (swapContext.part === 'A') {
             const nArr = [...arr];
             nArr[swapContext.slotIndex] = nQ;
-            if (Array.isArray(currentSetData)) currentSetData = nArr;
-            else currentSetData.questions = nArr;
+            const updated = Array.isArray(currentSetData) ? nArr : { ...currentSetData, questions: nArr };
+            currentSetData = updated;
         } else {
             const nArr = [...arr];
             let nSlot = { ...nArr[swapContext.slotIndex] };
@@ -121,8 +129,8 @@
                 nSlot.questions = [nQ];
             }
             nArr[swapContext.slotIndex] = nSlot;
-            if (Array.isArray(currentSetData)) currentSetData = nArr;
-            else currentSetData.questions = nArr;
+            const updated = Array.isArray(currentSetData) ? nArr : { ...currentSetData, questions: nArr };
+            currentSetData = updated;
         }
         
         isSwapSidebarOpen = false;
@@ -258,6 +266,9 @@
                             onUpdateText={(v: string, qid: string) => updateText(v, 'QUESTION', 'text', q.id, qid)} 
                             onSwap={() => openSwapSidebar(q, 'A')}
                             onRemove={() => removeQuestion(q)}
+                            borderClass="divide-x border-black"
+                            textClass="text-[9pt]"
+                            marksClass="w-16 border-l border-black flex items-center justify-center font-bold text-[8.5pt] py-2"
                         />
                     </div>
                 {:else}

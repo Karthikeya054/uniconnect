@@ -166,7 +166,7 @@
         }
         
         nArr[slotIndex] = nSlot;
-        currentSetData.questions = nArr;
+        currentSetData = { ...currentSetData, questions: nArr };
         isSwapSidebarOpen = false;
     }
 
