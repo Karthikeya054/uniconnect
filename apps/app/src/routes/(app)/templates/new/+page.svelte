@@ -184,7 +184,7 @@
             type="text" 
             bind:value={name} 
             placeholder="e.g., Term 2 Fee Reminder"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 font-bold"
           >
         </div>
         <div>
@@ -194,7 +194,7 @@
             type="text" 
             bind:value={subject} 
             placeholder="Subject line with {'{{STUDENT_NAME}}'}"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 font-bold"
           >
         </div>
       </div>
@@ -227,8 +227,8 @@
           <div class="bg-white rounded-lg border border-indigo-200 p-4 space-y-3 shadow-inner">
             {#each tableRows as row, i}
               <div class="grid grid-cols-[1fr_1fr_auto] items-center gap-2">
-                <input type="text" bind:value={row.label} placeholder="Label" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md">
-                <input type="text" bind:value={row.value} placeholder="Value" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md">
+                <input type="text" bind:value={row.label} placeholder="Label" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-900 font-medium">
+                <input type="text" bind:value={row.value} placeholder="Value" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-900 font-medium">
                 <button onclick={() => removeRow(i)} class="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors" aria-label="Remove Row">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
@@ -253,11 +253,11 @@
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label for="btn-text" class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Button Text</label>
-                <input id="btn-text" type="text" bind:value={payButton.text} placeholder="Pay Now" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md">
+                <input id="btn-text" type="text" bind:value={payButton.text} placeholder="Pay Now" class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-900 font-medium">
               </div>
               <div>
                 <label for="btn-url" class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Button URL</label>
-                <input id="btn-url" type="text" bind:value={payButton.url} placeholder="https://..." class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md">
+                <input id="btn-url" type="text" bind:value={payButton.url} placeholder="https://..." class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-900 font-medium">
               </div>
             </div>
           </div>
@@ -285,7 +285,7 @@
           bind:value={html} 
           rows="16" 
           placeholder="Write your email body here... use {'{{VARIABLE_NAME}}'} for dynamic data."
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-base focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-base focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none text-gray-900"
         ></textarea>
       </div>
 
@@ -300,7 +300,7 @@
             type="email" 
             bind:value={testEmail} 
             placeholder="your-email@example.com"
-            class="flex-1 px-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+            class="flex-1 px-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-gray-900 font-medium"
           >
           <button 
             onclick={sendTest}
