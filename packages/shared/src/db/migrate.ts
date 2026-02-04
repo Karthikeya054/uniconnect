@@ -13,6 +13,9 @@ const HARDCODED_DB_URL = "postgresql://USER:PASSWORD@aws-1-ap-south-1.pooler.sup
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL || HARDCODED_DB_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 async function migrate() {
