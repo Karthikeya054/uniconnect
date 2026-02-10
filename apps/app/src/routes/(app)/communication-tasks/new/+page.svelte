@@ -9,25 +9,12 @@
     ArrowLeft,
     Send,
     Sparkles,
-    Search,
   } from "lucide-svelte";
 
   let { data, form } = $props();
   let universities = $derived(data.universities);
-  let users = $derived(data.users);
 
   let selectedUniversities = $state<string[]>([]);
-  let userSearchQuery = $state("");
-
-  const filteredUsers = $derived(
-    users.filter((u) => {
-      const name = u.name || "";
-      return (
-        name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-        u.role.toLowerCase().includes(userSearchQuery.toLowerCase())
-      );
-    }),
-  );
 
   const channels = [
     "WhatsApp - Students",
@@ -83,7 +70,7 @@
       <p
         class="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1"
       >
-        Define task parameters and assigned executioners
+        Define task parameters for university-wide notification
       </p>
     </div>
   </div>
@@ -131,7 +118,7 @@
                   <input
                     type="checkbox"
                     name="universities"
-                    value={uni.short_name || uni.name}
+                    value={uni.id}
                     bind:group={selectedUniversities}
                     class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
@@ -306,7 +293,7 @@
           <div class="space-y-2">
             <label
               class="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-tight pl-1"
-              for="body">Message Content (Copyable by assigned staff)</label
+              for="body">Message Content</label
             >
             <textarea
               name="message_body"
@@ -321,68 +308,25 @@
       </div>
 
       <div
-        class="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest"
+        class="p-6 bg-indigo-50 dark:bg-indigo-900/10 rounded-3xl border border-indigo-100 dark:border-indigo-800/50 flex items-start gap-4"
       >
-        <span class="w-8 h-px bg-indigo-100 dark:bg-indigo-900/50"></span>
-        Step 3: Staff Assignment
-      </div>
-
-      <div class="space-y-2 max-w-2xl">
-        <label
-          class="flex items-center gap-2 text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-tight"
+        <div
+          class="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-xl text-indigo-600 dark:text-indigo-400"
         >
-          <Users size={14} class="text-indigo-500" />
-          Assign Executing Staff Members
-        </label>
-        <div class="space-y-3">
-          <div class="relative">
-            <Search
-              class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={12}
-            />
-            <input
-              type="text"
-              bind:value={userSearchQuery}
-              placeholder="Search staff by name or role..."
-              class="w-full pl-9 pr-3 py-4 bg-gray-50 dark:bg-slate-800/50 border border-transparent rounded-2xl text-sm font-bold focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
-            />
-          </div>
-          <div
-            class="h-64 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-transparent custom-scrollbar"
+          <Info size={20} />
+        </div>
+        <div>
+          <h4
+            class="text-xs font-black text-indigo-900 dark:text-indigo-100 uppercase tracking-tight"
           >
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {#each filteredUsers as staff (staff.id)}
-                <label
-                  class="flex items-center gap-3 p-4 bg-white/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-indigo-500/20 group"
-                >
-                  <input
-                    type="checkbox"
-                    name="assigned_to"
-                    value={staff.id}
-                    class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <div class="flex flex-col">
-                    <span
-                      class="text-xs font-bold text-gray-700 dark:text-gray-200"
-                      >{staff.name}</span
-                    >
-                    <span
-                      class="text-[9px] font-black text-gray-400 uppercase tracking-widest"
-                      >{staff.role}</span
-                    >
-                  </div>
-                </label>
-              {:else}
-                <div class="col-span-full py-10 text-center">
-                  <p
-                    class="text-[10px] font-black text-gray-400 uppercase tracking-widest"
-                  >
-                    No matching staff found
-                  </p>
-                </div>
-              {/each}
-            </div>
-          </div>
+            Automatic Staff Notification
+          </h4>
+          <p
+            class="text-[10px] font-bold text-indigo-700/70 dark:text-indigo-400/70 uppercase tracking-widest mt-1"
+          >
+            All registered staff members of the selected universities will
+            receive push notifications for this task.
+          </p>
         </div>
       </div>
 

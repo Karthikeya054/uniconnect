@@ -44,7 +44,7 @@ export const actions: Actions = {
         const contentType = data.get('content_type') as any;
         const link = data.get('link') as string;
 
-        if (!universities.length || !channel || !assignedTo.length || !title || !body || !scheduledAt) {
+        if (!universities.length || !channel || !title || !body || !scheduledAt) {
             return fail(400, { error: 'Missing required fields' });
         }
 
