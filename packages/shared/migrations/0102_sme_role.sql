@@ -33,14 +33,14 @@ ON CONFLICT (role) DO UPDATE
 -- 3. Create the 8 SME users (idempotent by email).
 INSERT INTO users (id, email, name, role, is_active, created_at, updated_at)
 VALUES
-    (gen_random_uuid(), 'user@example.com',            'Bhoushitha A',            'SME', true, NOW(), NOW()),
-    (gen_random_uuid(), 'user@example.com',     'Venkata Manoj Kumar D',   'SME', true, NOW(), NOW()),
-    (gen_random_uuid(), 'user@example.com',          'Poshala Varsha',          'SME', true, NOW(), NOW()),
-    (gen_random_uuid(), 'user@example.com',             'Alka Kumari',             'SME', true, NOW(), NOW()),
-    (gen_random_uuid(), 'user@example.com',        'Pachava Poojitha',        'SME', true, NOW(), NOW()),
-    (gen_random_uuid(), 'user@example.com',     'Pinisetti Viswanadh',     'SME', true, NOW(), NOW()),
-    (gen_random_uuid(), 'user@example.com',            'Mariyam Khan',            'SME', true, NOW(), NOW()),
-    (gen_random_uuid(), 'user@example.com',   'Chinthapalli Viharika',   'SME', true, NOW(), NOW())
+    (gen_random_uuid(), 'sme1@example.com',            'SME One',            'SME', true, NOW(), NOW()),
+    (gen_random_uuid(), 'sme2@example.com',     'SME Two',   'SME', true, NOW(), NOW()),
+    (gen_random_uuid(), 'sme3@example.com',          'SME Three',          'SME', true, NOW(), NOW()),
+    (gen_random_uuid(), 'sme4@example.com',             'SME Four',             'SME', true, NOW(), NOW()),
+    (gen_random_uuid(), 'sme5@example.com',        'SME Five',        'SME', true, NOW(), NOW()),
+    (gen_random_uuid(), 'sme6@example.com',     'SME Six',     'SME', true, NOW(), NOW()),
+    (gen_random_uuid(), 'sme7@example.com',            'SME Seven',            'SME', true, NOW(), NOW()),
+    (gen_random_uuid(), 'sme8@example.com',   'SME Eight',   'SME', true, NOW(), NOW())
 ON CONFLICT (email) DO UPDATE
     SET role = 'SME', is_active = true, updated_at = NOW();
 

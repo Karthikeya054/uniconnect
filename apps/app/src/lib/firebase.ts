@@ -1,27 +1,41 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { browser } from "$app/environment";
+import { env } from "$env/dynamic/public";
 
+/**
+ * Firebase web config.
+ *
+ * These values are public by design — they ship to the browser — but they are
+ * read from PUBLIC_FIREBASE_* environment variables so a fork points at its own
+ * Firebase project instead of inheriting someone else's. See .env.example.
+ *
+ * Push notifications are optional: with the variables absent the app runs
+ * normally and getFcmToken() simply returns null.
+ */
 const firebaseConfig = {
-    apiKey: "REDACTED_GOOGLE_API_KEY",
-    authDomain: "uniconnect-mailer.firebaseapp.com",
-    projectId: "uniconnect-mailer",
-    storageBucket: "uniconnect-mailer.firebasestorage.app",
-    messagingSenderId: "583176893164",
-    appId: "1:583176893164:web:9d348802d7bb60bc0fabc9",
-    measurementId: "G-BXWKZPXJGE"
+    apiKey: env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: env.PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: env.PUBLIC_FIREBASE_APP_ID,
+    measurementId: env.PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
+
+const app = isConfigured
+    ? (!getApps().length ? initializeApp(firebaseConfig) : getApp())
+    : null;
 
 export const getFcmToken = async () => {
-    if (!browser) return null;
+    if (!browser || !app) return null;
+    const vapidKey = env.PUBLIC_FIREBASE_VAPID_KEY;
+    if (!vapidKey) return null;
     try {
         const messaging = getMessaging(app);
-        const token = await getToken(messaging, {
-            vapidKey: "REDACTED_FIREBASE_VAPID_KEY"
-        });
-        return token;
+        return await getToken(messaging, { vapidKey });
     } catch (error) {
         console.error("Error getting FCM token:", error);
         return null;
@@ -29,7 +43,7 @@ export const getFcmToken = async () => {
 };
 
 export const onForegroundMessage = (callback: (payload: any) => void) => {
-    if (!browser) return;
+    if (!browser || !app) return;
     const messaging = getMessaging(app);
     return onMessage(messaging, callback);
 };

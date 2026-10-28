@@ -234,20 +234,29 @@ export async function notifyBudgetProposalUpdate(proposal: FullProposal, toStatu
         // approval, report) — not just L1 approval.
         const budget = Number(proposal.estimated_total_budget) || 0;
         const adminApprovalNeeded = budget >= 10000;
-        const KARTHIK_EMAIL = 'user@example.com';
 
-        // "Main Mails" - Explicitly requested by user + Admins/Ops
+        // Stakeholder lists are per-deployment, comma-separated in the
+        // environment. BUDGET_STAKEHOLDER_EMAILS are copied on every budget
+        // mail; BUDGET_ADMIN_APPROVER_EMAILS are added only once a proposal
+        // crosses the admin-approval threshold.
+        const envEmails = (raw: string | undefined): string[] =>
+            String(raw || '').split(',').map(e => e.trim()).filter(Boolean);
+        const stakeholders = envEmails(process.env.BUDGET_STAKEHOLDER_EMAILS);
+        const adminApprovers = envEmails(process.env.BUDGET_ADMIN_APPROVER_EMAILS);
+
+        // "Main Mails" - configured stakeholders + Admins/Ops
         const setRes = await db.query(
             `SELECT DISTINCT id, email
              FROM users
-             WHERE (role IN ('ADMIN', 'PROGRAM_OPS') OR email IN ('user@example.com', 'user@example.com', 'user@example.com', 'user@example.com'))
-             AND is_active = true`
+             WHERE (role IN ('ADMIN', 'PROGRAM_OPS') OR email = ANY($1::text[]))
+             AND is_active = true`,
+            [[...stakeholders, ...adminApprovers]]
         );
         recipients = setRes.rows;
 
-        // Ensure specifically requested stakeholders are ALWAYS included if they are not in the query result.
-        // Karthik is only force-included when admin approval is actually needed (≥ ₹10K).
-        const stakeholderEmails = ['user@example.com', ...(adminApprovalNeeded ? [KARTHIK_EMAIL] : [])];
+        // Ensure configured stakeholders are ALWAYS included even if they are
+        // not active users. Admin approvers join only above the threshold.
+        const stakeholderEmails = [...stakeholders, ...(adminApprovalNeeded ? adminApprovers : [])];
         for (const email of stakeholderEmails) {
             if (!recipients.some(r => r.email === email)) {
                 // If not found as active users, add them manually for Email only (dummy ID for notify/push)
@@ -255,9 +264,10 @@ export async function notifyBudgetProposalUpdate(proposal: FullProposal, toStatu
             }
         }
 
-        // Below ₹10K → CMA approval is final; Karthik (admin) should not receive it.
+        // Below the threshold → CMA approval is final, so the admin approvers
+        // should not receive it.
         if (!adminApprovalNeeded) {
-            recipients = recipients.filter(r => r.email !== KARTHIK_EMAIL);
+            recipients = recipients.filter(r => !adminApprovers.includes(r.email));
         }
 
         // Facilities / Finance-ops team are looped in on budget proposals for this

@@ -59,6 +59,7 @@ async function main() {
   console.log('Student ID sequence initialized for year 2026');
 
   // Create a test student with a known QR token
+  // Obvious placeholder: a seeded demo student's QR token, not a real secret.
   const testToken = 'DEMO-QR-TOKEN-NOT-A-SECRET';
   await prisma.student.upsert({
     where: { studentId: 'B2026TEST' },

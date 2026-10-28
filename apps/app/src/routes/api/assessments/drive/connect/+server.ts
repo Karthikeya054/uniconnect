@@ -2,7 +2,7 @@
  * GET /api/assessments/drive/connect
  *   → Start the Google OAuth flow to connect the exam-papers Drive.
  *     Admin-only. Must be authorised by the Drive folder owner
- *     (user@example.com) so uploads land in that account.
+ *     (the configured ops account) so uploads land in that account.
  */
 import { redirect, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';

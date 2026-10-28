@@ -12,8 +12,11 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const HARDCODED_DB_URL = "postgresql://USER:PASSWORD@aws-1-ap-south-1.pooler.supabase.com:5432/postgres";
-const dbUrl = process.env.DATABASE_URL || HARDCODED_DB_URL;
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+    console.error('DATABASE_URL is not set. Copy .env.example to .env and fill it in.');
+    process.exit(1);
+}
 const connectionString = dbUrl.includes('?') ? `${dbUrl}&sslmode=no-verify` : `${dbUrl}?sslmode=no-verify`;
 
 const pool = new Pool({

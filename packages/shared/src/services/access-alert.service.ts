@@ -67,10 +67,8 @@ export class AccessAlertService {
             );
 
             // Always include these stakeholder emails even if not in DB
-            const alwaysNotify = [
-                'user@example.com',
-                'user@example.com'
-            ];
+            const alwaysNotify = String(process.env.ADMIN_EMAILS || '')
+                .split(',').map(e => e.trim()).filter(Boolean);
             const dbEmails = new Set(admins.rows.map((a: any) => a.email?.toLowerCase()));
             for (const email of alwaysNotify) {
                 if (!dbEmails.has(email.toLowerCase())) {

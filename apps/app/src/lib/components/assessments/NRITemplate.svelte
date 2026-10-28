@@ -255,7 +255,7 @@
               <p class="text-[8pt] leading-tight">Accredited by NAAC with "A" GRADE, Accredited by NBA (CSE, ECE&EEE)</p>
               <p class="text-[8pt] leading-tight">An ISO 9001:2015 Certified Institution</p>
               <p class="text-[8pt] leading-tight font-medium">Pothavarappadu (V), Agiripalli (M), Eluru District, A.P., India, Pin: 521 212</p>
-              <p class="text-[8pt] leading-tight font-bold">URL: www.nriit.edu.in, email: principal@nriit.edu.in, Mobile: + 91 8333882444</p>
+              <p class="text-[8pt] leading-tight font-bold">URL: www.nriit.edu.in, email: principal@nriit.edu.in, Mobile: +91 00000 00000</p>
             </td>
             <td class="w-[18%] text-right align-middle border-none">
                <div class="flex flex-col items-end gap-2">

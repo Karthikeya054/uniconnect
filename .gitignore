@@ -1,23 +1,33 @@
+# ── Dependencies ─────────────────────────────────────────────────────
 node_modules
-.DS_Store
-dist
-.svelte-kit
-build
+package-lock.json
+
+# ── Secrets ──────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
-*.log
-package-lock.json
+
+# ── Build output ─────────────────────────────────────────────────────
+.svelte-kit
+build
+dist
+.next
 .turbo
+.vite
 
-# Build outputs
-.next/
-.svelte-kit/
-dist/
-build/
-.turbo/
+# ── Data exports — never commit real records ─────────────────────────
+*.csv
+*.xlsx
+*.xls
 
-# Local artifacts
+# ── Logs, dumps and scratch output ───────────────────────────────────
+*.log
+*debug*.txt
+*_output*.txt
+tmp/
 *.zip
-test-email-preview.mjs
+
+# ── OS / editor ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 next-env.d.ts

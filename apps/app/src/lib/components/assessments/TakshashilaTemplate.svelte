@@ -358,8 +358,8 @@
                     Ompur (PO), Tindivanam Taluk, Villupuram District,
                   </p>
                   <p class="m-0">Tamil Nadu - 604 305, India.</p>
-                  <p class="m-0">04147-234567 | +91 8925829070</p>
-                  <p class="m-0">+91 9150377919</p>
+                  <p class="m-0">04147-000000 | +91 00000 00000</p>
+                  <p class="m-0">+91 00000 00001</p>
                   <p class="m-0">coeoffice@takshashilauniv.ac.in |</p>
                   <p class="m-0">www.takshashilauniv.ac.in</p>
                 </div>

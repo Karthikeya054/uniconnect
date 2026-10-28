@@ -34,9 +34,7 @@
   let isAdminOverride = $derived(!hasOverlap);
 
   let allowedToOverride = $derived(
-    user.email === "user@example.com" ||
-      user.email === "user@example.com" ||
-      user.email === task.created_by ||
+    user.email === task.created_by ||
       user.name === task.created_by ||
       user.id === task.created_by,
   );

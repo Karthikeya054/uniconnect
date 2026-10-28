@@ -2,13 +2,22 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
+/*
+ * A service worker is a static file: it cannot read environment variables at
+ * runtime, so this config has to be filled in before deploying.
+ *
+ * Replace the placeholders below with your own Firebase web config — the same
+ * values you put in PUBLIC_FIREBASE_* in .env (see README → Push notifications).
+ * Leaving them as-is only disables background push; the rest of the app is
+ * unaffected.
+ */
 firebase.initializeApp({
-    apiKey: "REDACTED_GOOGLE_API_KEY",
-    authDomain: "uniconnect-mailer.firebaseapp.com",
-    projectId: "uniconnect-mailer",
-    storageBucket: "uniconnect-mailer.firebasestorage.app",
-    messagingSenderId: "583176893164",
-    appId: "1:583176893164:web:9d348802d7bb60bc0fabc9",
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_FIREBASE_APP_ID",
 });
 
 const messaging = firebase.messaging();

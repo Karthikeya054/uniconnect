@@ -13,7 +13,7 @@ function str(v: any): string { return String(v ?? '').trim(); }
  * ┌────────────────┬──────────────┬───────────────────┬────────────┬─────────┬────────┬─────────────┬─────────────┬──────────────┬──────────────────┬────────────────┐
  * │ Student Name   │ NIAT ID      │ Email             │ Phone      │ Gender  │ DOB    │ Blood Group │ Father Name │ Mother Name  │ Father Phone     │ Mother Phone   │
  * ├────────────────┼──────────────┼───────────────────┼────────────┼─────────┼────────┼─────────────┼─────────────┼──────────────┼──────────────────┼────────────────┤
- * │ John Doe       │ N25H02A0001  │ user@example.com    │ 9876543210 │ Male    │ 2005.. │ A+          │ James Doe   │ Jane Doe     │ 9876543211       │ 9876543212     │
+ * │ John Doe       │ N25H02A0001  │ john@example.com  │ 9876543210 │ Male    │ 2005.. │ A+          │ James Doe   │ Jane Doe     │ 9876543211       │ 9876543212     │
  * └────────────────┴──────────────┴───────────────────┴────────────┴─────────┴────────┴─────────────┴─────────────┴──────────────┴──────────────────┴────────────────┘
  *
  * Additional optional columns: Emergency Contact, Aadhaar, Roll Number, Admission Date, Address
@@ -271,10 +271,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     ];
 
     const sampleRow = [
-        'Pathan Abdul Gouse', 'N25H02A0004', 'user@example.com', '9876543210',
-        'Male', '2005-06-15', 'A+', 'Abdul Khan', 'Fatima Begum', '9876543211',
-        '9876543212', '9876543213', '123456789012', 'R001', '2026-03-10',
-        'Hyderabad, Telangana'
+        'Sample Student', 'SAMPLE001', 'student@example.com', '0000000000',
+        'Male', '2005-06-15', 'A+', 'Sample Father', 'Sample Mother', '0000000001',
+        '0000000002', '0000000003', '000000000000', 'R001', '2026-03-10',
+        'Sample City, Sample State'
     ];
 
     const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);

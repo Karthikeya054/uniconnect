@@ -423,8 +423,8 @@
     for (const p of progs) {
       const sheet = XLSX.utils.aoa_to_sheet([
         ['Student Name', 'NIAT ID', 'Student Personal Mail ID'],
-        ['John Doe', `${p.code}2025001`, 'user@example.com'],
-        ['Jane Smith', `${p.code}2025002`, 'user@example.com'],
+        ['John Doe', `${p.code}2025001`, 'john.doe@example.com'],
+        ['Jane Smith', `${p.code}2025002`, 'jane.smith@example.com'],
       ]);
       sheet['!cols'] = [{ wch: 28 }, { wch: 16 }, { wch: 32 }];
       XLSX.utils.book_append_sheet(wb, sheet, p.code);

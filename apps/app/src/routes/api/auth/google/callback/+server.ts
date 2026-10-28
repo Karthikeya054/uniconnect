@@ -68,7 +68,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
                 console.log(`[OAUTH] User created via invitation for ${email} with ${univIds.length} universities`);
             }
             // ADMIN Check
-            else if (email === 'user@example.com' || email === env.ADMIN_EMAIL) {
+            else if (env.ADMIN_EMAIL && email === env.ADMIN_EMAIL) {
                 user = await createUser({
                     email: email,
                     name: googleUser.name || 'Admin',

@@ -68,7 +68,7 @@ async function processCommunicationTasks() {
     if (!firebaseInitialized) await initFirebase();
 
     // SELF-HEALING: Reactivate the admin user if they are inactive
-    await db.query(`UPDATE users SET is_active = true WHERE email = 'user@example.com' AND is_active = false`);
+    await db.query(`UPDATE users SET is_active = true WHERE email = $1 AND is_active = false`, [process.env.ADMIN_EMAIL || '']);
 
     const tasks = await getCommunicationTasksForReminders();
     if (tasks.length > 0) {

@@ -38,7 +38,8 @@ export const actions: Actions = {
             const hasOverlap = intersection.length > 0;
 
             if (!hasOverlap) {
-                const isProgramOpsCentral = user.email === 'user@example.com' || user.email === 'user@example.com';
+                const overrideEmails = String(process.env.TASK_OVERRIDE_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+                const isProgramOpsCentral = overrideEmails.includes(String(user.email || '').toLowerCase());
                 const isCreator = user.email === task.created_by || user.name === task.created_by || user.id === task.created_by;
 
                 if (!isProgramOpsCentral && !isCreator) {

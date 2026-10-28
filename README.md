@@ -1,161 +1,145 @@
-# UniConnect Operations OS
+# UniConnect — Campus Operations OS
 
-**An operations platform for a multi-campus higher-education network.**
-One database, one permission model, one audit trail — replacing the
-spreadsheets, email threads and side files that campus operations used to run
-on.
+**An operations platform that replaced the spreadsheets and email threads 42 universities ran on.**
 
-🔗 **Live:** https://uniconnect-app.up.railway.app
-
-`SvelteKit` · `TypeScript` · `Supabase / PostgreSQL` · `Redis + BullMQ` ·
-`Google Workspace` · `Gemini` · `Railway`
-
-> **On the repository name:** this began as a mail-automation tool and grew into
-> the operations platform described below. The name hasn't caught up.
+`SvelteKit` · `TypeScript` · `PostgreSQL` · `Redis + BullMQ` · `Google Workspace` · `Gemini` · `pnpm monorepo`
 
 ---
 
-## What it does
+## The problem
 
-### Daily operations
+A higher-education network ran campus operations across dozens of universities
+on manual Google Sheets and email threads. Every recurring job — mailing
+thousands of students, collecting the daily status of each campus, generating
+exam papers, chasing fee payments, approving a ₹2,000 expense — meant someone
+copying rows between sheets and sending mail by hand.
 
-- **Daily report spine** — one report per campus by a 16:00 cut-off, sign-off by
-  18:30, on a strict state machine: draft → submitted → in review → signed off,
-  with send-back, reminders, auto-sign-off and immutability once locked.
-- **Task centre** — assignable tasks with multiple assignees, checklists and a
-  view log, so it's clear who saw what and when.
-- **Operations dashboard** — sessions, attendance, instructors and at-risk views
-  across the network, with daily, weekly and monthly reporting.
+That approach broke in three predictable ways. It did not scale with the number
+of campuses. Nobody could tell whether a given mail had actually reached a
+student. And there was no single place to ask "what happened yesterday, across
+the network?"
 
-### Academic operations
+## What I built
 
-- **Examinations** — question bank, per-university paper templates, and
-  generation of multiple distinct-but-equivalent paper sets.
-- **Exam plans** — classroom seating allocation under an interleaving
-  constraint, invigilation assignment with a conflict-of-interest ladder, and
-  marks entry.
-- **Faculty and success coaches** — profiles and subject mappings that drive
-  scheduling eligibility, daily attendance, and coach call targets.
+I built UniConnect solo, as creator and product owner: gathering requirements
+from the operations, finance and academic teams, designing the data model and
+the permission system, writing the application, and running the rollout.
 
-### Money
-
-- **Budget proposals** — a multi-stage approval workflow with a two-level path,
-  a value threshold requiring administrative approval, post-event reporting, and
-  a webhook into the facilities system on final approval.
-- **Petty cash** — the same approval spine, tracking requests, disbursement and
-  bill settlement.
-- **Fee collection** — semester-window tracking synchronised from institutional
-  sheets, twice-daily snapshots, per-batch and per-coach rollups, dropout
-  tracking.
-
-### Communication
-
-- **Campaigns and mailboxes** — per-university mailboxes, mail-merge templates,
-  bulk send with per-recipient open and acknowledgement tracking, and a full
-  mail audit log.
-- **Meeting intelligence** — discovers scheduled meetings, pulls the transcript,
-  and produces a summary, action items and attendance.
-
----
-
-## AI in the platform
-
-Two different kinds, with different failure modes — and one place it's kept out
-on purpose.
-
-| | Where | What it does |
-|---|---|---|
-| **Language AI** | Narrative reports, meeting summaries, document analysis | Reads, ranks and drafts. Assist-only: it never advances a state, sends a message, or writes to an operational table. |
-| **Optimisation AI** | Examination classroom allocation | Constraint satisfaction with a repair pass, not a language model. A plan that can't satisfy the interleaving invariant is flagged, never silently emitted. |
-| **No AI, by design** | Fees, permissions, approvals, thresholds, audit | Deterministic code. These have to be exactly correct and defensible to an auditor. |
-
----
+| Module | What it does |
+|---|---|
+| **Mail campaigns** | Bulk, templated email to filtered student and staff lists, queued through Redis, with per-recipient delivery and open tracking. |
+| **Assessments & exam papers** | A question bank with units, topics and course outcomes; a wizard that composes a paper structure; a generator that fills multiple distinct-but-equivalent sets; and 18 per-university paper layouts that print to each institution's own format. |
+| **Exam operations** | Exam timetables, classroom seating plans, invigilator allocation and marks entry. |
+| **Fee collection** | Per-university collection tracking against a source of truth, day-over-day movement sampled through the working day, and scheduled snapshot emails. |
+| **Instructor attendance** | Daily faculty attendance, workload and leave, feeding scheduling eligibility. |
+| **Tasks & events** | Assignable tasks with checklists, multiple assignees and a view log, plus campus event tracking. |
+| **Budget proposals** | Submission → review → approval, with the approval chain and recipients configured per deployment. |
+| **Petty cash** | Two-level approval, disbursement, bill verification and settlement. |
+| **Daily ops log** | One structured status record per campus per day, on a draft → submitted → reviewed → signed-off state machine. |
+| **Access control** | Per-user and per-university scoping, so a campus manager sees only their own campuses while central teams see everything. |
+| **Gemini daily report** | An LLM-written narrative summary of the day across the network, generated and mailed automatically at 8 PM. |
 
 ## Architecture
 
-| Layer | Implementation |
-|---|---|
-| Application | SvelteKit · TypeScript · Tailwind, on Railway |
-| Data | Supabase PostgreSQL, event-sourced, row-level security |
-| Worker | Node/TypeScript — scheduled loops and BullMQ queues |
-| Cache and queues | Redis |
-| AI services | Google Gemini · Google Vision (OCR) |
-| Integrations | Google OAuth, Gmail, Calendar, Sheets, Drive; push notifications |
+A pnpm + Turborepo monorepo. The SvelteKit app serves both UI and API; a
+separate worker process owns everything on a schedule, so no background job
+depends on a browser being open. Shared types, database access and services
+live in one package used by both.
 
-**The core model:** the university is the scoping key on nearly every table, and
-a role-to-permission matrix gates every page and endpoint. Adding a university
-makes it a filter everywhere; changing a role changes what exists for that user.
+```mermaid
+flowchart TB
+    subgraph Client
+        B["Browser — SvelteKit UI<br/>Svelte 5 runes, Tailwind"]
+    end
 
----
+    subgraph "apps/app — SvelteKit (adapter-node)"
+        R["Server routes<br/>288 API endpoints"]
+        H["hooks.server.ts<br/>session + per-university access control"]
+    end
+
+    subgraph "apps/worker — Node"
+        Q["BullMQ consumers<br/>mail send + delivery tracking"]
+        C["Scheduled loops<br/>fee sync · snapshots · daily lock · 8 PM report"]
+    end
+
+    subgraph "packages/shared"
+        S["DB access · types · mail · crypto<br/>121 SQL migrations"]
+    end
+
+    DB[("PostgreSQL")]
+    RD[("Redis")]
+    G["Google Workspace<br/>OAuth · Gmail · Drive · Sheets"]
+    AI["Gemini"]
+
+    B --> H --> R
+    R --> S
+    Q --> S
+    C --> S
+    S --> DB
+    R -- enqueue --> RD
+    RD --> Q
+    R --> G
+    Q --> G
+    C --> AI
+```
+
+**Why these choices.** SvelteKit keeps UI and API in one deployable with shared
+types end to end. Mail goes through a Redis queue rather than the request cycle,
+so a 3,000-recipient campaign cannot time out a browser tab and failures retry
+on their own. Scheduled work lives in a separate process so it survives
+deploys and doesn't compete with user requests. Postgres over an ORM-heavy
+stack because the reporting queries are the hard part and are written as SQL.
+
+## Outcomes
+
+- Used across **42 universities** by **111+ users**.
+- Bulk communications: **~3 hours → under 5 minutes**.
+- Reporting: **~30 minutes → under 2 minutes**.
+- Marks entry: **2–3 hours → ~20 minutes**.
+
+## Status
+
+Active. Features are being merged into the organisation's main Campus OS
+portal; this repository is the standalone implementation.
+
+## Running it locally
+
+Requires Node 20+, pnpm 8, PostgreSQL and Redis.
+
+```bash
+pnpm install
+cp .env.example .env     # then fill in the values
+pnpm --filter @uniconnect/shared migrate
+pnpm dev
+```
+
+`.env.example` documents every variable the app reads, with placeholder values.
+At minimum set `DATABASE_URL`, `REDIS_URL`, `ENCRYPTION_KEY_BASE64` and the
+`GOOGLE_*` OAuth credentials; the rest enable optional integrations.
+
+**Push notifications (optional).** The Firebase web config is read from
+`PUBLIC_FIREBASE_*` variables. A service worker cannot read environment
+variables at runtime, so if you enable push you must also replace the
+placeholders in `apps/app/static/firebase-messaging-sw.js` by hand with the
+same values. Leaving them disables background push only.
 
 ## Repository layout
 
 ```
-apps/                  application and worker
-packages/shared        shared types, database access, migrations
-extensions/            meet-tracker browser extension
-scripts/               operational and migration scripts
-docs/                  design and product documentation
-PRD.md                 product requirements
-OPS_OS_FEATURES.md     feature inventory
+apps/
+  app/              SvelteKit application — UI + 288 API endpoints
+  worker/           scheduled jobs and queue consumers
+  qr-attendance/    standalone QR attendance app (Next.js)
+  chrome-extension/ meeting tracker
+  niat-planner/     planning prototype
+packages/
+  shared/           database access, types, mail, crypto, 121 migrations
+docs/               operational guides and HTML templates
 ```
 
----
+## A note on this repository
 
-## Getting started
-
-```bash
-pnpm install
-cp .env.example .env
-pnpm --filter shared migrate
-```
-
-Then, in two terminals:
-
-```bash
-pnpm --filter app dev        # application
-pnpm --filter worker start   # background worker
-```
-
-**Environment values required:**
-
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | Supabase Postgres connection |
-| `REDIS_URL` | Queues and cache |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth, Gmail, Calendar, Sheets |
-| `ADMIN_EMAIL` | Bootstrap admin account |
-| `ENCRYPTION_KEY_BASE64` | 32-byte key for field encryption |
-
-No credentials are committed to this repository.
-
-**Deployment**
-
-```bash
-pnpm --filter app build && node build/index.js
-```
-
----
-
-## Roles
-
-| Role | Access |
-|---|---|
-| Super Admin / Admin | Full access; university and user management |
-| Programme Manager / Chief of Staff | Review, sign-off and escalation |
-| Business Operations Associate | The daily operator, scoped to one campus |
-| Programme Management Associate | Shares the daily operational load |
-| University Operator | Restricted to an assigned university |
-
----
-
-## Security and privacy
-
-- **Scoping at the database.** Row-level security filters every query by
-  university and role, rather than relying on application code.
-- **Encrypted student fields.** Sensitive identifiers are stored with
-  AES-256-GCM, masked by default, and every reveal is logged.
-- **A second factor for sensitive records.** A per-user PIN gates access, with
-  verification cached for five minutes only.
-- **An immutable audit log.** Approvals, state transitions and reveals are all
-  recorded and cannot be edited after the fact.
+This is a sanitised public copy. It contains no production data, no
+credentials, and no personal information: every operational email address,
+approver list and recipient list is configured through environment variables,
+and all sample data is fictional.

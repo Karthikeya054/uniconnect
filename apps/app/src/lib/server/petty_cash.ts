@@ -12,7 +12,11 @@ import { PC_APPROVER_EMAILS, PC_APPROVER_L1_EMAILS, PC_APPROVER_L2_EMAILS } from
 
 // The disburser gets the "ready to disburse" mail once a request is approved.
 // (Approver emails live in petty_cash_access so approval rights + mail agree.)
-const PC_DISBURSER = { id: '', email: 'user@example.com', name: 'Sasi' };
+const PC_DISBURSER = {
+    id: '',
+    email: process.env.PETTY_CASH_DISBURSER_EMAIL || '',
+    name: process.env.PETTY_CASH_DISBURSER_NAME || 'Disburser',
+};
 
 async function usersWithRoles(universityId: string, roles: string[]): Promise<Array<{ id: string; email: string; name: string }>> {
     // University-scoped users in the given roles + global admins/ops.

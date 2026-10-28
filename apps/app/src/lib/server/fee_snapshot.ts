@@ -15,10 +15,10 @@ import { getEmailUniversityScope, scopeLabel, getUniversityAvailability, type Un
 import { NIAT_LOGO_B64 } from './niat_logo_b64';
 import { loadOverviewAggregates, type PerBatchRow } from './fee_overview_v2';
 
-export const FIXED_SNAPSHOT_RECIPIENTS = [
-    'user@example.com',
-    'user@example.com',
-];
+// Always-CC'd recipients for the fee snapshot mail, comma-separated in the
+// environment (e.g. FEE_SNAPSHOT_RECIPIENTS="ops@example.com,finance@example.com").
+export const FIXED_SNAPSHOT_RECIPIENTS = String(process.env.FEE_SNAPSHOT_RECIPIENTS || '')
+    .split(',').map(e => e.trim()).filter(Boolean);
 
 interface SnapshotData {
     window_id: string;

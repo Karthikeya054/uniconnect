@@ -18,15 +18,15 @@ CREATE INDEX IF NOT EXISTS idx_ssa_subject ON sme_subject_assignment(subject_key
 INSERT INTO sme_subject_assignment (subject_key, sme_user_id)
 SELECT v.subject_key, u.id
   FROM (VALUES
-    ('backenddevelopment',            'user@example.com'),
-    ('backenddevelopment',            'user@example.com'),
-    ('designandanalysisofalgorithm',  'user@example.com'),
-    ('probabilityandstatistic',       'user@example.com'),
-    ('probabilityandstatistic',       'user@example.com'),
-    ('logicalreasoning',              'user@example.com'),
-    ('logicalreasoning',              'user@example.com'),
-    ('advancecommunicationskill',     'user@example.com'),
-    ('aiforfinance',                  'user@example.com')
+    ('backenddevelopment',            'sme1@example.com'),
+    ('backenddevelopment',            'sme2@example.com'),
+    ('designandanalysisofalgorithm',  'sme3@example.com'),
+    ('probabilityandstatistic',       'sme4@example.com'),
+    ('probabilityandstatistic',       'sme4.alt@example.com'),
+    ('logicalreasoning',              'sme5@example.com'),
+    ('logicalreasoning',              'sme6@example.com'),
+    ('advancecommunicationskill',     'sme7@example.com'),
+    ('aiforfinance',                  'sme8@example.com')
   ) AS v(subject_key, email)
   JOIN users u ON lower(u.email) = v.email
 ON CONFLICT (subject_key, sme_user_id) DO NOTHING;

@@ -13,7 +13,7 @@
  * created automatically.
  *
  * AUTH: a single shared OAuth connection, authorised ONCE by the Drive folder's
- * owner (user@example.com). We store that account's encrypted
+ * owner (the configured ops account). We store that account's encrypted
  * refresh token and upload as them — files land in their My Drive, so no
  * Shared Drive or service account is needed. Reuses the existing
  * GOOGLE_CLIENT_ID/SECRET + encryptString/decryptString plumbing.

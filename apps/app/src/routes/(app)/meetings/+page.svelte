@@ -340,7 +340,7 @@
           <div>
             <!-- svelte-ignore a11y_label_has_associated_control -->
             <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Organizer Email *</label>
-            <input bind:value={manualOrganizer} placeholder="user@example.com" class="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white" />
+            <input bind:value={manualOrganizer} placeholder="organizer@example.com" class="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white" />
           </div>
           <div>
             <!-- svelte-ignore a11y_label_has_associated_control -->

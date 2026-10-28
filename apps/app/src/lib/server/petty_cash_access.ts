@@ -14,8 +14,12 @@ const FINANCE_ROLES = ['CMA_MANAGER', 'ADMIN', 'PROGRAM_OPS', 'FACILITIES'];
 const GLOBAL_ROLES = ['ADMIN', 'PROGRAM_OPS'];
 
 // Petty cash approvers, matched by email so they work whatever role they hold.
-export const PC_APPROVER_L1_EMAILS = ['user@example.com']; // Level 1 — first approval
-export const PC_APPROVER_L2_EMAILS = ['user@example.com'];  // Level 2 — final approval
+// Configured per deployment — comma-separated lists in the environment.
+const emailList = (raw: string | undefined): string[] =>
+    String(raw || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+
+export const PC_APPROVER_L1_EMAILS = emailList(process.env.PETTY_CASH_L1_EMAILS); // Level 1 — first approval
+export const PC_APPROVER_L2_EMAILS = emailList(process.env.PETTY_CASH_L2_EMAILS); // Level 2 — final approval
 // Anyone who can approve at some level (used for "is an approver at all" checks
 // and to keep approvers out of the disburser mail list).
 export const PC_APPROVER_EMAILS = [...PC_APPROVER_L1_EMAILS, ...PC_APPROVER_L2_EMAILS];

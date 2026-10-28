@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const sourceId = `AR_${locals.user.id}_${new Date().toISOString().split('T')[0]}`;
 
         // Notify central admin
-        const ADMIN_EMAIL = 'user@example.com';
+        const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
         const mainAdmin = await getUserByEmail(ADMIN_EMAIL);
 
         if (mainAdmin) {
